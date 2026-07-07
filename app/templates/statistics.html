@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Player Statistics - DartsEdge AI</title>
+    <style>
+        body { font-family: Arial; background:#111; color:white; margin:40px; }
+        h1 { color:#00d084; }
+        table { width:100%; border-collapse:collapse; margin-top:20px; }
+        th, td { padding:10px; border-bottom:1px solid #333; text-align:left; }
+        th { color:#00d084; }
+        .card { background:#222; padding:20px; border-radius:10px; }
+        a { color:#00d084; }
+    </style>
+</head>
+<body>
+
+<h1>📊 Player Statistics</h1>
+
+<p><a href="/dashboard">Back to Dashboard</a></p>
+
+<div class="card">
+<table>
+    <tr>
+        <th>Player</th>
+        <th>Elo</th>
+        <th>Matches</th>
+        <th>Wins</th>
+        <th>Losses</th>
+        <th>Win %</th>
+        <th>Legs Won</th>
+        <th>Legs Lost</th>
+        <th>180s / Match</th>
+    </tr>
+
+    {% for row in rows %}
+    <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.elo }}</td>
+        <td>{{ row.matches }}</td>
+        <td>{{ row.wins }}</td>
+        <td>{{ row.losses }}</td>
+        <td>{{ row.win_pct }}%</td>
+        <td>{{ row.legs_won }}</td>
+        <td>{{ row.legs_lost }}</td>
+        <td>{{ row.one80_per_match }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+
+</body>
+</html>
