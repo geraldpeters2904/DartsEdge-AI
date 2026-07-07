@@ -122,3 +122,78 @@ def dashboard(request: Request):
             "match_count": match_count
         }
     )
+@app.get("/predict")
+def predict_page(request: Request):
+
+    db = SessionLocal()
+
+    players = db.query(Player).order_by(Player.name.asc()).all()
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "predict.html",
+        {
+            "request": request,
+            "players": players
+        }
+    )
+@app.get("/predict")
+def predict_page(request: Request):
+
+    db = SessionLocal()
+
+    players = db.query(Player).order_by(Player.name.asc()).all()
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "predict.html",
+        {
+            "request": request,
+            "players": players
+        }
+    )
+@app.get("/predict-ui")
+def predict_ui(request: Request, player_a: str, player_b: str):
+
+    db = SessionLocal()
+
+    a = db.query(Player).filter(Player.name == player_a).first()
+    b = db.query(Player).filter(Player.name == player_b).first()
+    players = db.query(Player).order_by(Player.name.asc()).all()
+
+    if not a or not b:
+        db.close()
+        return {"error": "Player not found"}
+
+    elo_prob = win_probability(a.elo, b.elo)
+    sim_prob = leg_win_probability(a, b)
+
+    final_prob_a = (elo_prob * 0.6) + (sim_prob * 0.4)
+
+    exp_180_a = expected_180s(a)
+    exp_180_b = expected_180s(b)
+
+    value = value_edge(final_prob_a)
+
+    result = {
+        "player_a": player_a,
+        "player_b": player_b,
+        "win_prob_a": round(final_prob_a, 3),
+        "win_prob_b": round(1 - final_prob_a, 3),
+        "expected_180s_a": round(exp_180_a, 2),
+        "expected_180s_b": round(exp_180_b, 2),
+        "value_bet": value
+    }
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "predict.html",
+        {
+            "request": request,
+            "players": players,
+            "result": result
+        }
+    )

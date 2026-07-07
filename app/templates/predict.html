@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DartsEdge AI Predictor</title>
+    <style>
+        body{
+            font-family:Arial;
+            background:#111;
+            color:white;
+            margin:40px;
+        }
+
+        h1{
+            color:#00d084;
+        }
+
+        select{
+            padding:10px;
+            width:250px;
+            margin:10px 0;
+        }
+
+        button{
+            padding:12px 20px;
+            background:#00d084;
+            border:none;
+            font-size:16px;
+            cursor:pointer;
+            border-radius:8px;
+        }
+
+        .card{
+            margin-top:30px;
+            padding:20px;
+            background:#222;
+            border-radius:10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🎯 Match Predictor</h1>
+
+<form action="/predict-ui">
+
+<label>Player A</label><br>
+
+<select name="player_a">
+
+{% for player in players %}
+<option value="{{player.name}}">
+{{player.name}}
+</option>
+{% endfor %}
+
+</select>
+
+<br><br>
+
+<label>Player B</label><br>
+
+<select name="player_b">
+
+{% for player in players %}
+<option value="{{player.name}}">
+{{player.name}}
+</option>
+{% endfor %}
+
+</select>
+
+<br><br>
+
+<button type="submit">
+
+Analyse Match
+
+</button>
+
+</form>
+{% if result %}
+<div class="card">
+    <h2>Prediction Result</h2>
+    <p><strong>{{ result.player_a }}</strong>: {{ result.win_prob_a }} win probability</p>
+    <p><strong>{{ result.player_b }}</strong>: {{ result.win_prob_b }} win probability</p>
+    <p>Expected 180s {{ result.player_a }}: {{ result.expected_180s_a }}</p>
+    <p>Expected 180s {{ result.player_b }}: {{ result.expected_180s_b }}</p>
+    <p><strong>Value Bet:</strong> {{ result.value_bet.value }}</p>
+</div>
+{% endif %}
+</body>
+</html>

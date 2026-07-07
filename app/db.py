@@ -15,8 +15,10 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
 def create_database():
     from app.models.player import Player
     from app.models.match import Match
+    from app.models.player_stats import PlayerStats
 
     Base.metadata.create_all(bind=engine)
