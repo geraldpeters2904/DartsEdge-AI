@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Import Matches - DartsEdge AI</title>
+    <style>
+        body { font-family: Arial; background:#111; color:white; margin:40px; }
+        h1 { color:#00d084; }
+        .card { background:#222; padding:20px; border-radius:10px; width:500px; }
+        button { padding:12px 20px; background:#00d084; border:none; border-radius:8px; cursor:pointer; }
+        input { margin:20px 0; }
+        a { color:#00d084; }
+    </style>
+</head>
+<body>
+
+<h1>📥 Import Match Results</h1>
+
+<div class="card">
+    <form action="/import-matches" method="post" enctype="multipart/form-data">
+        <p>Select a CSV file of match results:</p>
+        <input type="file" name="file" accept=".csv">
+        <br>
+        <button type="submit">Import Matches</button>
+    </form>
+</div>
+
+<p><a href="/dashboard">Back to Dashboard</a></p>
+
+</body>
+</html>

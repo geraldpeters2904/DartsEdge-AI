@@ -1,3 +1,10 @@
+import csv
+import io
+from fastapi import UploadFile, File
+from datetime import datetime
+from app.models.match import Match
+from app.services.elo_service import update_elo
+from app.services.stats_service import update_player_stats
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from app.models.match import Match
@@ -197,3 +204,83 @@ def predict_ui(request: Request, player_a: str, player_b: str):
             "result": result
         }
     )
+@app.get("/import")
+def import_page(request: Request):
+    return templates.TemplateResponse(
+        "import.html",
+        {"request": request}
+    )
+
+
+@app.post("/import-matches")
+async def import_matches(file: UploadFile = File(...)):
+
+    contents = await file.read()
+    decoded = contents.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(decoded))
+
+    db = SessionLocal()
+    imported = 0
+    skipped = 0
+
+    for row in reader:
+
+        player_a = db.query(Player).filter(
+            Player.name == row["player_a"]
+        ).first()
+
+        player_b = db.query(Player).filter(
+            Player.name == row["player_b"]
+        ).first()
+
+        if not player_a or not player_b:
+            skipped += 1
+            continue
+
+        match_date = datetime.strptime(
+            row["date"],
+            "%Y-%m-%d"
+        ).date()
+
+        existing_match = db.query(Match).filter(
+            Match.date == match_date,
+            Match.player_a == row["player_a"],
+            Match.player_b == row["player_b"],
+            Match.winner == row["winner"],
+            Match.score == row["score"]
+        ).first()
+
+        if existing_match:
+            skipped += 1
+            continue
+
+        match = Match(
+            date=match_date,
+            player_a=row["player_a"],
+            player_b=row["player_b"],
+            winner=row["winner"],
+            score=row["score"]
+        )
+
+        db.add(match)
+
+        update_elo(player_a, player_b, row["winner"])
+
+        update_player_stats(
+            db,
+            player_a,
+            player_b,
+            row["winner"],
+            row["score"]
+        )
+
+        imported += 1
+
+    db.commit()
+    db.close()
+
+    return {
+        "message": "Import complete",
+        "imported": imported,
+        "skipped": skipped
+    }

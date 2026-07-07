@@ -1,6 +1,6 @@
 import csv
 from datetime import datetime
-
+from app.services.stats_service import update_player_stats
 from app.db import SessionLocal
 from app.models.match import Match
 from app.models.player import Player
@@ -31,7 +31,13 @@ with open("data/sample_matches.csv", newline="") as file:
         db.add(match)
 
         update_elo(player_a, player_b, row["winner"])
-
+update_player_stats(
+    db,
+    player_a,
+    player_b,
+    row["winner"],
+    row["score"]
+)
 db.commit()
 db.close()
 
