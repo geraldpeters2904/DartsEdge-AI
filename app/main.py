@@ -1,5 +1,7 @@
+from app.db import create_database, SessionLocal
 from fastapi import FastAPI
 from app.services.players import players
+from app.models.player import Player
 from app.services.match_engine import (
     win_probability,
     expected_180s,
@@ -8,7 +10,7 @@ from app.services.match_engine import (
 )
 
 app = FastAPI()
-
+create_database()
 @app.get("/")
 def home():
     return {"status": "DartsEdge AI v2 running"}
@@ -41,3 +43,29 @@ def match(player_a: str, player_b: str):
         "expected_180s_b": round(exp_180_b, 2),
         "value_bet": value
     }
+    from app.db import SessionLocal
+from app.models.player import Player
+
+
+@app.get("/players")
+def list_players():
+
+    db = SessionLocal()
+
+    players = db.query(Player).all()
+
+    result = []
+
+    for p in players:
+        result.append({
+            "id": p.id,
+            "name": p.name,
+            "elo": p.elo,
+            "average": p.average,
+            "checkout": p.checkout,
+            "one80_rate": p.one80_rate
+        })
+
+    db.close()
+
+    return result
