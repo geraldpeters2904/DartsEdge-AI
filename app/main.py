@@ -18,13 +18,16 @@ def home():
 @app.get("/match")
 def match(player_a: str, player_b: str):
 
-    a = players.get(player_a)
-    b = players.get(player_b)
+    db = SessionLocal()
+
+    a = db.query(Player).filter(Player.name == player_a).first()
+    b = db.query(Player).filter(Player.name == player_b).first()
 
     if not a or not b:
+        db.close()
         return {"error": "Player not found"}
 
-    elo_prob = win_probability(a["elo"], b["elo"])
+    elo_prob = win_probability(a.elo, b.elo)
     sim_prob = leg_win_probability(a, b)
 
     final_prob_a = (elo_prob * 0.6) + (sim_prob * 0.4)
@@ -33,6 +36,8 @@ def match(player_a: str, player_b: str):
     exp_180_b = expected_180s(b)
 
     value = value_edge(final_prob_a)
+
+    db.close()
 
     return {
         "player_a": player_a,
@@ -43,8 +48,6 @@ def match(player_a: str, player_b: str):
         "expected_180s_b": round(exp_180_b, 2),
         "value_bet": value
     }
-    from app.db import SessionLocal
-from app.models.player import Player
 
 
 @app.get("/players")
