@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DartsEdge AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #111;
+            color: #f4f4f4;
+        }
+        h1 { color: #00d084; }
+        .card {
+            background: #1e1e1e;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            text-align: left;
+            color: #00d084;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🎯 DartsEdge AI Dashboard</h1>
+
+<div class="card">
+    <h2>System Summary</h2>
+    <p><strong>Players:</strong> {{ player_count }}</p>
+    <p><strong>Matches:</strong> {{ match_count }}</p>
+    <p><strong>Prediction Engine:</strong> Online ✅</p>
+</div>
+
+<div class="card">
+    <h2>Top Elo Players</h2>
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>Elo</th>
+            <th>Average</th>
+            <th>Checkout %</th>
+            <th>180 Rate</th>
+        </tr>
+        {% for p in players %}
+        <tr>
+            <td>{{ p.name }}</td>
+            <td>{{ p.elo }}</td>
+            <td>{{ p.average }}</td>
+            <td>{{ p.checkout }}</td>
+            <td>{{ p.one80_rate }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h2>Recent Matches</h2>
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Player A</th>
+            <th>Player B</th>
+            <th>Winner</th>
+            <th>Score</th>
+        </tr>
+        {% for m in matches %}
+        <tr>
+            <td>{{ m.date }}</td>
+            <td>{{ m.player_a }}</td>
+            <td>{{ m.player_b }}</td>
+            <td>{{ m.winner }}</td>
+            <td>{{ m.score }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+</body>
+</html>

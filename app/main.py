@@ -1,3 +1,6 @@
+from fastapi import Request
+from fastapi.templating import Jinja2Templates
+from app.models.match import Match
 from app.db import create_database, SessionLocal
 from fastapi import FastAPI
 from app.services.players import players
@@ -10,6 +13,7 @@ from app.services.match_engine import (
 )
 
 app = FastAPI()
+templates = Jinja2Templates(directory="app/templates")
 create_database()
 @app.get("/")
 def home():
@@ -95,3 +99,26 @@ def list_matches():
     db.close()
 
     return result
+@app.get("/dashboard")
+def dashboard(request: Request):
+
+    db = SessionLocal()
+
+    players = db.query(Player).order_by(Player.elo.desc()).all()
+    matches = db.query(Match).order_by(Match.date.desc()).limit(10).all()
+
+    player_count = db.query(Player).count()
+    match_count = db.query(Match).count()
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request,
+            "players": players,
+            "matches": matches,
+            "player_count": player_count,
+            "match_count": match_count
+        }
+    )
