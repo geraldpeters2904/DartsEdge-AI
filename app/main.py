@@ -49,7 +49,6 @@ def match(player_a: str, player_b: str):
         "value_bet": value
     }
 
-
 @app.get("/players")
 def list_players():
 
@@ -67,6 +66,30 @@ def list_players():
             "average": p.average,
             "checkout": p.checkout,
             "one80_rate": p.one80_rate
+        })
+
+    db.close()
+
+    return result
+@app.get("/matches")
+def list_matches():
+
+    from app.models.match import Match
+
+    db = SessionLocal()
+
+    matches = db.query(Match).all()
+
+    result = []
+
+    for m in matches:
+        result.append({
+            "id": m.id,
+            "date": str(m.date),
+            "player_a": m.player_a,
+            "player_b": m.player_b,
+            "winner": m.winner,
+            "score": m.score
         })
 
     db.close()
