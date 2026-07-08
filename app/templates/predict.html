@@ -94,6 +94,30 @@ Analyse Match
     <p>Expected 180s {{ result.player_a }}: {{ result.expected_180s_a }}</p>
     <p>Expected 180s {{ result.player_b }}: {{ result.expected_180s_b }}</p>
     <p><strong>Value Bet:</strong> {{ result.value_bet.value }}</p>
+    <h2>180 Markets</h2>
+
+<h3>{{ result.player_a }}</h3>
+<p>Over 0.5 180s: {{ result.markets_180.player_a.over_0_5 }}</p>
+<p>Over 1.5 180s: {{ result.markets_180.player_a.over_1_5 }}</p>
+<p>Over 2.5 180s: {{ result.markets_180.player_a.over_2_5 }}</p>
+
+<h3>{{ result.player_b }}</h3>
+<p>Over 0.5 180s: {{ result.markets_180.player_b.over_0_5 }}</p>
+<p>Over 1.5 180s: {{ result.markets_180.player_b.over_1_5 }}</p>
+<p>Over 2.5 180s: {{ result.markets_180.player_b.over_2_5 }}</p>
+
+<h3>Most 180s</h3>
+<p>{{ result.player_a }}: {{ result.markets_180.most_180s_a }}</p>
+<p>{{ result.player_b }}: {{ result.markets_180.most_180s_b }}</p>
+
+<h3>180 Form</h3>
+<p>{{ result.player_a }} Last 5: {{ result.form_180_a.last_5 }}</p>
+<p>{{ result.player_a }} Last 10: {{ result.form_180_a.last_10 }}</p>
+<p>{{ result.player_a }} Career: {{ result.form_180_a.career }}</p>
+
+<p>{{ result.player_b }} Last 5: {{ result.form_180_b.last_5 }}</p>
+<p>{{ result.player_b }} Last 10: {{ result.form_180_b.last_10 }}</p>
+<p>{{ result.player_b }} Career: {{ result.form_180_b.career }}</p>
 </div>
 {% endif %}
 </body>
