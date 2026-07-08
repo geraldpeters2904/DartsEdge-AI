@@ -1,3 +1,4 @@
+from app.services.simulation_service import simulate_match
 from app.services.match_intelligence_service import compare_players
 from app.services.player_profile_service import get_player_profile
 import csv
@@ -210,6 +211,7 @@ def predict_ui(request: Request, player_a: str, player_b: str):
 
     value = value_edge(final_prob_a)
     markets_180 = one80_markets(exp_180_a, exp_180_b)
+    simulation = simulate_match(profile_a, profile_b)
 
     result = {
         "player_a": player_a,
@@ -224,7 +226,8 @@ def predict_ui(request: Request, player_a: str, player_b: str):
         "value_bet": value,
         "profile_a": profile_a,
         "profile_b": profile_b,
-        "intelligence": intelligence
+        "intelligence": intelligence,
+        "simulation": simulation
     }
 
     db.close()
