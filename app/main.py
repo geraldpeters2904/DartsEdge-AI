@@ -1,3 +1,4 @@
+from app.services.match_intelligence_service import compare_players
 from app.services.player_profile_service import get_player_profile
 import csv
 import io
@@ -187,23 +188,25 @@ def predict_page(request: Request):
 def predict_ui(request: Request, player_a: str, player_b: str):
     db = SessionLocal()
 
-    a = db.query(Player).filter(Player.name == player_a).first()
-    b = db.query(Player).filter(Player.name == player_b).first()
     players = db.query(Player).order_by(Player.name.asc()).all()
 
-    if not a or not b:
+    profile_a = get_player_profile(db, player_a)
+    profile_b = get_player_profile(db, player_b)
+    intelligence = compare_players(profile_a, profile_b)
+
+    if not profile_a or not profile_b:
         db.close()
         return {"error": "Player not found"}
 
-    elo_prob = win_probability(a.elo, b.elo)
+    a = db.query(Player).filter(Player.name == player_a).first()
+    b = db.query(Player).filter(Player.name == player_b).first()
+
+    elo_prob = win_probability(profile_a["elo"], profile_b["elo"])
     sim_prob = leg_win_probability(a, b)
     final_prob_a = (elo_prob * 0.6) + (sim_prob * 0.4)
 
-    form_180_a = weighted_expected_180s(db, player_a)
-    form_180_b = weighted_expected_180s(db, player_b)
-
-    exp_180_a = form_180_a["expected"]
-    exp_180_b = form_180_b["expected"]
+    exp_180_a = profile_a["form"]["expected"]
+    exp_180_b = profile_b["form"]["expected"]
 
     value = value_edge(final_prob_a)
     markets_180 = one80_markets(exp_180_a, exp_180_b)
@@ -215,10 +218,13 @@ def predict_ui(request: Request, player_a: str, player_b: str):
         "win_prob_b": round(1 - final_prob_a, 3),
         "expected_180s_a": round(exp_180_a, 2),
         "expected_180s_b": round(exp_180_b, 2),
-        "form_180_a": form_180_a,
-        "form_180_b": form_180_b,
+        "form_180_a": profile_a["form"],
+        "form_180_b": profile_b["form"],
         "markets_180": markets_180,
-        "value_bet": value
+        "value_bet": value,
+        "profile_a": profile_a,
+        "profile_b": profile_b,
+        "intelligence": intelligence
     }
 
     db.close()
