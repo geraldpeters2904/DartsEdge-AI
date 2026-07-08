@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DartsEdge AI Predictor</title>
+    <title>DartsEdge AI Match Analysis</title>
     <style>
         body { font-family: Arial; background:#111; color:white; margin:40px; }
         h1, h2, h3 { color:#00d084; }
@@ -9,15 +9,17 @@
         select { padding:10px; width:250px; margin:10px 0; }
         button { padding:12px 20px; background:#00d084; border:none; font-size:16px; cursor:pointer; border-radius:8px; }
         .card { margin-top:30px; padding:20px; background:#222; border-radius:10px; }
+        .summary { background:#003d2b; border:1px solid #00d084; }
         table { width:100%; border-collapse:collapse; margin-top:15px; }
         th, td { padding:10px; border-bottom:1px solid #333; text-align:left; }
         th { color:#00d084; }
+        .big { font-size:28px; font-weight:bold; }
     </style>
 </head>
 
 <body>
 
-<h1>🎯 Match Predictor</h1>
+<h1>🎯 Match Analysis</h1>
 
 <div style="margin-bottom:25px;">
     <a href="/dashboard">🏠 Dashboard</a> |
@@ -32,7 +34,9 @@
     <label>Player A</label><br>
     <select name="player_a">
         {% for player in players %}
-        <option value="{{ player.name }}">{{ player.name }}</option>
+        <option value="{{ player.name }}" {% if player.name == selected_player_a %}selected{% endif %}>
+            {{ player.name }}
+        </option>
         {% endfor %}
     </select>
 
@@ -41,7 +45,9 @@
     <label>Player B</label><br>
     <select name="player_b">
         {% for player in players %}
-        <option value="{{ player.name }}">{{ player.name }}</option>
+        <option value="{{ player.name }}" {% if player.name == selected_player_b %}selected{% endif %}>
+            {{ player.name }}
+        </option>
         {% endfor %}
     </select>
 
@@ -51,6 +57,30 @@
 </form>
 
 {% if result %}
+
+<div class="card summary">
+    <h2>⭐ Match Summary</h2>
+
+    <p><strong>Match:</strong> {{ result.player_a }} vs {{ result.player_b }}</p>
+
+    <p><strong>Favoured Player:</strong></p>
+    <p class="big">{{ result.intelligence.favoured_player }}</p>
+
+    <p><strong>Confidence:</strong> {{ result.intelligence.confidence }} / 100</p>
+
+    <p><strong>Win Probability:</strong></p>
+    <p>{{ result.player_a }}: {{ result.win_prob_a }}</p>
+    <p>{{ result.player_b }}: {{ result.win_prob_b }}</p>
+
+    <p><strong>Expected 180s:</strong></p>
+    <p>{{ result.player_a }}: {{ result.expected_180s_a }}</p>
+    <p>{{ result.player_b }}: {{ result.expected_180s_b }}</p>
+
+    <p><strong>Most 180s:</strong></p>
+    <p>{{ result.player_a }}: {{ result.markets_180.most_180s_a }}</p>
+    <p>{{ result.player_b }}: {{ result.markets_180.most_180s_b }}</p>
+</div>
+
 <div class="card">
     <h2>Match Intelligence</h2>
     <p><strong>Favoured Player:</strong> {{ result.intelligence.favoured_player }}</p>
@@ -69,13 +99,6 @@
         <li>{{ reason }}</li>
         {% endfor %}
     </ul>
-</div>
-
-<div class="card">
-    <h2>Prediction Result</h2>
-    <p><strong>{{ result.player_a }}</strong>: {{ result.win_prob_a }} win probability</p>
-    <p><strong>{{ result.player_b }}</strong>: {{ result.win_prob_b }} win probability</p>
-    <p><strong>Value Bet:</strong> {{ result.value_bet.value }}</p>
 </div>
 
 <div class="card">
@@ -116,6 +139,33 @@
 </div>
 
 <div class="card">
+    <h2>Simulation Markets</h2>
+
+    <h3>Correct Score</h3>
+    <table>
+        <tr>
+            <th>Score</th>
+            <th>Probability</th>
+        </tr>
+        {% for score, probability in result.simulation.scores.items() %}
+        <tr>
+            <td>{{ score }}</td>
+            <td>{{ probability }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Handicap Markets</h3>
+    <p>{{ result.player_a }} -1.5: {{ result.simulation.handicaps.player_a_minus_1_5 }}</p>
+    <p>{{ result.player_a }} -2.5: {{ result.simulation.handicaps.player_a_minus_2_5 }}</p>
+    <p>{{ result.player_b }} +2.5: {{ result.simulation.handicaps.player_b_plus_2_5 }}</p>
+
+    <h3>Total Legs</h3>
+    <p>Over 5.5 legs: {{ result.simulation.total_legs.over_5_5 }}</p>
+    <p>Over 6.5 legs: {{ result.simulation.total_legs.over_6_5 }}</p>
+</div>
+
+<div class="card">
     <h2>180 Form</h2>
 
     <table>
@@ -141,6 +191,7 @@
         </tr>
     </table>
 </div>
+
 {% endif %}
 
 </body>

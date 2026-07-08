@@ -171,16 +171,16 @@ def match(player_a: str, player_b: str):
 @app.get("/predict")
 def predict_page(request: Request):
     db = SessionLocal()
-
     players = db.query(Player).order_by(Player.name.asc()).all()
-
     db.close()
 
     return templates.TemplateResponse(
         "predict.html",
         {
             "request": request,
-            "players": players
+            "players": players,
+            "selected_player_a": None,
+            "selected_player_b": None
         }
     )
 
@@ -193,7 +193,6 @@ def predict_ui(request: Request, player_a: str, player_b: str):
 
     profile_a = get_player_profile(db, player_a)
     profile_b = get_player_profile(db, player_b)
-    intelligence = compare_players(profile_a, profile_b)
 
     if not profile_a or not profile_b:
         db.close()
@@ -201,6 +200,8 @@ def predict_ui(request: Request, player_a: str, player_b: str):
 
     a = db.query(Player).filter(Player.name == player_a).first()
     b = db.query(Player).filter(Player.name == player_b).first()
+
+    intelligence = compare_players(profile_a, profile_b)
 
     elo_prob = win_probability(profile_a["elo"], profile_b["elo"])
     sim_prob = leg_win_probability(a, b)
@@ -237,7 +238,9 @@ def predict_ui(request: Request, player_a: str, player_b: str):
         {
             "request": request,
             "players": players,
-            "result": result
+            "result": result,
+            "selected_player_a": player_a,
+            "selected_player_b": player_b
         }
     )
 
