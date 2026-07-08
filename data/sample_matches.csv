@@ -1,4 +1,2 @@
-date,player_a,player_b,winner,score,player_a_180s,player_b_180s
-2026-07-08,lewis_pride,scott_taylor,lewis_pride,4-2,2,1
-2026-07-08,carl_wilson,devon_peterson,carl_wilson,4-1,3,0
-2026-07-08,meinte_hibma,adrian_gray,meinte_hibma,4-3,1,2
+date,tournament,stage,match_format,player_a,player_b,winner,score,player_a_180s,player_b_180s,first_180_player,first_leg_winner,player_a_average,player_b_average,player_a_checkout,player_b_checkout,player_a_first9,player_b_first9,player_a_highest_checkout,player_b_highest_checkout
+2026-07-11,MODUS,Group,Best of 7,lewis_pride,scott_taylor,lewis_pride,4-2,2,1,lewis_pride,scott_taylor,92.5,90.1,41.2,38.5,97.3,94.6,120,84

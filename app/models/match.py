@@ -9,10 +9,15 @@ class Match(Base):
 
     date = Column(Date)
 
-    player_a = Column(String)
+    tournament = Column(String, default="MODUS")
+    stage = Column(String, default="Group")
+    match_format = Column(String, default="Best of 7")
 
+    player_a = Column(String)
     player_b = Column(String)
 
     winner = Column(String)
-
     score = Column(String)
+
+    first_180_player = Column(String, nullable=True)
+    first_leg_winner = Column(String, nullable=True)

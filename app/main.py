@@ -1,3 +1,5 @@
+
+from app.routes.predict import router as predict_router
 from app.services.simulation_service import simulate_match
 from app.services.match_intelligence_service import compare_players
 from app.services.player_profile_service import get_player_profile
@@ -315,22 +317,14 @@ async def import_matches(file: UploadFile = File(...)):
     skipped = 0
 
     for row in reader:
-        player_a = db.query(Player).filter(
-            Player.name == row["player_a"]
-        ).first()
-
-        player_b = db.query(Player).filter(
-            Player.name == row["player_b"]
-        ).first()
+        player_a = db.query(Player).filter(Player.name == row["player_a"]).first()
+        player_b = db.query(Player).filter(Player.name == row["player_b"]).first()
 
         if not player_a or not player_b:
             skipped += 1
             continue
 
-        match_date = datetime.strptime(
-            row["date"],
-            "%Y-%m-%d"
-        ).date()
+        match_date = datetime.strptime(row["date"], "%Y-%m-%d").date()
 
         existing_match = db.query(Match).filter(
             Match.date == match_date,
@@ -346,40 +340,42 @@ async def import_matches(file: UploadFile = File(...)):
 
         match = Match(
             date=match_date,
+            tournament=row.get("tournament", "MODUS"),
+            stage=row.get("stage", "Group"),
+            match_format=row.get("match_format", "Best of 7"),
             player_a=row["player_a"],
             player_b=row["player_b"],
             winner=row["winner"],
-            score=row["score"]
+            score=row["score"],
+            first_180_player=row.get("first_180_player"),
+            first_leg_winner=row.get("first_leg_winner")
         )
 
         db.add(match)
         db.flush()
 
-        db.add(
-            MatchPlayerStats(
-                match_id=match.id,
-                player_name=row["player_a"],
-                one80s=int(row.get("player_a_180s", 0))
-            )
-        )
+        db.add(MatchPlayerStats(
+            match_id=match.id,
+            player_name=row["player_a"],
+            one80s=int(row.get("player_a_180s", 0)),
+            average=float(row.get("player_a_average", 0)),
+            checkout=float(row.get("player_a_checkout", 0)),
+            first9_average=float(row.get("player_a_first9", 0)),
+            highest_checkout=int(row.get("player_a_highest_checkout", 0))
+        ))
 
-        db.add(
-            MatchPlayerStats(
-                match_id=match.id,
-                player_name=row["player_b"],
-                one80s=int(row.get("player_b_180s", 0))
-            )
-        )
+        db.add(MatchPlayerStats(
+            match_id=match.id,
+            player_name=row["player_b"],
+            one80s=int(row.get("player_b_180s", 0)),
+            average=float(row.get("player_b_average", 0)),
+            checkout=float(row.get("player_b_checkout", 0)),
+            first9_average=float(row.get("player_b_first9", 0)),
+            highest_checkout=int(row.get("player_b_highest_checkout", 0))
+        ))
 
         update_elo(player_a, player_b, row["winner"])
-
-        update_player_stats(
-            db,
-            player_a,
-            player_b,
-            row["winner"],
-            row["score"]
-        )
+        update_player_stats(db, player_a, player_b, row["winner"], row["score"])
 
         imported += 1
 
