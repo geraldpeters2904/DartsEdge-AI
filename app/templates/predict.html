@@ -3,44 +3,22 @@
 <head>
     <title>DartsEdge AI Predictor</title>
     <style>
-        body{
-            font-family:Arial;
-            background:#111;
-            color:white;
-            margin:40px;
-        }
-
-        h1{
-            color:#00d084;
-        }
-
-        select{
-            padding:10px;
-            width:250px;
-            margin:10px 0;
-        }
-
-        button{
-            padding:12px 20px;
-            background:#00d084;
-            border:none;
-            font-size:16px;
-            cursor:pointer;
-            border-radius:8px;
-        }
-
-        .card{
-            margin-top:30px;
-            padding:20px;
-            background:#222;
-            border-radius:10px;
-        }
+        body { font-family: Arial; background:#111; color:white; margin:40px; }
+        h1, h2, h3 { color:#00d084; }
+        a { color:#00d084; }
+        select { padding:10px; width:250px; margin:10px 0; }
+        button { padding:12px 20px; background:#00d084; border:none; font-size:16px; cursor:pointer; border-radius:8px; }
+        .card { margin-top:30px; padding:20px; background:#222; border-radius:10px; }
+        table { width:100%; border-collapse:collapse; margin-top:15px; }
+        th, td { padding:10px; border-bottom:1px solid #333; text-align:left; }
+        th { color:#00d084; }
     </style>
 </head>
 
 <body>
 
 <h1>🎯 Match Predictor</h1>
+
 <div style="margin-bottom:25px;">
     <a href="/dashboard">🏠 Dashboard</a> |
     <a href="/predict">🎯 Predictor</a> |
@@ -49,76 +27,121 @@
     <a href="/matches">🎮 Matches</a> |
     <a href="/import">📥 Import</a>
 </div>
+
 <form action="/predict-ui">
+    <label>Player A</label><br>
+    <select name="player_a">
+        {% for player in players %}
+        <option value="{{ player.name }}">{{ player.name }}</option>
+        {% endfor %}
+    </select>
 
-<label>Player A</label><br>
+    <br><br>
 
-<select name="player_a">
+    <label>Player B</label><br>
+    <select name="player_b">
+        {% for player in players %}
+        <option value="{{ player.name }}">{{ player.name }}</option>
+        {% endfor %}
+    </select>
 
-{% for player in players %}
-<option value="{{player.name}}">
-{{player.name}}
-</option>
-{% endfor %}
+    <br><br>
 
-</select>
-
-<br><br>
-
-<label>Player B</label><br>
-
-<select name="player_b">
-
-{% for player in players %}
-<option value="{{player.name}}">
-{{player.name}}
-</option>
-{% endfor %}
-
-</select>
-
-<br><br>
-
-<button type="submit">
-
-Analyse Match
-
-</button>
-
+    <button type="submit">Analyse Match</button>
 </form>
+
 {% if result %}
+<div class="card">
+    <h2>Match Intelligence</h2>
+    <p><strong>Favoured Player:</strong> {{ result.intelligence.favoured_player }}</p>
+    <p><strong>Confidence:</strong> {{ result.intelligence.confidence }} / 100</p>
+
+    <h3>Reasons for {{ result.player_a }}</h3>
+    <ul>
+        {% for reason in result.intelligence.reasons_a %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Reasons for {{ result.player_b }}</h3>
+    <ul>
+        {% for reason in result.intelligence.reasons_b %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
 <div class="card">
     <h2>Prediction Result</h2>
     <p><strong>{{ result.player_a }}</strong>: {{ result.win_prob_a }} win probability</p>
     <p><strong>{{ result.player_b }}</strong>: {{ result.win_prob_b }} win probability</p>
-    <p>Expected 180s {{ result.player_a }}: {{ result.expected_180s_a }}</p>
-    <p>Expected 180s {{ result.player_b }}: {{ result.expected_180s_b }}</p>
     <p><strong>Value Bet:</strong> {{ result.value_bet.value }}</p>
+</div>
+
+<div class="card">
     <h2>180 Markets</h2>
 
-<h3>{{ result.player_a }}</h3>
-<p>Over 0.5 180s: {{ result.markets_180.player_a.over_0_5 }}</p>
-<p>Over 1.5 180s: {{ result.markets_180.player_a.over_1_5 }}</p>
-<p>Over 2.5 180s: {{ result.markets_180.player_a.over_2_5 }}</p>
+    <table>
+        <tr>
+            <th>Market</th>
+            <th>{{ result.player_a }}</th>
+            <th>{{ result.player_b }}</th>
+        </tr>
+        <tr>
+            <td>Expected 180s</td>
+            <td>{{ result.expected_180s_a }}</td>
+            <td>{{ result.expected_180s_b }}</td>
+        </tr>
+        <tr>
+            <td>Over 0.5 180s</td>
+            <td>{{ result.markets_180.player_a.over_0_5 }}</td>
+            <td>{{ result.markets_180.player_b.over_0_5 }}</td>
+        </tr>
+        <tr>
+            <td>Over 1.5 180s</td>
+            <td>{{ result.markets_180.player_a.over_1_5 }}</td>
+            <td>{{ result.markets_180.player_b.over_1_5 }}</td>
+        </tr>
+        <tr>
+            <td>Over 2.5 180s</td>
+            <td>{{ result.markets_180.player_a.over_2_5 }}</td>
+            <td>{{ result.markets_180.player_b.over_2_5 }}</td>
+        </tr>
+        <tr>
+            <td>Most 180s</td>
+            <td>{{ result.markets_180.most_180s_a }}</td>
+            <td>{{ result.markets_180.most_180s_b }}</td>
+        </tr>
+    </table>
+</div>
 
-<h3>{{ result.player_b }}</h3>
-<p>Over 0.5 180s: {{ result.markets_180.player_b.over_0_5 }}</p>
-<p>Over 1.5 180s: {{ result.markets_180.player_b.over_1_5 }}</p>
-<p>Over 2.5 180s: {{ result.markets_180.player_b.over_2_5 }}</p>
+<div class="card">
+    <h2>180 Form</h2>
 
-<h3>Most 180s</h3>
-<p>{{ result.player_a }}: {{ result.markets_180.most_180s_a }}</p>
-<p>{{ result.player_b }}: {{ result.markets_180.most_180s_b }}</p>
-
-<h3>180 Form</h3>
-<p>{{ result.player_a }} Last 5: {{ result.form_180_a.last_5 }}</p>
-<p>{{ result.player_a }} Last 10: {{ result.form_180_a.last_10 }}</p>
-<p>{{ result.player_a }} Career: {{ result.form_180_a.career }}</p>
-
-<p>{{ result.player_b }} Last 5: {{ result.form_180_b.last_5 }}</p>
-<p>{{ result.player_b }} Last 10: {{ result.form_180_b.last_10 }}</p>
-<p>{{ result.player_b }} Career: {{ result.form_180_b.career }}</p>
+    <table>
+        <tr>
+            <th>Form</th>
+            <th>{{ result.player_a }}</th>
+            <th>{{ result.player_b }}</th>
+        </tr>
+        <tr>
+            <td>Last 5</td>
+            <td>{{ result.form_180_a.last_5 }}</td>
+            <td>{{ result.form_180_b.last_5 }}</td>
+        </tr>
+        <tr>
+            <td>Last 10</td>
+            <td>{{ result.form_180_a.last_10 }}</td>
+            <td>{{ result.form_180_b.last_10 }}</td>
+        </tr>
+        <tr>
+            <td>Career</td>
+            <td>{{ result.form_180_a.career }}</td>
+            <td>{{ result.form_180_b.career }}</td>
+        </tr>
+    </table>
 </div>
 {% endif %}
+
 </body>
 </html>
