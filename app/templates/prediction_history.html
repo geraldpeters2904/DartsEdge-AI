@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>📈 Prediction History</h1>
+
+<div class="card">
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Match</th>
+        <th>Predicted Winner</th>
+        <th>Win Prob A</th>
+        <th>Win Prob B</th>
+        <th>Confidence</th>
+        <th>Ratings</th>
+        <th>First 180</th>
+    </tr>
+
+    {% for p in predictions %}
+    <tr>
+        <td>{{ p.created_at }}</td>
+        <td>{{ p.player_a }} vs {{ p.player_b }}</td>
+        <td>{{ p.predicted_winner }}</td>
+        <td>{{ p.win_prob_a }}</td>
+        <td>{{ p.win_prob_b }}</td>
+        <td>{{ p.confidence }}</td>
+        <td>{{ p.rating_a }} / {{ p.rating_b }}</td>
+        <td>{{ p.first_180_a }} / {{ p.first_180_b }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+
+{% endblock %}

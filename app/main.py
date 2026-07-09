@@ -65,6 +65,26 @@ def dashboard(request: Request):
             "match_count": match_count
         }
     )
+@app.get("/prediction-history")
+def prediction_history(request: Request):
+
+    db = SessionLocal()
+
+    predictions = (
+        db.query(Prediction)
+        .order_by(Prediction.created_at.desc())
+        .all()
+    )
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "prediction_history.html",
+        {
+            "request": request,
+            "predictions": predictions
+        }
+    )
 @app.get("/rankings")
 def rankings(request: Request):
 
