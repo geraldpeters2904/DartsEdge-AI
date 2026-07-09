@@ -137,7 +137,30 @@
         </tr>
     </table>
 </div>
+<div class="card">
+    <h2>First 180 Market</h2>
 
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>Probability</th>
+            <th>Career First 180 %</th>
+            <th>Last 10 First 180 %</th>
+        </tr>
+        <tr>
+            <td>{{ result.player_a }}</td>
+            <td>{{ result.first_180.player_a }}</td>
+            <td>{{ result.first_180.profile_a.first_180_pct }}</td>
+            <td>{{ result.first_180.profile_a.last_10_pct }}</td>
+        </tr>
+        <tr>
+            <td>{{ result.player_b }}</td>
+            <td>{{ result.first_180.player_b }}</td>
+            <td>{{ result.first_180.profile_b.first_180_pct }}</td>
+            <td>{{ result.first_180.profile_b.last_10_pct }}</td>
+        </tr>
+    </table>
+</div>
 <div class="card">
     <h2>Simulation Markets</h2>
 

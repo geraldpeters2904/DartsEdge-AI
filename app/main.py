@@ -1,4 +1,4 @@
-
+from app.services.first180_service import first_180_market
 from app.routes.predict import router as predict_router
 from app.services.simulation_service import simulate_match
 from app.services.match_intelligence_service import compare_players
@@ -214,6 +214,7 @@ def predict_ui(request: Request, player_a: str, player_b: str):
 
     value = value_edge(final_prob_a)
     markets_180 = one80_markets(exp_180_a, exp_180_b)
+    first_180 = first_180_market(db, player_a, player_b)
     simulation = simulate_match(profile_a, profile_b)
 
     result = {
@@ -226,6 +227,7 @@ def predict_ui(request: Request, player_a: str, player_b: str):
         "form_180_a": profile_a["form"],
         "form_180_b": profile_b["form"],
         "markets_180": markets_180,
+        "first_180": first_180,
         "value_bet": value,
         "profile_a": profile_a,
         "profile_b": profile_b,
