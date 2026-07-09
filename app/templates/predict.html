@@ -64,6 +64,9 @@
     <p><strong>Match:</strong> {{ result.player_a }} vs {{ result.player_b }}</p>
 
     <p><strong>Favoured Player:</strong></p>
+    <p><strong>DartsEdge Rating:</strong></p>
+    <p>{{ result.player_a }}: {{ result.profile_a.dartsedge_rating }}</p>
+    <p>{{ result.player_b }}: {{ result.profile_b.dartsedge_rating }}</p>
     <p class="big">{{ result.intelligence.favoured_player }}</p>
 
     <p><strong>Confidence:</strong> {{ result.intelligence.confidence }} / 100</p>

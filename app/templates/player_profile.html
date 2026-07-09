@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DartsEdge AI Player Profile</title>
+    <style>
+        body { font-family: Arial; background:#111; color:white; margin:40px; }
+        h1, h2, h3 { color:#00d084; }
+        a { color:#00d084; }
+        .card { margin-top:25px; padding:20px; background:#222; border-radius:10px; }
+        .summary { background:#003d2b; border:1px solid #00d084; }
+        .big { font-size:34px; font-weight:bold; }
+        table { width:100%; border-collapse:collapse; margin-top:15px; }
+        th, td { padding:10px; border-bottom:1px solid #333; text-align:left; }
+        th { color:#00d084; }
+    </style>
+</head>
+<body>
+
+<h1>🎯 Player Profile</h1>
+
+<div style="margin-bottom:25px;">
+    <a href="/dashboard">🏠 Dashboard</a> |
+    <a href="/predict">🎯 Predictor</a> |
+    <a href="/statistics">📊 Statistics</a> |
+    <a href="/players">👥 Players</a> |
+    <a href="/matches">🎮 Matches</a> |
+    <a href="/import">📥 Import</a>
+</div>
+
+<div class="card summary">
+    <h2>{{ profile.name }}</h2>
+    <p><strong>DartsEdge Rating</strong></p>
+    <p class="big">{{ profile.dartsedge_rating }} / 100</p>
+    <p><strong>Confidence:</strong> {{ profile.confidence }} / 100</p>
+</div>
+
+<div class="card">
+    <h2>Core Profile</h2>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Elo</td><td>{{ profile.elo }}</td></tr>
+        <tr><td>Average</td><td>{{ profile.average }}</td></tr>
+        <tr><td>Checkout %</td><td>{{ profile.checkout }}</td></tr>
+        <tr><td>Matches</td><td>{{ profile.matches }}</td></tr>
+        <tr><td>Wins</td><td>{{ profile.wins }}</td></tr>
+        <tr><td>Losses</td><td>{{ profile.losses }}</td></tr>
+        <tr><td>Win %</td><td>{{ profile.win_pct }}%</td></tr>
+        <tr><td>Legs Won</td><td>{{ profile.legs_won }}</td></tr>
+        <tr><td>Legs Lost</td><td>{{ profile.legs_lost }}</td></tr>
+    </table>
+</div>
+
+<div class="card">
+    <h2>180 Form</h2>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Expected 180s</td><td>{{ profile.form.expected }}</td></tr>
+        <tr><td>Last 5</td><td>{{ profile.form.last_5 }}</td></tr>
+        <tr><td>Last 10</td><td>{{ profile.form.last_10 }}</td></tr>
+        <tr><td>Career</td><td>{{ profile.form.career }}</td></tr>
+    </table>
+</div>
+
+</body>
+</html>

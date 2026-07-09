@@ -1,3 +1,4 @@
+from app.services.rating_service import dartsedge_rating
 from app.services.first180_service import first_180_market
 from app.routes.predict import router as predict_router
 from app.services.simulation_service import simulate_match
@@ -9,6 +10,7 @@ from datetime import datetime
 
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 from app.db import create_database, SessionLocal
 from app.models.player import Player
@@ -29,6 +31,7 @@ from app.services.form_service import weighted_expected_180s
 
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 create_database()
@@ -61,7 +64,35 @@ def dashboard(request: Request):
             "match_count": match_count
         }
     )
+@app.get("/rankings")
+def rankings(request: Request):
 
+    db = SessionLocal()
+
+    players = db.query(Player).order_by(Player.name.asc()).all()
+
+    rankings = []
+
+    for player in players:
+        profile = get_player_profile(db, player.name)
+
+        if profile:
+            rankings.append(profile)
+
+    rankings.sort(
+        key=lambda x: x["dartsedge_rating"],
+        reverse=True
+    )
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "rankings.html",
+        {
+            "request": request,
+            "rankings": rankings
+        }
+    )
 
 @app.get("/players")
 def list_players():
@@ -390,7 +421,7 @@ async def import_matches(file: UploadFile = File(...)):
         "skipped": skipped
     }
 @app.get("/player-profile/{player_name}")
-def player_profile(player_name: str):
+def player_profile_page(request: Request, player_name: str):
 
     db = SessionLocal()
 
@@ -401,4 +432,10 @@ def player_profile(player_name: str):
     if not profile:
         return {"error": "Player not found"}
 
-    return profile
+    return templates.TemplateResponse(
+        "player_profile.html",
+        {
+            "request": request,
+            "profile": profile
+        }
+    )

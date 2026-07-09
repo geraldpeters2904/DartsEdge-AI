@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DartsEdge AI</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+<div class="layout">
+
+    <div class="sidebar">
+        <h2>🎯 DartsEdge AI</h2>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/predict">🎯 Match Analysis</a>
+        <a href="/rankings">🏆 Rankings</a>
+        <a href="/statistics">📊 Statistics</a>
+        <a href="/players">👥 Players</a>
+        <a href="/matches">🎮 Matches</a>
+        <a href="/import">📥 Import</a>
+    </div>
+
+    <div class="content">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>🏆 DartsEdge Player Rankings</h1>
+
+<div class="card">
+<table>
+    <tr>
+        <th>Rank</th>
+        <th>Player</th>
+        <th>DartsEdge Rating</th>
+        <th>Elo</th>
+        <th>Matches</th>
+        <th>Win %</th>
+        <th>Expected 180s</th>
+        <th>Profile</th>
+    </tr>
+
+    {% for row in rankings %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.dartsedge_rating }}</td>
+        <td>{{ row.elo }}</td>
+        <td>{{ row.matches }}</td>
+        <td>{{ row.win_pct }}%</td>
+        <td>{{ row.form.expected }}</td>
+        <td><a href="/player-profile/{{ row.name }}">View</a></td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+
+{% endblock %}
