@@ -21,5 +21,6 @@ def create_database():
     from app.models.match import Match
     from app.models.player_stats import PlayerStats
     from app.models.match_player_stats import MatchPlayerStats
+    from app.models.prediction import Prediction
 
     Base.metadata.create_all(bind=engine)

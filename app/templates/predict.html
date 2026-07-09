@@ -1,34 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DartsEdge AI Match Analysis</title>
-    <style>
-        body { font-family: Arial; background:#111; color:white; margin:40px; }
-        h1, h2, h3 { color:#00d084; }
-        a { color:#00d084; }
-        select { padding:10px; width:250px; margin:10px 0; }
-        button { padding:12px 20px; background:#00d084; border:none; font-size:16px; cursor:pointer; border-radius:8px; }
-        .card { margin-top:30px; padding:20px; background:#222; border-radius:10px; }
-        .summary { background:#003d2b; border:1px solid #00d084; }
-        table { width:100%; border-collapse:collapse; margin-top:15px; }
-        th, td { padding:10px; border-bottom:1px solid #333; text-align:left; }
-        th { color:#00d084; }
-        .big { font-size:28px; font-weight:bold; }
-    </style>
-</head>
+{% extends "base.html" %}
 
-<body>
+{% block content %}
 
 <h1>🎯 Match Analysis</h1>
-
-<div style="margin-bottom:25px;">
-    <a href="/dashboard">🏠 Dashboard</a> |
-    <a href="/predict">🎯 Predictor</a> |
-    <a href="/statistics">📊 Statistics</a> |
-    <a href="/players">👥 Players</a> |
-    <a href="/matches">🎮 Matches</a> |
-    <a href="/import">📥 Import</a>
-</div>
 
 <form action="/predict-ui">
     <label>Player A</label><br>
@@ -64,10 +38,11 @@
     <p><strong>Match:</strong> {{ result.player_a }} vs {{ result.player_b }}</p>
 
     <p><strong>Favoured Player:</strong></p>
+    <p class="big">{{ result.intelligence.favoured_player }}</p>
+
     <p><strong>DartsEdge Rating:</strong></p>
     <p>{{ result.player_a }}: {{ result.profile_a.dartsedge_rating }}</p>
     <p>{{ result.player_b }}: {{ result.profile_b.dartsedge_rating }}</p>
-    <p class="big">{{ result.intelligence.favoured_player }}</p>
 
     <p><strong>Confidence:</strong> {{ result.intelligence.confidence }} / 100</p>
 
@@ -140,6 +115,7 @@
         </tr>
     </table>
 </div>
+
 <div class="card">
     <h2>First 180 Market</h2>
 
@@ -164,6 +140,7 @@
         </tr>
     </table>
 </div>
+
 <div class="card">
     <h2>Simulation Markets</h2>
 
@@ -220,5 +197,4 @@
 
 {% endif %}
 
-</body>
-</html>
+{% endblock %}

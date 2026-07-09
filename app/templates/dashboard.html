@@ -1,47 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DartsEdge AI</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #111;
-            color: #f4f4f4;
-        }
-        h1 { color: #00d084; }
-        .card {
-            background: #1e1e1e;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            border-bottom: 1px solid #333;
-        }
-        th {
-            text-align: left;
-            color: #00d084;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>🎯 DartsEdge AI Dashboard</h1>
-<div style="margin-bottom:25px;">
-    <a href="/dashboard">🏠 Dashboard</a> |
-    <a href="/predict">🎯 Predictor</a> |
-    <a href="/statistics">📊 Statistics</a> |
-    <a href="/players">👥 Players</a> |
-    <a href="/matches">🎮 Matches</a> |
-    <a href="/import">📥 Import</a>
-</div>
-<div class="card">
+{% block content %}
+
+<h1>🏠 DartsEdge AI Dashboard</h1>
+
+<div class="card summary">
     <h2>System Summary</h2>
     <p><strong>Players:</strong> {{ player_count }}</p>
     <p><strong>Matches:</strong> {{ match_count }}</p>
@@ -49,7 +12,15 @@
 </div>
 
 <div class="card">
-    <h2>Top Elo Players</h2>
+    <h2>Quick Actions</h2>
+    <p><a href="/predict">🎯 Run Match Analysis</a></p>
+    <p><a href="/rankings">🏆 View Player Rankings</a></p>
+    <p><a href="/import">📥 Import Match Results</a></p>
+    <p><a href="/statistics">📊 View Statistics</a></p>
+</div>
+
+<div class="card">
+    <h2>Top Rated Players</h2>
     <table>
         <tr>
             <th>Player</th>
@@ -58,9 +29,9 @@
             <th>Checkout %</th>
             <th>180 Rate</th>
         </tr>
-        {% for p in players %}
+        {% for p in players[:5] %}
         <tr>
-            <td>{{ p.name }}</td>
+            <td><a href="/player-profile/{{ p.name }}">{{ p.name }}</a></td>
             <td>{{ p.elo }}</td>
             <td>{{ p.average }}</td>
             <td>{{ p.checkout }}</td>
@@ -75,16 +46,14 @@
     <table>
         <tr>
             <th>Date</th>
-            <th>Player A</th>
-            <th>Player B</th>
+            <th>Match</th>
             <th>Winner</th>
             <th>Score</th>
         </tr>
         {% for m in matches %}
         <tr>
             <td>{{ m.date }}</td>
-            <td>{{ m.player_a }}</td>
-            <td>{{ m.player_b }}</td>
+            <td>{{ m.player_a }} vs {{ m.player_b }}</td>
             <td>{{ m.winner }}</td>
             <td>{{ m.score }}</td>
         </tr>
@@ -92,5 +61,4 @@
     </table>
 </div>
 
-</body>
-</html>
+{% endblock %}
