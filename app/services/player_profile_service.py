@@ -1,3 +1,4 @@
+from app.services.rating_service import dartsedge_rating
 from app.models.player import Player
 from app.models.player_stats import PlayerStats
 from app.services.form_service import weighted_expected_180s
@@ -23,7 +24,24 @@ def get_player_profile(db, player_name):
     losses = stats.losses if stats else 0
 
     confidence = min(95, 40 + matches)
+    profile = {
+        "name": player.name,
+        "elo": player.elo,
+        "average": player.average,
+        "checkout": player.checkout,
+        "matches": matches,
+        "wins": wins,
+        "losses": losses,
+        "win_pct": round((wins / matches) * 100, 1) if matches else 0,
+        "legs_won": stats.legs_won if stats else 0,
+        "legs_lost": stats.legs_lost if stats else 0,
+        "form": form,
+        "confidence": confidence
+    }
 
+    profile["dartsedge_rating"] = dartsedge_rating(profile)
+
+    return profile
     return {
         "name": player.name,
         "elo": player.elo,
