@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>✅ Update Prediction Result</h1>
+
+<div class="card">
+
+<form action="/update-prediction-result" method="post">
+
+<label>Prediction</label><br>
+
+<select name="prediction_id">
+
+{% for p in predictions %}
+
+<option value="{{ p.id }}">
+{{ p.created_at }} |
+{{ p.player_a }} vs {{ p.player_b }}
+</option>
+
+{% endfor %}
+
+</select>
+
+<br><br>
+
+<label>Actual Winner</label><br>
+
+<input
+type="text"
+name="actual_winner"
+style="width:300px;">
+
+<br><br>
+
+<label>Actual First 180 Player</label><br>
+
+<input
+type="text"
+name="actual_first_180_player"
+style="width:300px;">
+
+<br><br>
+
+<button type="submit">
+
+Update Prediction
+
+</button>
+
+</form>
+
+</div>
+
+{% endblock %}

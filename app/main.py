@@ -1,7 +1,7 @@
+from app.routes.update_prediction import router as update_prediction_router
 from app.models.prediction import Prediction
 from app.services.rating_service import dartsedge_rating
 from app.services.first180_service import first_180_market
-from app.routes.predict import router as predict_router
 from app.services.simulation_service import simulate_match
 from app.services.match_intelligence_service import compare_players
 from app.services.player_profile_service import get_player_profile
@@ -34,153 +34,13 @@ from app.services.form_service import weighted_expected_180s
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
-
+app.include_router(update_prediction_router)
 create_database()
 
 
 @app.get("/")
 def home():
     return {"status": "DartsEdge AI running"}
-
-
-@app.get("/dashboard")
-def dashboard(request: Request):
-    db = SessionLocal()
-
-    players = db.query(Player).order_by(Player.elo.desc()).all()
-    matches = db.query(Match).order_by(Match.date.desc()).limit(10).all()
-
-    player_count = db.query(Player).count()
-    match_count = db.query(Match).count()
-
-    db.close()
-
-    return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
-            "players": players,
-            "matches": matches,
-            "player_count": player_count,
-            "match_count": match_count
-        }
-    )
-@app.get("/prediction-history")
-def prediction_history(request: Request):
-
-    db = SessionLocal()
-
-    predictions = (
-        db.query(Prediction)
-        .order_by(Prediction.created_at.desc())
-        .all()
-    )
-
-    db.close()
-
-    return templates.TemplateResponse(
-        "prediction_history.html",
-        {
-            "request": request,
-            "predictions": predictions
-        }
-    )
-@app.get("/rankings")
-def rankings(request: Request):
-
-    db = SessionLocal()
-
-    players = db.query(Player).order_by(Player.name.asc()).all()
-
-    rankings = []
-
-    for player in players:
-        profile = get_player_profile(db, player.name)
-
-        if profile:
-            rankings.append(profile)
-
-    rankings.sort(
-        key=lambda x: x["dartsedge_rating"],
-        reverse=True
-    )
-
-    db.close()
-
-    return templates.TemplateResponse(
-        "rankings.html",
-        {
-            "request": request,
-            "rankings": rankings
-        }
-    )
-
-@app.get("/players")
-def list_players():
-    db = SessionLocal()
-
-    players = db.query(Player).all()
-
-    result = []
-
-    for p in players:
-        result.append({
-            "id": p.id,
-            "name": p.name,
-            "elo": p.elo,
-            "average": p.average,
-            "checkout": p.checkout,
-            "one80_rate": p.one80_rate
-        })
-
-    db.close()
-
-    return result
-
-
-@app.get("/matches")
-def list_matches():
-    db = SessionLocal()
-
-    matches = db.query(Match).all()
-
-    result = []
-
-    for m in matches:
-        result.append({
-            "id": m.id,
-            "date": str(m.date),
-            "player_a": m.player_a,
-            "player_b": m.player_b,
-            "winner": m.winner,
-            "score": m.score
-        })
-
-    db.close()
-
-    return result
-
-
-@app.get("/match-player-stats")
-def list_match_player_stats():
-    db = SessionLocal()
-
-    stats = db.query(MatchPlayerStats).all()
-
-    result = []
-
-    for s in stats:
-        result.append({
-            "id": s.id,
-            "match_id": s.match_id,
-            "player_name": s.player_name,
-            "one80s": s.one80s
-        })
-
-    db.close()
-
-    return result
-
 
 @app.get("/match")
 def match(player_a: str, player_b: str):
@@ -222,34 +82,14 @@ def match(player_a: str, player_b: str):
     }
 
 
-@app.get("/predict")
-def predict_page(request: Request):
-    db = SessionLocal()
-    players = [
-    {"name": p.name}
-    for p in db.query(Player).order_by(Player.name.asc()).all()
-]
-    db.close()
-
-    return templates.TemplateResponse(
-        "predict.html",
-        {
-            "request": request,
-            "players": players,
-            "selected_player_a": None,
-            "selected_player_b": None
-        }
-    )
-
-
 @app.get("/predict-ui")
 def predict_ui(request: Request, player_a: str, player_b: str):
     db = SessionLocal()
 
     players = [
-    {"name": p.name}
-    for p in db.query(Player).order_by(Player.name.asc()).all()
-]
+        {"name": p.name}
+        for p in db.query(Player).order_by(Player.name.asc()).all()
+    ]
 
     profile_a = get_player_profile(db, player_a)
     profile_b = get_player_profile(db, player_b)
@@ -465,6 +305,7 @@ async def import_matches(file: UploadFile = File(...)):
         "imported": imported,
         "skipped": skipped
     }
+
 @app.get("/player-profile/{player_name}")
 def player_profile_page(request: Request, player_name: str):
 
