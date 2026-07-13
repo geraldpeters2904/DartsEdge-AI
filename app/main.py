@@ -1,3 +1,4 @@
+from app.routes.dashboard import router as dashboard_router
 from app.routes.predict import router as predict_router
 from app.routes.accuracy import router as accuracy_router
 from app.routes.update_prediction import router as update_prediction_router
@@ -36,6 +37,7 @@ from app.services.form_service import weighted_expected_180s
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+app.include_router(dashboard_router)
 app.include_router(update_prediction_router)
 create_database()
 app.include_router(predict_router)
