@@ -1,3 +1,4 @@
+from app.routes.prediction_history import router as prediction_history_router
 from app.routes.statistics import router as statistics_router
 from app.routes.player_profile import router as player_profile_router
 from app.routes.rankings import router as rankings_router
@@ -48,6 +49,7 @@ app.include_router(accuracy_router)
 app.include_router(rankings_router)
 app.include_router(player_profile_router)
 app.include_router(statistics_router)
+app.include_router(prediction_history_router)
 
 @app.get("/")
 def home():
