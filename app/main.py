@@ -1,3 +1,4 @@
+from app.routes.predict import router as predict_router
 from app.routes.accuracy import router as accuracy_router
 from app.routes.update_prediction import router as update_prediction_router
 from app.models.prediction import Prediction
@@ -37,7 +38,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 app.include_router(update_prediction_router)
 create_database()
-
+app.include_router(predict_router)
 app.include_router(accuracy_router)
 
 @app.get("/")
@@ -84,87 +85,6 @@ def match(player_a: str, player_b: str):
     }
 
 
-@app.get("/predict-ui")
-def predict_ui(request: Request, player_a: str, player_b: str):
-    db = SessionLocal()
-
-    players = [
-        {"name": p.name}
-        for p in db.query(Player).order_by(Player.name.asc()).all()
-    ]
-
-    profile_a = get_player_profile(db, player_a)
-    profile_b = get_player_profile(db, player_b)
-
-    if not profile_a or not profile_b:
-        db.close()
-        return {"error": "Player not found"}
-
-    a = db.query(Player).filter(Player.name == player_a).first()
-    b = db.query(Player).filter(Player.name == player_b).first()
-
-    intelligence = compare_players(profile_a, profile_b)
-
-    elo_prob = win_probability(profile_a["elo"], profile_b["elo"])
-    sim_prob = leg_win_probability(a, b)
-    final_prob_a = (elo_prob * 0.6) + (sim_prob * 0.4)
-
-    exp_180_a = profile_a["form"]["expected"]
-    exp_180_b = profile_b["form"]["expected"]
-
-    value = value_edge(final_prob_a)
-    markets_180 = one80_markets(exp_180_a, exp_180_b)
-    first_180 = first_180_market(db, player_a, player_b)
-    simulation = simulate_match(profile_a, profile_b)
-
-    predicted_winner = player_a if final_prob_a >= 0.5 else player_b
-
-    prediction = Prediction(
-        player_a=player_a,
-        player_b=player_b,
-        predicted_winner=predicted_winner,
-        win_prob_a=round(final_prob_a, 3),
-        win_prob_b=round(1 - final_prob_a, 3),
-        confidence=intelligence["confidence"],
-        rating_a=profile_a["dartsedge_rating"],
-        rating_b=profile_b["dartsedge_rating"],
-        first_180_a=first_180["player_a"],
-        first_180_b=first_180["player_b"]
-    )
-
-    db.add(prediction)
-    db.commit()
-
-    result = {
-        "player_a": player_a,
-        "player_b": player_b,
-        "win_prob_a": round(final_prob_a, 3),
-        "win_prob_b": round(1 - final_prob_a, 3),
-        "expected_180s_a": round(exp_180_a, 2),
-        "expected_180s_b": round(exp_180_b, 2),
-        "form_180_a": profile_a["form"],
-        "form_180_b": profile_b["form"],
-        "markets_180": markets_180,
-        "first_180": first_180,
-        "value_bet": value,
-        "profile_a": profile_a,
-        "profile_b": profile_b,
-        "intelligence": intelligence,
-        "simulation": simulation
-    }
-
-    db.close()
-
-    return templates.TemplateResponse(
-        "predict.html",
-        {
-            "request": request,
-            "players": players,
-            "result": result,
-            "selected_player_a": player_a,
-            "selected_player_b": player_b
-        }
-    )
 
 
 @app.get("/statistics")
