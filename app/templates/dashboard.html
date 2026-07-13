@@ -4,57 +4,79 @@
 
 <h1>🏠 DartsEdge AI Dashboard</h1>
 
-<div class="card summary">
-    <h2>System Summary</h2>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Players</div>
+        <div class="kpi-value">{{ player_count }}</div>
+    </div>
 
-    <p><strong>Players:</strong> {{ player_count }}</p>
-    <p><strong>Matches:</strong> {{ match_count }}</p>
-    <p><strong>Predictions:</strong> {{ prediction_count }}</p>
-    <p><strong>Winner Accuracy:</strong> {{ winner_accuracy }}%</p>
+    <div class="kpi-card">
+        <div class="kpi-label">Matches</div>
+        <div class="kpi-value">{{ match_count }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Predictions</div>
+        <div class="kpi-value">{{ prediction_count }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Winner Accuracy</div>
+        <div class="kpi-value">{{ winner_accuracy }}%</div>
+
+        {% if winner_accuracy >= 70 %}
+        <span class="badge badge-good">Strong</span>
+        {% elif winner_accuracy >= 55 %}
+        <span class="badge badge-warning">Developing</span>
+        {% else %}
+        <span class="badge badge-low">Needs Data</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="dashboard-grid">
+
+    <div class="card">
+        <h2>🏆 Top Rated Players</h2>
+
+        <table>
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Rating</th>
+                <th>Elo</th>
+            </tr>
+
+            {% for player in top_players %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                    <a href="/player-profile/{{ player.name }}">
+                        {{ player.name }}
+                    </a>
+                </td>
+                <td>{{ player.dartsedge_rating }}</td>
+                <td>{{ player.elo }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>⚡ Quick Actions</h2>
+
+        <p><a href="/predict">🎯 Run Match Analysis</a></p>
+        <p><a href="/rankings">🏆 View Rankings</a></p>
+        <p><a href="/prediction-history">📈 Prediction History</a></p>
+        <p><a href="/accuracy">📊 Model Accuracy</a></p>
+        <p><a href="/update-prediction-result">✅ Update Results</a></p>
+        <p><a href="/import">📥 Import Matches</a></p>
+    </div>
+
 </div>
 
 <div class="card">
-    <h2>Quick Actions</h2>
-
-    <p><a href="/predict">🎯 Run Match Analysis</a></p>
-    <p><a href="/rankings">🏆 View Player Rankings</a></p>
-    <p><a href="/prediction-history">📈 Prediction History</a></p>
-    <p><a href="/accuracy">📊 Model Accuracy</a></p>
-    <p><a href="/import">📥 Import Match Results</a></p>
-</div>
-
-<div class="card">
-    <h2>Top Rated Players</h2>
-
-    <table>
-        <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>DartsEdge Rating</th>
-            <th>Elo</th>
-            <th>Win %</th>
-            <th>Expected 180s</th>
-        </tr>
-
-        {% for player in top_players %}
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>
-                <a href="/player-profile/{{ player.name }}">
-                    {{ player.name }}
-                </a>
-            </td>
-            <td>{{ player.dartsedge_rating }}</td>
-            <td>{{ player.elo }}</td>
-            <td>{{ player.win_pct }}%</td>
-            <td>{{ player.form.expected }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<div class="card">
-    <h2>Recent Matches</h2>
+    <h2>🎮 Recent Matches</h2>
 
     <table>
         <tr>
