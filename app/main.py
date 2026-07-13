@@ -1,3 +1,4 @@
+from app.routes.statistics import router as statistics_router
 from app.routes.player_profile import router as player_profile_router
 from app.routes.rankings import router as rankings_router
 from app.routes.dashboard import router as dashboard_router
@@ -46,6 +47,7 @@ app.include_router(predict_router)
 app.include_router(accuracy_router)
 app.include_router(rankings_router)
 app.include_router(player_profile_router)
+app.include_router(statistics_router)
 
 @app.get("/")
 def home():
@@ -89,60 +91,6 @@ def match(player_a: str, player_b: str):
         "markets_180": markets_180,
         "value_bet": value
     }
-
-
-
-
-@app.get("/statistics")
-def statistics_page(request: Request):
-    db = SessionLocal()
-
-    players = db.query(Player).order_by(Player.elo.desc()).all()
-
-    rows = []
-
-    for p in players:
-        stats = db.query(PlayerStats).filter(
-            PlayerStats.player_id == p.id
-        ).first()
-
-        if stats:
-            win_pct = round((stats.wins / stats.matches) * 100, 1) if stats.matches else 0
-
-            rows.append({
-                "name": p.name,
-                "elo": p.elo,
-                "matches": stats.matches,
-                "wins": stats.wins,
-                "losses": stats.losses,
-                "win_pct": win_pct,
-                "legs_won": stats.legs_won,
-                "legs_lost": stats.legs_lost,
-                "one80_per_match": stats.one80_per_match
-            })
-        else:
-            rows.append({
-                "name": p.name,
-                "elo": p.elo,
-                "matches": 0,
-                "wins": 0,
-                "losses": 0,
-                "win_pct": 0,
-                "legs_won": 0,
-                "legs_lost": 0,
-                "one80_per_match": 0
-            })
-
-    db.close()
-
-    return templates.TemplateResponse(
-        "statistics.html",
-        {
-            "request": request,
-            "rows": rows
-        }
-    )
-
 
 @app.get("/import")
 def import_page(request: Request):
