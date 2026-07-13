@@ -15,6 +15,7 @@ body {
     background: #181818;
     padding: 25px;
     border-right: 1px solid #333;
+    flex-shrink: 0;
 }
 
 .sidebar h2 {
@@ -35,6 +36,7 @@ body {
 .content {
     flex: 1;
     padding: 40px;
+    min-width: 0;
 }
 
 .card {
@@ -49,7 +51,13 @@ body {
     border: 1px solid #00d084;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
+    color: #00d084;
+}
+
+a {
     color: #00d084;
 }
 
@@ -58,7 +66,8 @@ table {
     border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
     padding: 10px;
     border-bottom: 1px solid #333;
     text-align: left;
@@ -76,10 +85,19 @@ button {
     cursor: pointer;
 }
 
-select, input {
+select,
+input {
     padding: 10px;
     margin: 10px 0;
 }
+
+.big {
+    font-size: 34px;
+    font-weight: bold;
+}
+
+/* Dashboard and accuracy KPI cards */
+
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(160px, 1fr));
@@ -92,6 +110,7 @@ select, input {
     border: 1px solid #333;
     border-radius: 12px;
     padding: 22px;
+    min-height: 110px;
 }
 
 .kpi-label {
@@ -104,6 +123,7 @@ select, input {
     color: #00d084;
     font-size: 32px;
     font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .dashboard-grid {
@@ -137,7 +157,7 @@ select, input {
 
 @media (max-width: 900px) {
     .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
     }
 
     .dashboard-grid {

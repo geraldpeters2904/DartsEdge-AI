@@ -4,60 +4,94 @@
 
 <h1>📊 Model Accuracy</h1>
 
-<div class="card summary">
-    <h2>Overall Performance</h2>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Total Predictions</div>
+        <div class="kpi-value">{{ total_predictions }}</div>
+    </div>
 
-    <p><strong>Total Predictions:</strong> {{ total_predictions }}</p>
-    <p><strong>Completed Predictions:</strong> {{ completed_predictions }}</p>
-    <p><strong>Winner Accuracy:</strong> {{ winner_accuracy }}%</p>
-    <p><strong>First 180 Accuracy:</strong> {{ first_180_accuracy }}%</p>
+    <div class="kpi-card">
+        <div class="kpi-label">Completed</div>
+        <div class="kpi-value">{{ completed_predictions }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Winner Accuracy</div>
+        <div class="kpi-value">{{ winner_accuracy }}%</div>
+
+        {% if winner_accuracy >= 70 %}
+        <span class="badge badge-good">Strong</span>
+        {% elif winner_accuracy >= 55 %}
+        <span class="badge badge-warning">Developing</span>
+        {% else %}
+        <span class="badge badge-low">Needs Data</span>
+        {% endif %}
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">First 180 Accuracy</div>
+        <div class="kpi-value">{{ first_180_accuracy }}%</div>
+
+        {% if first_180_accuracy >= 70 %}
+        <span class="badge badge-good">Strong</span>
+        {% elif first_180_accuracy >= 55 %}
+        <span class="badge badge-warning">Developing</span>
+        {% else %}
+        <span class="badge badge-low">Needs Data</span>
+        {% endif %}
+    </div>
 </div>
 
-<div class="card">
-    <h2>Winner Prediction Results</h2>
+<div class="dashboard-grid">
 
-    <table>
-        <tr>
-            <th>Status</th>
-            <th>Count</th>
-        </tr>
-        <tr>
-            <td>Correct</td>
-            <td>{{ winner_correct }}</td>
-        </tr>
-        <tr>
-            <td>Incorrect</td>
-            <td>{{ winner_incorrect }}</td>
-        </tr>
-        <tr>
-            <td>Awaiting Result</td>
-            <td>{{ winner_pending }}</td>
-        </tr>
-    </table>
+    <div class="card">
+        <h2>Winner Prediction Results</h2>
+
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Count</th>
+            </tr>
+            <tr>
+                <td>Correct</td>
+                <td>{{ winner_correct }}</td>
+            </tr>
+            <tr>
+                <td>Incorrect</td>
+                <td>{{ winner_incorrect }}</td>
+            </tr>
+            <tr>
+                <td>Awaiting Result</td>
+                <td>{{ winner_pending }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>First 180 Results</h2>
+
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Count</th>
+            </tr>
+            <tr>
+                <td>Correct</td>
+                <td>{{ first_180_correct }}</td>
+            </tr>
+            <tr>
+                <td>Incorrect</td>
+                <td>{{ first_180_incorrect }}</td>
+            </tr>
+            <tr>
+                <td>Awaiting Result</td>
+                <td>{{ first_180_pending }}</td>
+            </tr>
+        </table>
+    </div>
+
 </div>
 
-<div class="card">
-    <h2>First 180 Results</h2>
-
-    <table>
-        <tr>
-            <th>Status</th>
-            <th>Count</th>
-        </tr>
-        <tr>
-            <td>Correct</td>
-            <td>{{ first_180_correct }}</td>
-        </tr>
-        <tr>
-            <td>Incorrect</td>
-            <td>{{ first_180_incorrect }}</td>
-        </tr>
-        <tr>
-            <td>Awaiting Result</td>
-            <td>{{ first_180_pending }}</td>
-        </tr>
-    </table>
-</div>
 <div class="card">
     <h2>Accuracy by Confidence Band</h2>
 
@@ -79,4 +113,5 @@
         {% endfor %}
     </table>
 </div>
+
 {% endblock %}
