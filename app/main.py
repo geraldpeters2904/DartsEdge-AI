@@ -1,3 +1,4 @@
+from app.routes.rankings import router as rankings_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.predict import router as predict_router
 from app.routes.accuracy import router as accuracy_router
@@ -42,6 +43,7 @@ app.include_router(update_prediction_router)
 create_database()
 app.include_router(predict_router)
 app.include_router(accuracy_router)
+app.include_router(rankings_router)
 
 @app.get("/")
 def home():
