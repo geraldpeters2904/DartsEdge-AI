@@ -58,5 +58,25 @@
         </tr>
     </table>
 </div>
+<div class="card">
+    <h2>Accuracy by Confidence Band</h2>
 
+    <table>
+        <tr>
+            <th>Confidence</th>
+            <th>Completed</th>
+            <th>Correct</th>
+            <th>Accuracy</th>
+        </tr>
+
+        {% for row in confidence_bands %}
+        <tr>
+            <td>{{ row.band }}%</td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.correct }}</td>
+            <td>{{ row.accuracy }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 {% endblock %}

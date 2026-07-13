@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-
+from app.services.accuracy_service import build_confidence_bands
 from app.db import SessionLocal
 from app.models.prediction import Prediction
 
@@ -14,6 +14,7 @@ def accuracy_page(request: Request):
     db = SessionLocal()
 
     predictions = db.query(Prediction).all()
+    confidence_bands = build_confidence_bands(predictions)
 
     total_predictions = len(predictions)
 
@@ -73,5 +74,6 @@ def accuracy_page(request: Request):
             "first_180_correct": first_180_correct,
             "first_180_incorrect": first_180_incorrect,
             "first_180_pending": first_180_pending,
+            "confidence_bands": confidence_bands,
         },
     )

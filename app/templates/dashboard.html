@@ -6,36 +6,48 @@
 
 <div class="card summary">
     <h2>System Summary</h2>
+
     <p><strong>Players:</strong> {{ player_count }}</p>
     <p><strong>Matches:</strong> {{ match_count }}</p>
-    <p><strong>Prediction Engine:</strong> Online ✅</p>
+    <p><strong>Predictions:</strong> {{ prediction_count }}</p>
+    <p><strong>Winner Accuracy:</strong> {{ winner_accuracy }}%</p>
 </div>
 
 <div class="card">
     <h2>Quick Actions</h2>
+
     <p><a href="/predict">🎯 Run Match Analysis</a></p>
     <p><a href="/rankings">🏆 View Player Rankings</a></p>
+    <p><a href="/prediction-history">📈 Prediction History</a></p>
+    <p><a href="/accuracy">📊 Model Accuracy</a></p>
     <p><a href="/import">📥 Import Match Results</a></p>
-    <p><a href="/statistics">📊 View Statistics</a></p>
 </div>
 
 <div class="card">
     <h2>Top Rated Players</h2>
+
     <table>
         <tr>
+            <th>Rank</th>
             <th>Player</th>
+            <th>DartsEdge Rating</th>
             <th>Elo</th>
-            <th>Average</th>
-            <th>Checkout %</th>
-            <th>180 Rate</th>
+            <th>Win %</th>
+            <th>Expected 180s</th>
         </tr>
-        {% for p in players[:5] %}
+
+        {% for player in top_players %}
         <tr>
-            <td><a href="/player-profile/{{ p.name }}">{{ p.name }}</a></td>
-            <td>{{ p.elo }}</td>
-            <td>{{ p.average }}</td>
-            <td>{{ p.checkout }}</td>
-            <td>{{ p.one80_rate }}</td>
+            <td>{{ loop.index }}</td>
+            <td>
+                <a href="/player-profile/{{ player.name }}">
+                    {{ player.name }}
+                </a>
+            </td>
+            <td>{{ player.dartsedge_rating }}</td>
+            <td>{{ player.elo }}</td>
+            <td>{{ player.win_pct }}%</td>
+            <td>{{ player.form.expected }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -43,6 +55,7 @@
 
 <div class="card">
     <h2>Recent Matches</h2>
+
     <table>
         <tr>
             <th>Date</th>
@@ -50,12 +63,13 @@
             <th>Winner</th>
             <th>Score</th>
         </tr>
-        {% for m in matches %}
+
+        {% for match in recent_matches %}
         <tr>
-            <td>{{ m.date }}</td>
-            <td>{{ m.player_a }} vs {{ m.player_b }}</td>
-            <td>{{ m.winner }}</td>
-            <td>{{ m.score }}</td>
+            <td>{{ match.date }}</td>
+            <td>{{ match.player_a }} vs {{ match.player_b }}</td>
+            <td>{{ match.winner }}</td>
+            <td>{{ match.score }}</td>
         </tr>
         {% endfor %}
     </table>
