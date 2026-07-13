@@ -1,3 +1,4 @@
+from app.routes.player_profile import router as player_profile_router
 from app.routes.rankings import router as rankings_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.predict import router as predict_router
@@ -44,6 +45,7 @@ create_database()
 app.include_router(predict_router)
 app.include_router(accuracy_router)
 app.include_router(rankings_router)
+app.include_router(player_profile_router)
 
 @app.get("/")
 def home():
@@ -231,23 +233,3 @@ async def import_matches(file: UploadFile = File(...)):
         "imported": imported,
         "skipped": skipped
     }
-
-@app.get("/player-profile/{player_name}")
-def player_profile_page(request: Request, player_name: str):
-
-    db = SessionLocal()
-
-    profile = get_player_profile(db, player_name)
-
-    db.close()
-
-    if not profile:
-        return {"error": "Player not found"}
-
-    return templates.TemplateResponse(
-        "player_profile.html",
-        {
-            "request": request,
-            "profile": profile
-        }
-    )
