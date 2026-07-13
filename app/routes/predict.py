@@ -1,3 +1,4 @@
+from app.services.explanation_service import build_match_explanation
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
@@ -96,6 +97,11 @@ def predict_ui(request: Request, player_a: str, player_b: str):
         markets_180 = one80_markets(exp_180_a, exp_180_b)
         first_180 = first_180_market(db, player_a, player_b)
         simulation = simulate_match(profile_a, profile_b)
+        explanation = build_match_explanation(
+    profile_a,
+    profile_b,
+    simulation,
+)
 
         predicted_winner = player_a if final_prob_a >= 0.5 else player_b
 
@@ -131,6 +137,7 @@ def predict_ui(request: Request, player_a: str, player_b: str):
             "profile_b": profile_b,
             "intelligence": intelligence,
             "simulation": simulation,
+            "explanation": explanation,
         }
 
         return templates.TemplateResponse(

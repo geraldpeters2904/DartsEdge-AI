@@ -31,7 +31,51 @@
 </form>
 
 {% if result %}
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">{{ result.player_a }} Win Probability</div>
+        <div class="kpi-value">{{ (result.win_prob_a * 100) | round(1) }}%</div>
+    </div>
 
+    <div class="kpi-card">
+        <div class="kpi-label">{{ result.player_b }} Win Probability</div>
+        <div class="kpi-value">{{ (result.win_prob_b * 100) | round(1) }}%</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Favoured Player</div>
+        <div class="kpi-value" style="font-size:24px;">
+            {{ result.intelligence.favoured_player }}
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Confidence</div>
+        <div class="kpi-value">{{ result.intelligence.confidence }}</div>
+
+        {% if result.intelligence.confidence >= 80 %}
+        <span class="badge badge-good">High</span>
+        {% elif result.intelligence.confidence >= 60 %}
+        <span class="badge badge-warning">Medium</span>
+        {% else %}
+        <span class="badge badge-low">Low</span>
+        {% endif %}
+    </div>
+</div>
+<div class="card">
+    <h2>🧠 AI Match Intelligence</h2>
+
+    <p>
+        <strong>Predicted Winner:</strong>
+        {{ result.intelligence.favoured_player }}
+    </p>
+
+    <ul>
+        {% for reason in result.explanation %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+</div>
 <div class="card summary">
     <h2>⭐ Match Summary</h2>
 
