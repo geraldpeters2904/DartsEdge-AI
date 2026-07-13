@@ -1,3 +1,4 @@
+from app.routes.accuracy import router as accuracy_router
 from app.routes.update_prediction import router as update_prediction_router
 from app.models.prediction import Prediction
 from app.services.rating_service import dartsedge_rating
@@ -37,6 +38,7 @@ templates = Jinja2Templates(directory="app/templates")
 app.include_router(update_prediction_router)
 create_database()
 
+app.include_router(accuracy_router)
 
 @app.get("/")
 def home():

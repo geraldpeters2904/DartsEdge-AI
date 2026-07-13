@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>📊 Model Accuracy</h1>
+
+<div class="card summary">
+    <h2>Overall Performance</h2>
+
+    <p><strong>Total Predictions:</strong> {{ total_predictions }}</p>
+    <p><strong>Completed Predictions:</strong> {{ completed_predictions }}</p>
+    <p><strong>Winner Accuracy:</strong> {{ winner_accuracy }}%</p>
+    <p><strong>First 180 Accuracy:</strong> {{ first_180_accuracy }}%</p>
+</div>
+
+<div class="card">
+    <h2>Winner Prediction Results</h2>
+
+    <table>
+        <tr>
+            <th>Status</th>
+            <th>Count</th>
+        </tr>
+        <tr>
+            <td>Correct</td>
+            <td>{{ winner_correct }}</td>
+        </tr>
+        <tr>
+            <td>Incorrect</td>
+            <td>{{ winner_incorrect }}</td>
+        </tr>
+        <tr>
+            <td>Awaiting Result</td>
+            <td>{{ winner_pending }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="card">
+    <h2>First 180 Results</h2>
+
+    <table>
+        <tr>
+            <th>Status</th>
+            <th>Count</th>
+        </tr>
+        <tr>
+            <td>Correct</td>
+            <td>{{ first_180_correct }}</td>
+        </tr>
+        <tr>
+            <td>Incorrect</td>
+            <td>{{ first_180_incorrect }}</td>
+        </tr>
+        <tr>
+            <td>Awaiting Result</td>
+            <td>{{ first_180_pending }}</td>
+        </tr>
+    </table>
+</div>
+
+{% endblock %}
