@@ -117,17 +117,55 @@
 
             <div class="recommendation-metric">
                 <span>Edge</span>
-                <strong>{{ result.value_bet.edge }}%</strong>
+                {% if result.value_bet.edge >= 5 %}
+                <strong class="text-positive">
+                    +{{ result.value_bet.edge }}%
+                </strong>
+            {% elif result.value_bet.edge >= 0 %}
+                <strong class="text-warning">
+                    +{{ result.value_bet.edge }}%
+                </strong>
+            {% else %}
+                <strong class="text-risk">
+                    {{ result.value_bet.edge }}%
+                </strong>
+            {% endif %}
             </div>
 
             <div class="recommendation-metric">
                 <span>Expected Value</span>
-                <strong>{{ result.value_bet.expected_value }}%</strong>
+                {% if result.value_bet.expected_value > 0 %}
+    <strong class="text-positive">
+        +{{ result.value_bet.expected_value }}%
+    </strong>
+{% elif result.value_bet.expected_value == 0 %}
+    <strong class="text-warning">0%</strong>
+{% else %}
+    <strong class="text-risk">
+        {{ result.value_bet.expected_value }}%
+    </strong>
+{% endif %}
             </div>
 
             <div class="recommendation-metric">
                 <span>Verdict</span>
-                <strong>{{ result.value_bet.recommendation }}</strong>
+                {% if result.value_bet.recommendation == "VALUE BET" %}
+    <strong class="text-positive">
+        {{ result.value_bet.recommendation }}
+    </strong>
+{% elif result.value_bet.recommendation == "SMALL VALUE" %}
+    <strong class="text-warning">
+        {{ result.value_bet.recommendation }}
+    </strong>
+{% elif result.value_bet.recommendation == "FAIR PRICE" %}
+    <strong class="text-warning">
+        {{ result.value_bet.recommendation }}
+    </strong>
+{% else %}
+    <strong class="text-risk">
+        {{ result.value_bet.recommendation }}
+    </strong>
+{% endif %}
             </div>
 
         </div>
