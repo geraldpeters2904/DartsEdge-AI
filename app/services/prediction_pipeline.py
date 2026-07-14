@@ -1,3 +1,5 @@
+from app.services.confidence_service import build_confidence_breakdown
+from app.services.confidence_service import build_confidence_breakdown
 from app.services.player_profile_service import get_player_profile
 from app.services.match_intelligence_service import compare_players
 from app.services.simulation_service import simulate_match
@@ -54,13 +56,23 @@ def build_prediction(db, player_a, player_b):
         profile_a,
         profile_b,
     )
-
+    confidence = build_confidence_breakdown(
+    profile_a,
+    profile_b,
+    simulation,
+    max(final_prob_a, 1 - final_prob_a),
+)
     explanation = build_match_explanation(
         profile_a,
         profile_b,
         simulation,
     )
-
+    confidence = build_confidence_breakdown(
+    profile_a,
+    profile_b,
+    simulation,
+    final_prob_a,
+)
     result = {
         "player_a": player_a,
         "player_b": player_b,
@@ -75,6 +87,8 @@ def build_prediction(db, player_a, player_b):
         "simulation": simulation,
         "intelligence": intelligence,
         "explanation": explanation,
+        "confidence": confidence,
+        "confidence_breakdown": confidence,
     }
 
     recommendation = build_recommendation(result)

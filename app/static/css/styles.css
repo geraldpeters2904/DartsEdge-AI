@@ -390,3 +390,38 @@ input {
         grid-template-columns: 1fr;
     }
 }
+.odds-input{
+    width:90px;
+    padding:8px;
+    margin-bottom:8px;
+    border-radius:6px;
+    border:1px solid #555;
+    background:#222;
+    color:white;
+}
+
+.small-button{
+    width:100%;
+    padding:8px;
+    border:none;
+    border-radius:6px;
+    background:#00d084;
+    color:white;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.small-button:hover{
+    opacity:.9;
+}
+#bookmaker-odds-input {
+    display: block;
+    width: 160px;
+    min-height: 42px;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+    cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+}

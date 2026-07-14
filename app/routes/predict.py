@@ -1,4 +1,5 @@
 
+from app.services.value_bet_service import calculate_value_bet
 from app.services.prediction_pipeline import build_prediction
 from app.services.recommendation_service import build_recommendation
 from app.services.explanation_service import build_match_explanation
@@ -66,8 +67,33 @@ def predict_v2_page(request: Request):
 
     finally:
         db.close()
+@router.get("/value-bet")
+def value_bet_analysis(
+    request: Request,
+    probability: float,
+    bookmaker_odds: float,
+):
+    value_bet = calculate_value_bet(
+        probability,
+        bookmaker_odds,
+    )
+
+    if not value_bet:
+        return {
+            "error": "Bookmaker odds must be greater than 1.00"
+        }
+
+    return {
+        "probability": probability,
+        "value_bet": value_bet,
+    }
 @router.get("/predict-v2-result")
-def predict_v2_result(request: Request, player_a: str, player_b: str):
+def predict_v2_result(
+    request: Request,
+    player_a: str,
+    player_b: str,
+    bookmaker_odds: float = None,
+):
     if player_a == player_b:
         db = SessionLocal()
 
@@ -98,13 +124,25 @@ def predict_v2_result(request: Request, player_a: str, player_b: str):
             {"name": player.name}
             for player in db.query(Player).order_by(Player.name.asc()).all()
         ]
-
         result = build_prediction(
             db,
             player_a,
             player_b,
         )
 
+        if result and bookmaker_odds is not None:
+            selected_probability = (
+                result["win_prob_a"]
+                if result["recommendation"]["selection"] == player_a
+                else result["win_prob_b"]
+            )
+
+            result["value_bet"] = calculate_value_bet(
+                selected_probability,
+                bookmaker_odds,
+            )
+        else:
+            result["value_bet"] = None
         if not result:
             return {"error": "Player not found"}
 

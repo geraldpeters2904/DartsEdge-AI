@@ -10,6 +10,7 @@
             {% for _ in range(result.recommendation.stars) %}
                 ★
             {% endfor %}
+
             {% for _ in range(5 - result.recommendation.stars) %}
                 ☆
             {% endfor %}
@@ -33,6 +34,7 @@
     </div>
 
     <div class="recommendation-metrics">
+
         <div class="recommendation-metric">
             <span>Model Probability</span>
             <strong>{{ result.recommendation.probability }}%</strong>
@@ -65,7 +67,72 @@
                 </strong>
             {% endif %}
         </div>
+
     </div>
+
+    <div class="recommendation-metric bookmaker-odds-section">
+        <span>Bookmaker Odds</span>
+
+        <form action="/predict-v2-result" method="get">
+            <input
+                type="hidden"
+                name="player_a"
+                value="{{ result.player_a }}">
+
+            <input
+                type="hidden"
+                name="player_b"
+                value="{{ result.player_b }}">
+
+                <input
+                id="bookmaker-odds-input"
+                type="text"
+                name="bookmaker_odds"
+                inputmode="decimal"
+                pattern="[0-9]+([.][0-9]+)?"
+                placeholder="Enter odds, e.g. 2.00"
+                class="odds-input"
+                autocomplete="new-password"
+                autocorrect="off"
+                spellcheck="false"
+                value=""
+                required>
+
+            <button type="submit" class="small-button">
+                Analyse Value
+            </button>
+        </form>
+    </div>
+
+    {% if result.value_bet %}
+    <div class="value-result">
+        <h3>Value Analysis</h3>
+
+        <div class="recommendation-metrics">
+
+            <div class="recommendation-metric">
+                <span>Bookmaker Odds</span>
+                <strong>{{ result.value_bet.bookmaker_odds }}</strong>
+            </div>
+
+            <div class="recommendation-metric">
+                <span>Edge</span>
+                <strong>{{ result.value_bet.edge }}%</strong>
+            </div>
+
+            <div class="recommendation-metric">
+                <span>Expected Value</span>
+                <strong>{{ result.value_bet.expected_value }}%</strong>
+            </div>
+
+            <div class="recommendation-metric">
+                <span>Verdict</span>
+                <strong>{{ result.value_bet.recommendation }}</strong>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
 
     <div class="recommendation-note">
         Only consider backing this selection when the available bookmaker
