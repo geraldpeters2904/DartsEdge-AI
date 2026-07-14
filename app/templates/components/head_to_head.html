@@ -1,0 +1,53 @@
+<div class="card">
+    <h2>🤝 Head-to-Head</h2>
+
+    {% if result.head_to_head.matches > 0 %}
+
+    <div class="recommendation-metrics">
+        <div class="recommendation-metric">
+            <span>Total Meetings</span>
+            <strong>{{ result.head_to_head.matches }}</strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>{{ result.player_a }} Wins</span>
+            <strong>{{ result.head_to_head.wins_a }}</strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>{{ result.player_b }} Wins</span>
+            <strong>{{ result.head_to_head.wins_b }}</strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>Advantage</span>
+
+            {% if result.head_to_head.wins_a > result.head_to_head.wins_b %}
+                <strong class="text-positive">{{ result.player_a }}</strong>
+            {% elif result.head_to_head.wins_b > result.head_to_head.wins_a %}
+                <strong class="text-positive">{{ result.player_b }}</strong>
+            {% else %}
+                <strong class="text-warning">Level</strong>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if result.head_to_head.last_match %}
+    <div class="recommendation-note">
+        <strong>Last meeting:</strong>
+        {{ result.head_to_head.last_match.player_a }}
+        vs
+        {{ result.head_to_head.last_match.player_b }} —
+        {{ result.head_to_head.last_match.winner }} won
+        {% if result.head_to_head.last_match.score %}
+            {{ result.head_to_head.last_match.score }}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+
+    <p>No previous meetings are recorded for these players.</p>
+
+    {% endif %}
+</div>

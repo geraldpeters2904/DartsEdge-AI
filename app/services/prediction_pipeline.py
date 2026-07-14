@@ -1,3 +1,4 @@
+from app.services.head_to_head_service import get_head_to_head
 from app.services.confidence_service import build_confidence_breakdown
 from app.services.confidence_service import build_confidence_breakdown
 from app.services.player_profile_service import get_player_profile
@@ -51,7 +52,11 @@ def build_prediction(db, player_a, player_b):
         player_a,
         player_b,
     )
-
+    head_to_head = get_head_to_head(
+        db,
+        player_a,
+        player_b,
+    )
     simulation = simulate_match(
         profile_a,
         profile_b,
@@ -89,6 +94,7 @@ def build_prediction(db, player_a, player_b):
         "explanation": explanation,
         "confidence": confidence,
         "confidence_breakdown": confidence,
+        "head_to_head": head_to_head,
     }
 
     recommendation = build_recommendation(result)
