@@ -1,0 +1,84 @@
+<div class="card recommendation-card">
+
+    <div class="recommendation-topline">
+        <div>
+            <div class="section-kicker">MODEL RECOMMENDATION</div>
+            <h2>💰 Best Betting Opportunity</h2>
+        </div>
+
+        <div class="recommendation-stars">
+            {% for _ in range(result.recommendation.stars) %}
+                ★
+            {% endfor %}
+            {% for _ in range(5 - result.recommendation.stars) %}
+                ☆
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="recommendation-header">
+        <div>
+            <div class="kpi-label">Recommended Market</div>
+            <div class="recommendation-value">
+                {{ result.recommendation.market }}
+            </div>
+        </div>
+
+        <div>
+            <div class="kpi-label">Selection</div>
+            <div class="recommendation-value">
+                {{ result.recommendation.selection }}
+            </div>
+        </div>
+    </div>
+
+    <div class="recommendation-metrics">
+        <div class="recommendation-metric">
+            <span>Model Probability</span>
+            <strong>{{ result.recommendation.probability }}%</strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>Fair Odds</span>
+            <strong>{{ result.recommendation.fair_odds }}</strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>Minimum Back Odds</span>
+            <strong>{{ result.recommendation.minimum_odds }}</strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>Confidence</span>
+
+            {% if result.recommendation.stars >= 4 %}
+                <strong class="text-positive">
+                    {{ result.recommendation.confidence }}
+                </strong>
+            {% elif result.recommendation.stars == 3 %}
+                <strong class="text-warning">
+                    {{ result.recommendation.confidence }}
+                </strong>
+            {% else %}
+                <strong class="text-risk">
+                    {{ result.recommendation.confidence }}
+                </strong>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="recommendation-note">
+        Only consider backing this selection when the available bookmaker
+        odds are at or above
+        <strong>{{ result.recommendation.minimum_odds }}</strong>.
+    </div>
+
+    <h3>Why the model favours this selection</h3>
+
+    <ul class="recommendation-reasons">
+        {% for reason in result.recommendation.reasons %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+
+</div>

@@ -1,0 +1,122 @@
+<div class="card">
+    <h2>📊 Player Comparison</h2>
+
+    <table class="comparison-table">
+        <tr>
+            <th>Metric</th>
+            <th>{{ result.player_a }}</th>
+            <th>{{ result.player_b }}</th>
+            <th>Advantage</th>
+        </tr>
+
+        <tr>
+            <td>DartsEdge Rating</td>
+
+            <td class="{% if result.profile_a.dartsedge_rating > result.profile_b.dartsedge_rating %}metric-best{% endif %}">
+                {{ result.profile_a.dartsedge_rating }}
+            </td>
+
+            <td class="{% if result.profile_b.dartsedge_rating > result.profile_a.dartsedge_rating %}metric-best{% endif %}">
+                {{ result.profile_b.dartsedge_rating }}
+            </td>
+
+            <td>
+                {% if result.profile_a.dartsedge_rating > result.profile_b.dartsedge_rating %}
+                    {{ result.player_a }}
+                {% elif result.profile_b.dartsedge_rating > result.profile_a.dartsedge_rating %}
+                    {{ result.player_b }}
+                {% else %}
+                    Level
+                {% endif %}
+            </td>
+        </tr>
+
+        <tr>
+            <td>Elo</td>
+
+            <td class="{% if result.profile_a.elo > result.profile_b.elo %}metric-best{% endif %}">
+                {{ result.profile_a.elo }}
+            </td>
+
+            <td class="{% if result.profile_b.elo > result.profile_a.elo %}metric-best{% endif %}">
+                {{ result.profile_b.elo }}
+            </td>
+
+            <td>
+                {% if result.profile_a.elo > result.profile_b.elo %}
+                    {{ result.player_a }}
+                {% elif result.profile_b.elo > result.profile_a.elo %}
+                    {{ result.player_b }}
+                {% else %}
+                    Level
+                {% endif %}
+            </td>
+        </tr>
+
+        <tr>
+            <td>Expected 180s</td>
+
+            <td class="{% if result.expected_180s_a > result.expected_180s_b %}metric-best{% endif %}">
+                {{ result.expected_180s_a }}
+            </td>
+
+            <td class="{% if result.expected_180s_b > result.expected_180s_a %}metric-best{% endif %}">
+                {{ result.expected_180s_b }}
+            </td>
+
+            <td>
+                {% if result.expected_180s_a > result.expected_180s_b %}
+                    {{ result.player_a }}
+                {% elif result.expected_180s_b > result.expected_180s_a %}
+                    {{ result.player_b }}
+                {% else %}
+                    Level
+                {% endif %}
+            </td>
+        </tr>
+
+        <tr>
+            <td>Win Probability</td>
+
+            <td class="{% if result.win_prob_a > result.win_prob_b %}metric-best{% endif %}">
+                {{ (result.win_prob_a * 100) | round(1) }}%
+            </td>
+
+            <td class="{% if result.win_prob_b > result.win_prob_a %}metric-best{% endif %}">
+                {{ (result.win_prob_b * 100) | round(1) }}%
+            </td>
+
+            <td>
+                {% if result.win_prob_a > result.win_prob_b %}
+                    {{ result.player_a }}
+                {% elif result.win_prob_b > result.win_prob_a %}
+                    {{ result.player_b }}
+                {% else %}
+                    Level
+                {% endif %}
+            </td>
+        </tr>
+
+        <tr>
+            <td>First 180 Probability</td>
+
+            <td class="{% if result.first_180.player_a > result.first_180.player_b %}metric-best{% endif %}">
+                {{ result.first_180.player_a }}
+            </td>
+
+            <td class="{% if result.first_180.player_b > result.first_180.player_a %}metric-best{% endif %}">
+                {{ result.first_180.player_b }}
+            </td>
+
+            <td>
+                {% if result.first_180.player_a > result.first_180.player_b %}
+                    {{ result.player_a }}
+                {% elif result.first_180.player_b > result.first_180.player_a %}
+                    {{ result.player_b }}
+                {% else %}
+                    Level
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</div>

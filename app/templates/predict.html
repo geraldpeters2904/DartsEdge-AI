@@ -62,19 +62,97 @@
         {% endif %}
     </div>
 </div>
-<div class="card">
+<div class="card ai-panel">
     <h2>🧠 AI Match Intelligence</h2>
 
-    <p>
-        <strong>Predicted Winner:</strong>
-        {{ result.intelligence.favoured_player }}
-    </p>
+    <div class="ai-header">
+        <div>
+            <div class="kpi-label">Predicted Winner</div>
+            <div class="ai-winner">
+                {{ result.intelligence.favoured_player }}
+            </div>
+        </div>
 
-    <ul>
-        {% for reason in result.explanation %}
-        <li>{{ reason }}</li>
-        {% endfor %}
-    </ul>
+        <div class="ai-confidence">
+            <div class="kpi-label">Confidence</div>
+
+            <div class="confidence-bar">
+                <div
+                    class="confidence-fill"
+                    style="width: {{ result.intelligence.confidence }}%;">
+                </div>
+            </div>
+
+            <strong>{{ result.intelligence.confidence }}%</strong>
+
+            {% if result.intelligence.confidence >= 80 %}
+            <span class="badge badge-good">High</span>
+            {% elif result.intelligence.confidence >= 60 %}
+            <span class="badge badge-warning">Medium</span>
+            {% else %}
+            <span class="badge badge-low">Low</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div>
+            <h3>✅ Strengths</h3>
+
+            {% if result.explanation.strengths %}
+            <ul>
+                {% for item in result.explanation.strengths %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No clear statistical advantage identified.</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <h3>⚠ Risks</h3>
+
+            {% if result.explanation.risks %}
+            <ul>
+                {% for item in result.explanation.risks %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No major statistical risks identified.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3>📊 Model Evidence</h3>
+
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Monte Carlo support</td>
+            <td>{{ result.explanation.simulation_pct }}%</td>
+        </tr>
+        <tr>
+            <td>{{ result.player_a }} expected 180s</td>
+            <td>{{ result.explanation.expected_a }}</td>
+        </tr>
+        <tr>
+            <td>{{ result.player_b }} expected 180s</td>
+            <td>{{ result.explanation.expected_b }}</td>
+        </tr>
+        <tr>
+            <td>Rating difference</td>
+            <td>{{ result.explanation.rating_diff }}</td>
+        </tr>
+    </table>
+
+    <h3>💡 AI Verdict</h3>
+    <p>{{ result.explanation.verdict }}</p>
+</div>
 </div>
 <div class="card summary">
     <h2>⭐ Match Summary</h2>
@@ -122,6 +200,7 @@
         {% endfor %}
     </ul>
 </div>
+{% include "components/player_comparison.html" %}
 
 <div class="card">
     <h2>180 Markets</h2>

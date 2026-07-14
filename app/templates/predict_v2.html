@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>🎯 Match Analysis</h1>
+
+<form action="/predict-v2-result">
+
+    <label>Player A</label><br>
+
+    <select name="player_a">
+
+        {% for player in players %}
+        <option value="{{ player.name }}"
+            {% if player.name == selected_player_a %}selected{% endif %}>
+            {{ player.name }}
+        </option>
+        {% endfor %}
+
+    </select>
+
+    <br><br>
+
+    <label>Player B</label><br>
+
+    <select name="player_b">
+
+        {% for player in players %}
+        <option value="{{ player.name }}"
+            {% if player.name == selected_player_b %}selected{% endif %}>
+            {{ player.name }}
+        </option>
+        {% endfor %}
+
+    </select>
+
+    <br><br>
+
+    <button type="submit">Analyse Match</button>
+
+</form>
+
+{% if result %}
+
+<div class="match-title-card">
+    <div>
+        <div class="kpi-label">Match</div>
+        <div class="match-title">
+            {{ result.player_a }} vs {{ result.player_b }}
+        </div>
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Predicted Winner</div>
+        <div class="kpi-value" style="font-size:24px;">
+            {{ result.intelligence.favoured_player }}
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Confidence</div>
+        <div class="kpi-value">
+            {{ result.intelligence.confidence }}%
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Expected 180s</div>
+        <div class="kpi-value" style="font-size:24px;">
+            {{ result.expected_180s_a }} vs {{ result.expected_180s_b }}
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">First 180 Favourite</div>
+
+        {% if result.first_180.player_a > result.first_180.player_b %}
+        <div class="kpi-value" style="font-size:24px;">
+            {{ result.player_a }}
+        </div>
+        {% elif result.first_180.player_b > result.first_180.player_a %}
+        <div class="kpi-value" style="font-size:24px;">
+            {{ result.player_b }}
+        </div>
+        {% else %}
+        <div class="kpi-value" style="font-size:24px;">
+            Level
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% include "components/ai_panel.html" %}
+{% include "components/player_comparison.html" %}
+{% include "components/recommendation_card.html" %}
+
+{% endif %}
+
+{% endblock %}

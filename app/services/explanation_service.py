@@ -1,65 +1,68 @@
 def build_match_explanation(profile_a, profile_b, simulation):
-    reasons = []
 
     rating_diff = round(
-        profile_a["dartsedge_rating"] - profile_b["dartsedge_rating"],
+        profile_a["dartsedge_rating"] -
+        profile_b["dartsedge_rating"],
         1,
     )
 
-    if rating_diff > 0:
-        reasons.append(
-            f"{profile_a['name']} has the higher DartsEdge Rating (+{rating_diff})"
-        )
-    elif rating_diff < 0:
-        reasons.append(
-            f"{profile_b['name']} has the higher DartsEdge Rating (+{abs(rating_diff)})"
-        )
-    else:
-        reasons.append("Both players have the same DartsEdge Rating")
-
-    elo_diff = round(profile_a["elo"] - profile_b["elo"])
-
-    if elo_diff > 0:
-        reasons.append(
-            f"{profile_a['name']} has the higher Elo rating (+{elo_diff})"
-        )
-    elif elo_diff < 0:
-        reasons.append(
-            f"{profile_b['name']} has the higher Elo rating (+{abs(elo_diff)})"
-        )
-    else:
-        reasons.append("Both players have the same Elo rating")
-
-    form_diff = round(
-        profile_a["form"]["expected"] - profile_b["form"]["expected"],
-        2,
+    elo_diff = round(
+        profile_a["elo"] -
+        profile_b["elo"]
     )
 
-    if form_diff > 0:
-        reasons.append(
-            f"{profile_a['name']} has stronger 180 form "
-            f"(+{form_diff} expected 180s)"
-        )
-    elif form_diff < 0:
-        reasons.append(
-            f"{profile_b['name']} has stronger 180 form "
-            f"(+{abs(form_diff)} expected 180s)"
-        )
-    else:
-        reasons.append("Recent 180 form is level")
+    expected_a = round(profile_a["form"]["expected"], 2)
+    expected_b = round(profile_b["form"]["expected"], 2)
 
-    simulation_a_pct = round(simulation["player_a_win"] * 100, 1)
-    simulation_b_pct = round(simulation["player_b_win"] * 100, 1)
+    strengths = []
+    risks = []
 
-    if simulation_a_pct >= simulation_b_pct:
-        reasons.append(
-            f"{profile_a['name']} won {simulation_a_pct}% "
-            "of Monte Carlo simulations"
+    if rating_diff > 0:
+        strengths.append(
+            f"Higher DartsEdge Rating (+{rating_diff})"
         )
-    else:
-        reasons.append(
-            f"{profile_b['name']} won {simulation_b_pct}% "
-            "of Monte Carlo simulations"
+    elif rating_diff < 0:
+        risks.append(
+            f"Opponent has higher DartsEdge Rating (+{abs(rating_diff)})"
         )
 
-    return reasons
+    if elo_diff > 0:
+        strengths.append(
+            f"Higher Elo (+{elo_diff})"
+        )
+    elif elo_diff < 0:
+        risks.append(
+            f"Opponent has higher Elo (+{abs(elo_diff)})"
+        )
+
+    if expected_a > expected_b:
+        strengths.append(
+            "Better recent 180 scoring"
+        )
+    elif expected_a < expected_b:
+        risks.append(
+            "Opponent scoring better recently"
+        )
+
+    verdict = (
+        f"{profile_a['name']} has the stronger overall statistical profile."
+        if simulation["player_a_win"] >= 0.5
+        else
+        f"{profile_b['name']} has the stronger overall statistical profile."
+    )
+
+    return {
+        "strengths": strengths,
+        "risks": risks,
+        "simulation_pct": round(
+            max(
+                simulation["player_a_win"],
+                simulation["player_b_win"]
+            ) * 100,
+            1,
+        ),
+        "expected_a": expected_a,
+        "expected_b": expected_b,
+        "rating_diff": abs(rating_diff),
+        "verdict": verdict,
+    }

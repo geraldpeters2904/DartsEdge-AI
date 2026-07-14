@@ -1,3 +1,6 @@
+
+from app.services.prediction_pipeline import build_prediction
+from app.services.recommendation_service import build_recommendation
 from app.services.explanation_service import build_match_explanation
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
@@ -41,8 +44,83 @@ def predict_page(request: Request):
             "selected_player_b": None,
         },
     )
+@router.get("/predict-v2")
+def predict_v2_page(request: Request):
+    db = SessionLocal()
 
+    try:
+        players = [
+            {"name": player.name}
+            for player in db.query(Player).order_by(Player.name.asc()).all()
+        ]
 
+        return templates.TemplateResponse(
+            "predict_v2.html",
+            {
+                "request": request,
+                "players": players,
+                "selected_player_a": None,
+                "selected_player_b": None,
+            },
+        )
+
+    finally:
+        db.close()
+@router.get("/predict-v2-result")
+def predict_v2_result(request: Request, player_a: str, player_b: str):
+    if player_a == player_b:
+        db = SessionLocal()
+
+        try:
+            players = [
+                {"name": player.name}
+                for player in db.query(Player).order_by(Player.name.asc()).all()
+            ]
+
+            return templates.TemplateResponse(
+                "predict_v2.html",
+                {
+                    "request": request,
+                    "players": players,
+                    "selected_player_a": player_a,
+                    "selected_player_b": player_b,
+                    "error": "Please select two different players.",
+                },
+                status_code=400,
+            )
+        finally:
+            db.close()
+
+    db = SessionLocal()
+
+    try:
+        players = [
+            {"name": player.name}
+            for player in db.query(Player).order_by(Player.name.asc()).all()
+        ]
+
+        result = build_prediction(
+            db,
+            player_a,
+            player_b,
+        )
+
+        if not result:
+            return {"error": "Player not found"}
+
+        return templates.TemplateResponse(
+            "predict_v2.html",
+            {
+                "request": request,
+                "players": players,
+                "result": result,
+                "selected_player_a": player_a,
+                "selected_player_b": player_b,
+            },
+        )
+
+    finally:
+        db.close()
 @router.get("/predict-ui")
 def predict_ui(request: Request, player_a: str, player_b: str):
     if player_a == player_b:
