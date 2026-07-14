@@ -10,13 +10,39 @@
         </div>
 
         <div class="recommendation-metric">
-            <span>{{ result.player_a }} Wins</span>
-            <strong>{{ result.head_to_head.wins_a }}</strong>
+            <span>{{ result.player_a }}</span>
+            <strong>
+                {{ result.head_to_head.wins_a }} wins
+                ({{ result.head_to_head.win_pct_a }}%)
+            </strong>
         </div>
 
         <div class="recommendation-metric">
-            <span>{{ result.player_b }} Wins</span>
-            <strong>{{ result.head_to_head.wins_b }}</strong>
+            <span>{{ result.player_b }}</span>
+            <strong>
+                {{ result.head_to_head.wins_b }} wins
+                ({{ result.head_to_head.win_pct_b }}%)
+            </strong>
+        </div>
+
+        <div class="recommendation-metric">
+            <span>H2H Confidence</span>
+            <strong>{{ result.head_to_head.confidence }}%</strong>
+        </div>
+    </div>
+
+    <div class="recommendation-metrics">
+        <div class="recommendation-metric">
+            <span>Current Streak</span>
+
+            {% if result.head_to_head.streak_player %}
+                <strong class="text-positive">
+                    {{ result.head_to_head.streak_player }}
+                    — {{ result.head_to_head.streak }}
+                </strong>
+            {% else %}
+                <strong class="text-warning">No streak</strong>
+            {% endif %}
         </div>
 
         <div class="recommendation-metric">

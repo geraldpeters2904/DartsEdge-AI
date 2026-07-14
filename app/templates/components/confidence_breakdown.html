@@ -1,0 +1,43 @@
+<div class="card">
+    <h2>📈 Model Confidence Breakdown</h2>
+
+    <div class="confidence-section">
+
+        {% for metric, label in [
+            ("overall", "Overall Confidence"),
+            ("elo", "Elo Advantage"),
+            ("rating", "DartsEdge Rating"),
+            ("form", "Recent Form"),
+            ("simulation", "Monte Carlo"),
+            ("head_to_head", "Head-to-Head")
+        ] %}
+
+        <div class="confidence-row">
+            <div class="confidence-label">
+                {{ label }}
+            </div>
+
+            <div class="confidence-progress">
+                <div
+                    class="confidence-progress-fill"
+                    style="width: {{ result.confidence_breakdown[metric] }}%;">
+                </div>
+            </div>
+
+            <div class="confidence-value">
+                {{ result.confidence_breakdown[metric] }}%
+            </div>
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <div class="confidence-summary">
+        <strong>Model Summary</strong>
+
+        <p>
+            {{ result.confidence_breakdown.summary }}
+        </p>
+    </div>
+</div>
