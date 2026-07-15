@@ -97,3 +97,36 @@ def delete_fixture(db, fixture_id):
     db.commit()
 
     return True
+def get_fixture(db, fixture_id):
+    return (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+
+def update_fixture(
+    db,
+    fixture_id,
+    fixture_date,
+    tournament,
+    stage,
+    match_format,
+    player_a,
+    player_b,
+):
+    fixture = get_fixture(db, fixture_id)
+
+    if not fixture:
+        return False
+
+    fixture.date = fixture_date
+    fixture.tournament = tournament
+    fixture.stage = stage
+    fixture.match_format = match_format
+    fixture.player_a = player_a
+    fixture.player_b = player_b
+
+    db.commit()
+
+    return True
