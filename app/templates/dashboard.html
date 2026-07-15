@@ -33,7 +33,74 @@
         {% endif %}
     </div>
 </div>
+<div class="card">
 
+    <h2>⭐ Today's Best Bets</h2>
+
+    {% if best_bets %}
+
+    <div class="best-bets-grid">
+
+        {% for bet in best_bets %}
+
+        <div class="best-bet-card">
+
+            <div class="best-bet-stars">
+
+                {% for _ in range(bet.stars) %}
+                    ★
+                {% endfor %}
+
+                {% for _ in range(5 - bet.stars) %}
+                    ☆
+                {% endfor %}
+
+            </div>
+
+            <h3>
+                {{ bet.player_a | display_name }}
+                vs
+                {{ bet.player_b | display_name }}
+            </h3>
+
+            <div class="best-bet-pick">
+
+                🎯 {{ bet.selection | display_name }}
+
+            </div>
+
+            <div class="best-bet-probability">
+
+                {{ bet.probability }}%
+
+            </div>
+
+            <div class="best-bet-confidence">
+
+                {{ bet.confidence }}
+
+            </div>
+
+            <a
+                class="analyse-link"
+                href="/predict-v2?player_a={{ bet.player_a }}&player_b={{ bet.player_b }}"
+            >
+                Analyse Match →
+            </a>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+        <p>No scheduled fixtures available.</p>
+
+    {% endif %}
+
+</div>
 <div class="dashboard-grid">
 
     <div class="card">

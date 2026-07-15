@@ -1,6 +1,8 @@
+
 from app.models.match import Match
 from app.models.player import Player
 from app.models.prediction import Prediction
+from app.services.best_bets_service import build_best_bets
 from app.services.player_profile_service import get_player_profile
 
 
@@ -15,11 +17,13 @@ def build_dashboard_data(db):
         .all()
     )
 
-    correct_predictions = len([
-        prediction
-        for prediction in completed_predictions
-        if prediction.winner_correct == 1
-    ])
+    correct_predictions = len(
+        [
+            prediction
+            for prediction in completed_predictions
+            if prediction.winner_correct == 1
+        ]
+    )
 
     winner_accuracy = (
         round(
@@ -31,7 +35,6 @@ def build_dashboard_data(db):
     )
 
     players = db.query(Player).all()
-
     profiles = []
 
     for player in players:
@@ -57,11 +60,17 @@ def build_dashboard_data(db):
         }
         for match in (
             db.query(Match)
+            .filter(Match.status == "completed")
             .order_by(Match.date.desc())
             .limit(5)
             .all()
         )
     ]
+
+    best_bets = build_best_bets(
+        db,
+        limit=5,
+    )
 
     return {
         "player_count": player_count,
@@ -70,4 +79,5 @@ def build_dashboard_data(db):
         "winner_accuracy": winner_accuracy,
         "top_players": top_players,
         "recent_matches": recent_matches,
+        "best_bets": best_bets,
     }
