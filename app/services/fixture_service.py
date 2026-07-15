@@ -81,3 +81,19 @@ def create_fixture(
         "success": True,
         "fixture": fixture,
     }
+
+
+def delete_fixture(db, fixture_id):
+    fixture = (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+    if not fixture:
+        return False
+
+    db.delete(fixture)
+    db.commit()
+
+    return True

@@ -140,7 +140,7 @@
                         <th>Stage</th>
                         <th>Match</th>
                         <th>Format</th>
-                        <th>Analysis</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -161,11 +161,30 @@
                         <td>{{ fixture.match_format }}</td>
 
                         <td>
+
                             <a
                                 href="/predict-v2-result?player_a={{ fixture.player_a }}&player_b={{ fixture.player_b }}"
                             >
                                 Analyse
                             </a>
+                        
+                            |
+                        
+                            <form
+                                action="/fixtures/delete/{{ fixture.id }}"
+                                method="post"
+                                style="display:inline;"
+                            >
+                        
+                                <button
+                                    type="submit"
+                                    onclick="return confirm('Delete this fixture?')"
+                                >
+                                    Delete
+                                </button>
+                        
+                            </form>
+                        
                         </td>
                     </tr>
                     {% endfor %}

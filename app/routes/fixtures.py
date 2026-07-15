@@ -1,25 +1,27 @@
 from datetime import date
-from app.templates_config import templates
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse
+
 from app.db import SessionLocal
 from app.services.fixture_service import (
     create_fixture,
+    delete_fixture,
     get_fixture_form_data,
     get_scheduled_fixtures,
 )
+from app.templates_config import templates
+
 
 router = APIRouter()
 
+
 @router.get("/fixtures")
 def fixtures_page(request: Request):
-
     db = SessionLocal()
 
     try:
-
         form = get_fixture_form_data(db)
-
         fixtures = get_scheduled_fixtures(db)
 
         return templates.TemplateResponse(
@@ -45,11 +47,9 @@ def add_fixture(
     player_a: str = Form(...),
     player_b: str = Form(...),
 ):
-
     db = SessionLocal()
 
     try:
-
         create_fixture(
             db,
             fixture_date,
@@ -59,6 +59,22 @@ def add_fixture(
             player_a,
             player_b,
         )
+
+    finally:
+        db.close()
+
+    return RedirectResponse(
+        "/fixtures",
+        status_code=303,
+    )
+
+
+@router.post("/fixtures/delete/{fixture_id}")
+def remove_fixture(fixture_id: int):
+    db = SessionLocal()
+
+    try:
+        delete_fixture(db, fixture_id)
 
     finally:
         db.close()
