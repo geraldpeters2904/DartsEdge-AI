@@ -41,7 +41,8 @@
 </form>
 
 {% if result %}
-
+{% include "components/prediction_hero.html" %}
+{% include "components/verdict_card.html" %}
 <div class="match-title-card">
     <div>
         <div class="kpi-label">Match</div>
@@ -94,6 +95,7 @@
 {% include "components/ai_panel.html" %}
 {% include "components/player_comparison.html" %}
 {% include "components/head_to_head.html" %}
+{% include "components/prediction_factors.html" %}
 {% include "components/recommendation_card.html" %}
 {% include "components/confidence_breakdown.html" %}
 

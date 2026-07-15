@@ -1,3 +1,4 @@
+
 from app.models.player import Player
 from app.services.confidence_service import build_confidence_breakdown
 from app.services.explanation_service import build_match_explanation
@@ -9,6 +10,9 @@ from app.services.match_intelligence_service import compare_players
 from app.services.player_profile_service import get_player_profile
 from app.services.recommendation_service import build_recommendation
 from app.services.simulation_service import simulate_match
+from app.services.prediction_factors_service import (
+    build_prediction_factors,
+)
 
 
 def build_prediction(db, player_a, player_b):
@@ -69,7 +73,11 @@ def build_prediction(db, player_a, player_b):
         player_a,
         player_b,
     )
-
+    prediction_factors = build_prediction_factors(
+    profile_a,
+    profile_b,
+    head_to_head,
+    )
     simulation = simulate_match(
         profile_a,
         profile_b,
@@ -84,9 +92,10 @@ def build_prediction(db, player_a, player_b):
     )
 
     explanation = build_match_explanation(
-        profile_a,
-        profile_b,
-        simulation,
+    profile_a,
+    profile_b,
+    simulation,
+    head_to_head,
     )
 
     result = {
@@ -106,6 +115,7 @@ def build_prediction(db, player_a, player_b):
         "confidence": confidence_breakdown,
         "confidence_breakdown": confidence_breakdown,
         "head_to_head": head_to_head,
+        "prediction_factors": prediction_factors,
     }
 
     result["recommendation"] = build_recommendation(result)

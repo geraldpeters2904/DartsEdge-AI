@@ -1,4 +1,4 @@
-
+from app.services.display_service import display_name
 from app.services.value_bet_service import calculate_value_bet
 from app.services.prediction_pipeline import build_prediction
 from app.services.recommendation_service import build_recommendation
@@ -23,7 +23,7 @@ from app.services.simulation_service import simulate_match
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
-
+templates.env.filters["display_name"] = display_name
 
 @router.get("/predict")
 def predict_page(request: Request):

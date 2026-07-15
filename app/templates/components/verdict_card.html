@@ -1,0 +1,52 @@
+<div class="card verdict-card">
+
+    <div class="section-kicker">AI MATCH VERDICT</div>
+
+    <h2>🧠 {{ result.explanation.headline }}</h2>
+
+    <p class="verdict-summary">
+        {{ result.explanation.summary }}
+    </p>
+
+    <div class="recommendation-metrics">
+
+        <div class="recommendation-metric">
+            <span>Confidence</span>
+
+            {% if result.explanation.confidence == "High" %}
+                <strong class="text-positive">High</strong>
+            {% elif result.explanation.confidence == "Moderate" %}
+                <strong class="text-warning">Moderate</strong>
+            {% else %}
+                <strong class="text-risk">Low</strong>
+            {% endif %}
+        </div>
+
+        <div class="recommendation-metric">
+            <span>Simulation</span>
+            <strong>{{ result.explanation.simulation_pct }}%</strong>
+        </div>
+
+    </div>
+
+    {% if result.explanation.strengths %}
+    <h3>Why the model likes this pick</h3>
+
+    <ul class="verdict-list verdict-strengths">
+        {% for item in result.explanation.strengths %}
+        <li>✅ {{ item }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if result.explanation.risks %}
+    <h3>Things to watch</h3>
+
+    <ul class="verdict-list verdict-risks">
+        {% for item in result.explanation.risks %}
+        <li>⚠ {{ item }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+</div>

@@ -1,0 +1,36 @@
+<div class="card">
+    <h2>🧠 Why the Model Leans This Way</h2>
+
+    {% if result.prediction_factors %}
+
+    <div class="factor-list">
+        {% for factor in result.prediction_factors %}
+        <div class="factor-item">
+
+            <div>
+                <strong>{{ factor.winner }}</strong>
+                has the advantage in
+                <strong>{{ factor.factor }}</strong>.
+            </div>
+
+            {% if factor.impact == "High" %}
+                <span class="badge badge-good">Strong factor</span>
+            {% elif factor.impact == "Medium" %}
+                <span class="badge badge-warning">Supporting factor</span>
+            {% else %}
+                <span class="badge badge-low">Small factor</span>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+
+    <p>
+        The players are closely matched and no single factor provides
+        a clear advantage.
+    </p>
+
+    {% endif %}
+</div>
