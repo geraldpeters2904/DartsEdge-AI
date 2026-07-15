@@ -1,10 +1,9 @@
-from app.services.display_service import display_name
 from app.services.value_bet_service import calculate_value_bet
 from app.services.prediction_pipeline import build_prediction
 from app.services.recommendation_service import build_recommendation
 from app.services.explanation_service import build_match_explanation
 from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
+from app.templates_config import templates
 
 from app.db import SessionLocal
 from app.models.player import Player
@@ -20,10 +19,7 @@ from app.services.match_intelligence_service import compare_players
 from app.services.player_profile_service import get_player_profile
 from app.services.simulation_service import simulate_match
 
-
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-templates.env.filters["display_name"] = display_name
 
 @router.get("/predict")
 def predict_page(request: Request):
@@ -41,12 +37,16 @@ def predict_page(request: Request):
         {
             "request": request,
             "players": players,
-            "selected_player_a": None,
-            "selected_player_b": None,
+            "selected_player_a": player_a,
+            "selected_player_b": player_b,
         },
     )
 @router.get("/predict-v2")
-def predict_v2_page(request: Request):
+def predict_v2_page(
+    request: Request,
+    player_a: str = None,
+    player_b: str = None,
+):
     db = SessionLocal()
 
     try:
@@ -60,8 +60,8 @@ def predict_v2_page(request: Request):
             {
                 "request": request,
                 "players": players,
-                "selected_player_a": None,
-                "selected_player_b": None,
+                "selected_player_a": player_a,
+                "selected_player_b": player_b,
             },
         )
 
