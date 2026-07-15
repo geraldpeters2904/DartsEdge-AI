@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
-
+from app.templates_config import templates
 from app.db import SessionLocal
 from app.models.player import Player
 from app.services.player_profile_service import get_player_profile
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/rankings")

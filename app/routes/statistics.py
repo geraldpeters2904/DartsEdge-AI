@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
-
+from app.templates_config import templates
 from app.db import SessionLocal
 from app.models.player import Player
 from app.models.player_stats import PlayerStats
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/statistics")

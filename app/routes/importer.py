@@ -3,7 +3,7 @@ import io
 from datetime import datetime
 
 from fastapi import APIRouter, File, Request, UploadFile
-from fastapi.templating import Jinja2Templates
+from app.templates_config import templates
 
 from app.db import SessionLocal
 from app.models.match import Match
@@ -14,7 +14,6 @@ from app.services.stats_service import update_player_stats
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/import")

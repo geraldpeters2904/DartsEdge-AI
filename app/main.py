@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
+from app.routes.fixtures import router as fixtures_router
 from app.db import SessionLocal, create_database
 from app.models.player import Player
 from app.routes.accuracy import router as accuracy_router
@@ -14,6 +14,7 @@ from app.routes.statistics import router as statistics_router
 from app.routes.update_prediction import router as update_prediction_router
 from app.services.form_service import weighted_expected_180s
 from app.services.markets_service import one80_markets
+from app.routes.players import router as players_router
 from app.services.match_engine import (
     leg_win_probability,
     value_edge,
@@ -40,6 +41,8 @@ app.include_router(player_profile_router)
 app.include_router(statistics_router)
 app.include_router(prediction_history_router)
 app.include_router(importer_router)
+app.include_router(fixtures_router)
+app.include_router(players_router)
 
 
 @app.get("/")

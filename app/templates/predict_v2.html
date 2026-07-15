@@ -2,102 +2,163 @@
 
 {% block content %}
 
-<h1>🎯 Match Analysis</h1>
+<section class="match-selector-card">
 
-<form action="/predict-v2-result">
+    <div class="match-selector-heading">
+        <div class="section-kicker">PREDICTION CENTRE</div>
+        <h1>🎯 Analyse a Match</h1>
+        <p>Select two players to generate a full DartsEdge analysis.</p>
+    </div>
 
-    <label>Player A</label><br>
+    {% if error %}
+    <div class="form-error">
+        {{ error }}
+    </div>
+    {% endif %}
 
-    <select name="player_a">
+    <form
+        action="/predict-v2-result"
+        method="get"
+        class="match-selector-form"
+    >
 
-        {% for player in players %}
-        <option value="{{ player.name }}"
-            {% if player.name == selected_player_a %}selected{% endif %}>
-            {{ player.name }}
-        </option>
-        {% endfor %}
+        <div class="match-selector-field">
+            <label for="player-a">Player A</label>
 
-    </select>
+            <select
+                id="player-a"
+                name="player_a"
+                required
+            >
+                {% for player in players %}
+                <option
+                    value="{{ player.name }}"
+                    {% if player.name == selected_player_a %}
+                    selected
+                    {% endif %}
+                >
+                    {{ player.name | display_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <br><br>
+        <div class="match-selector-versus">
+            <span>VS</span>
+        </div>
 
-    <label>Player B</label><br>
+        <div class="match-selector-field">
+            <label for="player-b">Player B</label>
 
-    <select name="player_b">
+            <select
+                id="player-b"
+                name="player_b"
+                required
+            >
+                {% for player in players %}
+                <option
+                    value="{{ player.name }}"
+                    {% if player.name == selected_player_b %}
+                    selected
+                    {% endif %}
+                >
+                    {{ player.name | display_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-        {% for player in players %}
-        <option value="{{ player.name }}"
-            {% if player.name == selected_player_b %}selected{% endif %}>
-            {{ player.name }}
-        </option>
-        {% endfor %}
+        <div class="match-selector-action">
+            <button type="submit" class="analyse-match-button">
+                🔍 Analyse Match
+            </button>
+        </div>
 
-    </select>
+    </form>
 
-    <br><br>
+</section>
 
-    <button type="submit">Analyse Match</button>
-
-</form>
 
 {% if result %}
+
 {% include "components/prediction_hero.html" %}
+
 {% include "components/verdict_card.html" %}
-<div class="match-title-card">
-    <div>
-        <div class="kpi-label">Match</div>
-        <div class="match-title">
-            {{ result.player_a }} vs {{ result.player_b }}
-        </div>
-    </div>
-</div>
 
-<div class="kpi-grid">
-    <div class="kpi-card">
-        <div class="kpi-label">Predicted Winner</div>
-        <div class="kpi-value" style="font-size:24px;">
-            {{ result.intelligence.favoured_player }}
-        </div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">Confidence</div>
-        <div class="kpi-value">
-            {{ result.intelligence.confidence }}%
-        </div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">Expected 180s</div>
-        <div class="kpi-value" style="font-size:24px;">
-            {{ result.expected_180s_a }} vs {{ result.expected_180s_b }}
-        </div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">First 180 Favourite</div>
-
-        {% if result.first_180.player_a > result.first_180.player_b %}
-        <div class="kpi-value" style="font-size:24px;">
-            {{ result.player_a }}
-        </div>
-        {% elif result.first_180.player_b > result.first_180.player_a %}
-        <div class="kpi-value" style="font-size:24px;">
-            {{ result.player_b }}
-        </div>
-        {% else %}
-        <div class="kpi-value" style="font-size:24px;">
-            Level
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% include "components/ai_panel.html" %}
-{% include "components/player_comparison.html" %}
-{% include "components/head_to_head.html" %}
 {% include "components/prediction_factors.html" %}
+
 {% include "components/recommendation_card.html" %}
-{% include "components/confidence_breakdown.html" %}
+
+
+<details class="advanced-analysis">
+
+    <summary>
+        <span>
+            📊 Advanced Analysis
+        </span>
+
+        <span class="advanced-analysis-hint">
+            View detailed evidence
+        </span>
+    </summary>
+
+    <div class="advanced-analysis-content">
+
+        <div class="kpi-grid">
+
+            <div class="kpi-card">
+                <div class="kpi-label">Predicted Winner</div>
+
+                <div class="kpi-value kpi-value-name">
+                    {{ result.intelligence.favoured_player | display_name }}
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Confidence</div>
+
+                <div class="kpi-value">
+                    {{ result.intelligence.confidence }}%
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Expected 180s</div>
+
+                <div class="kpi-value kpi-value-name">
+                    {{ result.expected_180s_a }}
+                    vs
+                    {{ result.expected_180s_b }}
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">First 180 Favourite</div>
+
+                <div class="kpi-value kpi-value-name">
+                    {% if result.first_180.player_a > result.first_180.player_b %}
+                        {{ result.player_a | display_name }}
+                    {% elif result.first_180.player_b > result.first_180.player_a %}
+                        {{ result.player_b | display_name }}
+                    {% else %}
+                        Level
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        {% include "components/player_comparison.html" %}
+
+        {% include "components/head_to_head.html" %}
+
+        {% include "components/confidence_breakdown.html" %}
+
+        {% include "components/ai_panel.html" %}
+
+    </div>
+
+</details>
 
 {% endif %}
 

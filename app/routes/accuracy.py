@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
+from app.templates_config import templates
 from app.services.accuracy_service import build_confidence_bands
 from app.db import SessionLocal
 from app.models.prediction import Prediction
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/accuracy")

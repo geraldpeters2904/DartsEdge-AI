@@ -2,15 +2,15 @@
 
     <div class="section-kicker">AI MATCH VERDICT</div>
 
-    <h2>🧠 {{ result.explanation.headline }}</h2>
+    <h2>🧠 {{ result.explanation.headline | display_name }}</h2>
 
     <p class="verdict-summary">
         {{ result.explanation.summary }}
     </p>
 
-    <div class="recommendation-metrics">
+    <div class="verdict-meta">
 
-        <div class="recommendation-metric">
+        <div class="verdict-meta-item">
             <span>Confidence</span>
 
             {% if result.explanation.confidence == "High" %}
@@ -22,31 +22,65 @@
             {% endif %}
         </div>
 
-        <div class="recommendation-metric">
-            <span>Simulation</span>
+        <div class="verdict-meta-item">
+            <span>Simulation Support</span>
             <strong>{{ result.explanation.simulation_pct }}%</strong>
         </div>
 
     </div>
 
-    {% if result.explanation.strengths %}
-    <h3>Why the model likes this pick</h3>
+    <div class="verdict-columns">
 
-    <ul class="verdict-list verdict-strengths">
-        {% for item in result.explanation.strengths %}
-        <li>✅ {{ item }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+        <div class="verdict-column">
 
-    {% if result.explanation.risks %}
-    <h3>Things to watch</h3>
+            <h3>✅ Why the model likes this pick</h3>
 
-    <ul class="verdict-list verdict-risks">
-        {% for item in result.explanation.risks %}
-        <li>⚠ {{ item }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+            {% if result.explanation.strengths %}
+
+            <ul class="verdict-list verdict-strengths">
+
+                {% for item in result.explanation.strengths %}
+                <li>
+                    <span class="verdict-icon">✓</span>
+                    <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+
+            </ul>
+
+            {% else %}
+
+            <p>No clear strengths identified.</p>
+
+            {% endif %}
+
+        </div>
+
+        <div class="verdict-column">
+
+            <h3>⚠ Things to watch</h3>
+
+            {% if result.explanation.risks %}
+
+            <ul class="verdict-list verdict-risks">
+
+                {% for item in result.explanation.risks %}
+                <li>
+                    <span class="verdict-icon">!</span>
+                    <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+
+            </ul>
+
+            {% else %}
+
+            <p>No significant risk factors identified.</p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
 
 </div>

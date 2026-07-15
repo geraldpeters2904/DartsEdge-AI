@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>👥 Players</h1>
+        <p class="page-subtitle">
+            Browse player ratings and open individual profiles.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+
+    {% if players %}
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Elo</th>
+                    <th>Average</th>
+                    <th>Checkout</th>
+                    <th>180 Rate</th>
+                    <th>Profile</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for player in players %}
+                <tr>
+                    <td>{{ player.name | display_name }}</td>
+                    <td>{{ player.elo }}</td>
+                    <td>{{ player.average }}</td>
+                    <td>{{ player.checkout }}</td>
+                    <td>{{ player.one80_rate }}</td>
+                    <td>
+                        <a href="/player-profile/{{ player.name }}">
+                            View Profile
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+
+    <p>No players found.</p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

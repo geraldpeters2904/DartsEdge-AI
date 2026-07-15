@@ -1,31 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>DartsEdge AI</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <link
+        rel="stylesheet"
+        href="/static/css/styles.css"
+    >
 </head>
 
 <body>
+
 <div class="layout">
 
-    <div class="sidebar">
-        <h2>🎯 DartsEdge AI</h2>
-        <a href="/dashboard">🏠 Dashboard</a>
-        <a href="/predict-v2">🎯 Match Analysis</a>
-        <a href="/rankings">🏆 Rankings</a>
-        <a href="/statistics">📊 Statistics</a>
-        <a href="/players">👥 Players</a>
-        <a href="/matches">🎮 Matches</a>
-        <a href="/import">📥 Import</a>
-        <a href="/prediction-history">📈 Prediction History</a>
-        <a href="/accuracy">📊 Accuracy</a>
-    </div>
+    <aside class="sidebar">
 
-    <div class="content">
-        {% block content %}
-        {% endblock %}
-    </div>
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">🎯</div>
+
+            <div>
+                <div class="sidebar-brand-name">
+                    DartsEdge
+                </div>
+
+                <div class="sidebar-brand-subtitle">
+                    AI Analytics
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="/dashboard">
+                <span>🏠</span>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="/predict-v2">
+                <span>🎯</span>
+                <span>Prediction Centre</span>
+            </a>
+
+            <a href="/rankings">
+                <span>🏆</span>
+                <span>Rankings</span>
+            </a>
+
+            <a href="/statistics">
+                <span>📊</span>
+                <span>Statistics</span>
+            </a>
+
+            <a href="/players">
+                <span>👥</span>
+                <span>Players</span>
+            </a>
+
+            <<a href="/fixtures">📅 Fixtures</a>>
+            </a>
+
+            <a href="/import">
+                <span>📥</span>
+                <span>Import</span>
+            </a>
+
+            <a href="/prediction-history">
+                <span>📈</span>
+                <span>Prediction History</span>
+            </a>
+
+            <a href="/accuracy">
+                <span>📊</span>
+                <span>Accuracy</span>
+            </a>
+
+        </nav>
+
+    </aside>
+
+    <main class="content">
+
+        <div class="content-inner">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </main>
 
 </div>
+
 </body>
 </html>
