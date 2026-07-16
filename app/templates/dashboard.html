@@ -14,7 +14,16 @@
         <div class="kpi-label">Matches</div>
         <div class="kpi-value">{{ match_count }}</div>
     </div>
-
+    <div class="kpi-card">
+        <div class="kpi-label">Today's Fixtures</div>
+        <div class="kpi-value">{{ today_fixture_count }}</div>
+    
+        {% if today_fixture_count > 0 %}
+        <span class="badge badge-good">Scheduled</span>
+        {% else %}
+        <span class="badge badge-low">None Today</span>
+        {% endif %}
+    </div>
     <div class="kpi-card">
         <div class="kpi-label">Predictions</div>
         <div class="kpi-value">{{ prediction_count }}</div>
@@ -97,6 +106,82 @@
     {% else %}
 
         <p>No scheduled fixtures available.</p>
+
+    {% endif %}
+
+</div>
+<div class="card">
+
+    <div class="section-heading-row">
+        <div>
+            <h2>📅 Today’s Fixtures</h2>
+            <p class="page-subtitle">
+                Scheduled matches for today.
+            </p>
+        </div>
+
+        <a
+            href="/fixtures"
+            class="secondary-button"
+        >
+            Manage Fixtures
+        </a>
+    </div>
+
+    {% if today_fixtures %}
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tournament</th>
+                    <th>Stage</th>
+                    <th>Match</th>
+                    <th>Format</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for fixture in today_fixtures %}
+                <tr>
+                    <td>{{ fixture.tournament }}</td>
+                    <td>{{ fixture.stage }}</td>
+
+                    <td>
+                        {{ fixture.player_a | display_name }}
+                        vs
+                        {{ fixture.player_b | display_name }}
+                    </td>
+
+                    <td>{{ fixture.match_format }}</td>
+
+                    <td>
+                        <a
+                            href="/predict-v2-result?player_a={{ fixture.player_a }}&player_b={{ fixture.player_b }}"
+                            class="action-button action-analyse"
+                        >
+                            📊 Analyse
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+        <p>No fixtures are scheduled for today.</p>
+
+        <a
+            href="/fixtures"
+            class="primary-button"
+        >
+            Add Today’s Fixtures
+        </a>
+    </div>
 
     {% endif %}
 

@@ -99,10 +99,7 @@ input {
 /* Dashboard and accuracy KPI cards */
 
 .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(160px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .kpi-card {
@@ -1312,4 +1309,60 @@ input {
 .fixtures-layout th:last-child,
 .fixtures-layout td:last-child {
     min-width: 500px;
+}
+.section-heading-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.section-heading-row h2 {
+    margin: 0 0 6px;
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid #46504b;
+    border-radius: 9px;
+    background: #2a302d;
+    color: #ffffff;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.secondary-button:hover {
+    border-color: #00d084;
+    color: #00d084;
+}
+
+.empty-state {
+    padding: 28px;
+    border: 1px dashed #424a46;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    text-align: center;
+}
+
+.empty-state .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    text-decoration: none;
+}
+
+@media (max-width: 700px) {
+    .section-heading-row {
+        display: block;
+    }
+
+    .section-heading-row .secondary-button {
+        margin-top: 12px;
+    }
 }
