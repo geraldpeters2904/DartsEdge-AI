@@ -2,10 +2,22 @@
 
 {% block content %}
 
-<h1>🏠 DartsEdge AI Dashboard</h1>
+<div class="dashboard-hero">
+    <div>
+        <h1>🎯 DartsEdge AI</h1>
+
+        <p class="page-subtitle">
+            Professional darts prediction and betting analytics.
+        </p>
+    </div>
+
+    <div class="dashboard-date">
+        {{ today.strftime("%A %d %B %Y") }}
+    </div>
+</div>
 
 <div class="kpi-grid">
-    <div class="kpi-card">
+    <div class="kpi-card players">
         <div class="kpi-label">Players</div>
         <div class="kpi-value">{{ player_count }}</div>
     </div>
@@ -14,7 +26,7 @@
         <div class="kpi-label">Matches</div>
         <div class="kpi-value">{{ match_count }}</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card fixtures">
         <div class="kpi-label">Today's Fixtures</div>
         <div class="kpi-value">{{ today_fixture_count }}</div>
     
@@ -24,12 +36,12 @@
         <span class="badge badge-low">None Today</span>
         {% endif %}
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card predictions">
         <div class="kpi-label">Predictions</div>
         <div class="kpi-value">{{ prediction_count }}</div>
     </div>
 
-    <div class="kpi-card">
+    <div class="kpi-card accuracy">
         <div class="kpi-label">Winner Accuracy</div>
         <div class="kpi-value">{{ winner_accuracy }}%</div>
 
@@ -186,6 +198,73 @@
     {% endif %}
 
 </div>
+<div class="card">
+
+    <div class="section-heading-row">
+        <div>
+            <h2>⚠ Results Awaiting Entry</h2>
+
+            <p class="page-subtitle">
+                Completed fixtures that still need a result entered.
+            </p>
+        </div>
+
+        <a
+            href="/update-prediction-result"
+            class="secondary-button"
+        >
+            Update Results
+        </a>
+    </div>
+
+    {% if results_awaiting %}
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Tournament</th>
+                    <th>Match</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for fixture in results_awaiting %}
+                <tr>
+                    <td>{{ fixture.date }}</td>
+                    <td>{{ fixture.tournament }}</td>
+
+                    <td>
+                        {{ fixture.player_a | display_name }}
+                        vs
+                        {{ fixture.player_b | display_name }}
+                    </td>
+
+                    <td>
+                        <a
+                            href="/update-prediction-result"
+                            class="action-button action-edit"
+                        >
+                            Enter Result
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+        <p>All fixture results are up to date.</p>
+    </div>
+
+    {% endif %}
+
+</div>
 <div class="dashboard-grid">
 
     <div class="card">
@@ -215,14 +294,43 @@
     </div>
 
     <div class="card">
-        <h2>⚡ Quick Actions</h2>
 
-        <p><a href="/predict-v2">🎯 Open Prediction Centre</a></p>
-        <p><a href="/rankings">🏆 View Rankings</a></p>
-        <p><a href="/prediction-history">📈 Prediction History</a></p>
-        <p><a href="/accuracy">📊 Model Accuracy</a></p>
-        <p><a href="/update-prediction-result">✅ Update Results</a></p>
-        <p><a href="/import">📥 Import Matches</a></p>
+        <h2>⚡ Quick Actions</h2>
+    
+        <div class="quick-actions-grid">
+    
+            <a href="/predict-v2" class="quick-action-card">
+                🎯
+                <span>Prediction Centre</span>
+            </a>
+    
+            <a href="/fixtures" class="quick-action-card">
+                📅
+                <span>Fixtures</span>
+            </a>
+    
+            <a href="/rankings" class="quick-action-card">
+                🏆
+                <span>Rankings</span>
+            </a>
+    
+            <a href="/accuracy" class="quick-action-card">
+                📊
+                <span>Accuracy</span>
+            </a>
+    
+            <a href="/prediction-history" class="quick-action-card">
+                📈
+                <span>History</span>
+            </a>
+    
+            <a href="/import" class="quick-action-card">
+                📥
+                <span>Import</span>
+            </a>
+    
+        </div>
+    
     </div>
 
 </div>

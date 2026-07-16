@@ -113,7 +113,16 @@ def build_dashboard_data(db):
         )
         .count()
     )
-
+    results_awaiting = (
+    db.query(Match)
+    .filter(
+        Match.status == "scheduled",
+        Match.date < date.today(),
+    )
+    .order_by(Match.date.asc())
+    .limit(5)
+    .all()
+)
     today_best_bets = build_best_bets(
         db,
         limit=3,
@@ -131,4 +140,6 @@ def build_dashboard_data(db):
         "scheduled_fixture_count": scheduled_fixture_count,
         "results_awaiting_count": results_awaiting_count,
         "today_best_bets": today_best_bets,
+        "today": date.today(),
+        "results_awaiting": results_awaiting,
     }
