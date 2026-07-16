@@ -1,4 +1,4 @@
-
+from datetime import date
 from app.models.match import Match
 from app.models.player import Player
 from app.models.prediction import Prediction
@@ -7,8 +7,36 @@ from app.services.player_profile_service import get_player_profile
 
 
 def build_dashboard_data(db):
+    today_fixtures = [
+    {
+        "id": match.id,
+        "date": match.date,
+        "tournament": match.tournament,
+        "stage": match.stage,
+        "player_a": match.player_a,
+        "player_b": match.player_b,
+        "match_format": match.match_format,
+    }
+    for match in (
+        db.query(Match)
+        .filter(
+            Match.date == date.today(),
+            Match.status == "scheduled",
+        )
+        .order_by(Match.id.asc())
+        .all()
+    )
+]
     player_count = db.query(Player).count()
     match_count = db.query(Match).count()
+    today_fixture_count = (
+    db.query(Match)
+    .filter(
+        Match.date == date.today(),
+        Match.status == "scheduled",
+    )
+    .count()
+)
     prediction_count = db.query(Prediction).count()
 
     completed_predictions = (
@@ -71,7 +99,25 @@ def build_dashboard_data(db):
         db,
         limit=5,
     )
+    scheduled_fixture_count = (
+        db.query(Match)
+        .filter(Match.status == "scheduled")
+        .count()
+    )
 
+    results_awaiting_count = (
+        db.query(Match)
+        .filter(
+            Match.status == "scheduled",
+            Match.date < date.today(),
+        )
+        .count()
+    )
+
+    today_best_bets = build_best_bets(
+        db,
+        limit=3,
+    )
     return {
         "player_count": player_count,
         "match_count": match_count,
@@ -80,4 +126,9 @@ def build_dashboard_data(db):
         "top_players": top_players,
         "recent_matches": recent_matches,
         "best_bets": best_bets,
+        "today_fixture_count": today_fixture_count,
+        "today_fixtures": today_fixtures,
+        "scheduled_fixture_count": scheduled_fixture_count,
+        "results_awaiting_count": results_awaiting_count,
+        "today_best_bets": today_best_bets,
     }
