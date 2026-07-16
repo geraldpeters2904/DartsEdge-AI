@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-hero">
+
+    <div>
+        <h1>💰 Value Bet Scanner</h1>
+
+        <p class="page-subtitle">
+            Compare your model with bookmaker prices.
+        </p>
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h2>Enter Bookmaker Odds</h2>
+
+    <form method="get" action="/value-bet">
+
+        <div class="fixture-form-grid">
+
+            <div class="form-field">
+
+                <label>Model Probability (%)</label>
+
+                <input
+                    type="number"
+                    name="probability"
+                    step="0.1"
+                    required
+                >
+
+            </div>
+
+            <div class="form-field">
+
+                <label>Bookmaker Odds</label>
+
+                <input
+                    type="number"
+                    name="bookmaker_odds"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+        </div>
+
+        <button
+            class="primary-button"
+            type="submit"
+        >
+            Calculate Value
+        </button>
+
+    </form>
+
+</div>
+{% if error %}
+
+<div class="card">
+    <p class="error-message">{{ error }}</p>
+</div>
+
+{% endif %}
+
+
+{% if value_bet %}
+
+<div class="card">
+
+    <h2>Value Analysis</h2>
+
+    <div class="kpi-grid">
+
+        <div class="kpi-card">
+            <div class="kpi-label">Model Probability</div>
+            <div class="kpi-value">{{ probability }}%</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Bookmaker Odds</div>
+            <div class="kpi-value">{{ bookmaker_odds }}</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Fair Odds</div>
+            <div class="kpi-value">{{ value_bet.fair_odds }}</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Value Edge</div>
+            <div class="kpi-value">{{ value_bet.edge }}%</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Expected Value</div>
+            <div class="kpi-value">{{ value_bet.expected_value }}</div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+{% endblock %}

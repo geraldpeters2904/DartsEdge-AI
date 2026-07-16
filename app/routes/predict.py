@@ -69,23 +69,50 @@ def predict_v2_page(
 
 @router.get("/value-bet")
 def value_bet_analysis(
+    request: Request,
     probability: float,
     bookmaker_odds: float,
 ):
+    if probability <= 0 or probability > 100:
+        return templates.TemplateResponse(
+            "value_bets.html",
+            {
+                "request": request,
+                "probability": probability,
+                "bookmaker_odds": bookmaker_odds,
+                "error": "Probability must be between 0 and 100.",
+            },
+            status_code=400,
+        )
+
+    decimal_probability = probability / 100
+
     value_bet = calculate_value_bet(
-        probability,
+        decimal_probability,
         bookmaker_odds,
     )
 
     if not value_bet:
-        return {
-            "error": "Bookmaker odds must be greater than 1.00",
-        }
+        return templates.TemplateResponse(
+            "value_bets.html",
+            {
+                "request": request,
+                "probability": probability,
+                "bookmaker_odds": bookmaker_odds,
+                "error": "Bookmaker odds must be greater than 1.00.",
+            },
+            status_code=400,
+        )
 
-    return {
-        "probability": probability,
-        "value_bet": value_bet,
-    }
+    return templates.TemplateResponse(
+        "value_bets.html",
+        {
+            "request": request,
+            "probability": probability,
+            "bookmaker_odds": bookmaker_odds,
+            "value_bet": value_bet,
+        },
+    )
 
 
 @router.get("/predict-v2-result")
@@ -216,6 +243,23 @@ def predict_ui(
                 "selected_player_b": player_b,
             },
         )
+        @router.get("/value-bet-page")
+        def value_bet_page(request: Request):
+
+            return templates.TemplateResponse(
+            "value_bets.html",
+            {
+                "request": request,
+            },
+    )
 
     finally:
         db.close()
+@router.get("/value-bet-page")
+def value_bet_page(request: Request):
+    return templates.TemplateResponse(
+        "value_bets.html",
+        {
+            "request": request,
+        },
+    )
