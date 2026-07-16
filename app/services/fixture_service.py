@@ -103,7 +103,30 @@ def get_fixture(db, fixture_id):
         .filter(Match.id == fixture_id)
         .first()
     )
+def duplicate_fixture(db, fixture_id):
+    fixture = get_fixture(db, fixture_id)
 
+    if not fixture:
+        return False
+
+    duplicate = Match(
+        date=fixture.date,
+        tournament=fixture.tournament,
+        stage=fixture.stage,
+        match_format=fixture.match_format,
+        status="scheduled",
+        player_a=fixture.player_a,
+        player_b=fixture.player_b,
+        winner=None,
+        score=None,
+        first_180_player=None,
+        first_leg_winner=None,
+    )
+
+    db.add(duplicate)
+    db.commit()
+
+    return duplicate
 
 def update_fixture(
     db,

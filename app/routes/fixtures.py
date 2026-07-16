@@ -7,6 +7,7 @@ from app.db import SessionLocal
 from app.services.fixture_service import (
     create_fixture,
     delete_fixture,
+    duplicate_fixture,
     get_fixture_form_data,
     get_scheduled_fixtures,
     get_fixture,
@@ -77,6 +78,20 @@ def remove_fixture(fixture_id: int):
 
     try:
         delete_fixture(db, fixture_id)
+
+    finally:
+        db.close()
+
+    return RedirectResponse(
+        "/fixtures",
+        status_code=303,
+    )
+@router.post("/fixtures/duplicate/{fixture_id}")
+def duplicate_fixture_route(fixture_id: int):
+    db = SessionLocal()
+
+    try:
+        duplicate_fixture(db, fixture_id)
 
     finally:
         db.close()

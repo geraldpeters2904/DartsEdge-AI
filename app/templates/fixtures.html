@@ -161,42 +161,50 @@
                         <td>{{ fixture.match_format }}</td>
 
                         <td>
+                            <div class="action-buttons">
 
-                            <a
-                                href="/predict-v2-result?player_a={{ fixture.player_a }}&player_b={{ fixture.player_b }}"
-                            >
-                                Analyse
-                            </a>
-                        
-                            |
-                        
-                            <a
-                                href="/fixtures/edit/{{ fixture.id }}"
-                            >
-                                Edit
-                            </a>
-                        
-                            |
-                        
-                            <form
-                                action="/fixtures/delete/{{ fixture.id }}"
-                                method="post"
-                                style="display:inline;"
-                            >
-                        
-                                <button
-                                    type="submit"
-                                    onclick="return confirm('Delete this fixture?')"
+                                <a
+                                    href="/predict-v2-result?player_a={{ fixture.player_a }}&player_b={{ fixture.player_b }}"
+                                    class="action-button action-analyse"
                                 >
-                                    Delete
-                                </button>
-                        
-                            </form>
-                        
-                        </td>
-                        
-                            </form>
-                        
+                                    Analyse
+                                </a>
+
+                                <a
+                                    href="/fixtures/edit/{{ fixture.id }}"
+                                    class="action-button action-edit"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    action="/fixtures/duplicate/{{ fixture.id }}"
+                                    method="post"
+                                    class="inline-action-form"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="action-button action-duplicate"
+                                    >
+                                        Duplicate
+                                    </button>
+                                </form>
+
+                                <form
+                                    action="/fixtures/delete/{{ fixture.id }}"
+                                    method="post"
+                                    class="inline-action-form"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="action-button action-delete"
+                                        onclick="return confirm('Delete this fixture?')"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

@@ -1115,3 +1115,78 @@ input {
     color:#9da5a0;
     margin-top:6px;
 }
+.action-buttons{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+}
+
+.action-analyse{
+    background:#16a34a;
+}
+
+.action-edit{
+    background:#2563eb;
+}
+
+.action-duplicate{
+    background:#7c3aed;
+}
+
+.action-delete{
+    background:#dc2626;
+}
+
+.action-button:hover{
+    filter:brightness(1.1);
+}
+.inline-action-form {
+    display: inline;
+    margin: 0;
+}
+.action-buttons form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    box-sizing: border-box;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+.action-buttons .action-analyse {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    box-sizing: border-box;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #16a34a !important;
+    color: #ffffff !important;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+}
