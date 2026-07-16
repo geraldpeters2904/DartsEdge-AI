@@ -1117,37 +1117,70 @@ input {
 }
 .action-buttons{
     display:flex;
-    gap:8px;
-    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    flex-wrap:nowrap;
 }
 
-.action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-}
+.action-buttons form{
+    margin:0;
 }
 
-.action-analyse{
-    background:#16a34a;
-}
+.action-button{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
 
-.action-edit{
-    background:#2563eb;
-}
+    min-width:105px;
+    height:42px;
 
-.action-duplicate{
-    background:#7c3aed;
-}
+    padding:0 16px;
 
-.action-delete{
-    background:#dc2626;
+    border:none;
+    border-radius:10px;
+
+    text-decoration:none;
+
+    font-size:14px;
+    font-weight:700;
+
+    color:white;
+
+    cursor:pointer;
+
+    transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        filter .18s ease;
 }
 
 .action-button:hover{
-    filter:brightness(1.1);
+    transform:translateY(-2px);
+
+    box-shadow:
+        0 8px 18px rgba(0,0,0,.28);
+
+    filter:brightness(1.06);
+}
+
+.action-analyse{
+    background:linear-gradient(135deg,#10b981,#059669);
+}
+
+.action-edit{
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+}
+
+.action-duplicate{
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+}
+
+.action-delete{
+    background:linear-gradient(135deg,#ef4444,#dc2626);
+}
+
+.inline-action-form{
+    display:inline;
 }
 .inline-action-form {
     display: inline;
@@ -1189,4 +1222,94 @@ input {
     font-weight: 700;
     line-height: 1;
     text-decoration: none;
+}
+/* ---------- Fixtures Table ---------- */
+
+.table-wrapper table{
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.table-wrapper thead th{
+    background:#1b2026;
+    color:#00d084;
+    font-size:14px;
+    letter-spacing:.4px;
+    position:sticky;
+    top:0;
+    z-index:10;
+}
+
+.table-wrapper tbody tr{
+    transition:background .18s ease;
+}
+
+.table-wrapper tbody tr:nth-child(even){
+    background:#1b1f24;
+}
+
+.table-wrapper tbody tr:hover{
+    background:#263039;
+}
+
+.table-wrapper td{
+    vertical-align:middle;
+}
+/* ---------- Fixture Manager Table ---------- */
+
+.fixtures-layout .table-wrapper {
+    border: 1px solid #343a40;
+    border-radius: 12px;
+    overflow-x: auto;
+}
+
+.fixtures-layout table {
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 950px;
+}
+
+.fixtures-layout thead th {
+    padding: 15px 14px;
+    background: #1a1f24;
+    color: #00d084;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.fixtures-layout thead th:first-child {
+    border-top-left-radius: 11px;
+}
+
+.fixtures-layout thead th:last-child {
+    border-top-right-radius: 11px;
+}
+
+.fixtures-layout tbody td {
+    padding: 15px 14px;
+    border-bottom: 1px solid #32383d;
+}
+
+.fixtures-layout tbody tr {
+    background: #22272d;
+    transition: background 0.15s ease;
+}
+
+.fixtures-layout tbody tr:nth-child(even) {
+    background: #1e2328;
+}
+
+.fixtures-layout tbody tr:hover {
+    background: #293239;
+}
+
+.fixtures-layout tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.fixtures-layout th:last-child,
+.fixtures-layout td:last-child {
+    min-width: 500px;
 }

@@ -126,7 +126,7 @@
 
     <section class="card">
 
-        <h2>Upcoming Fixtures</h2>
+        <h2>📅 Fixture Manager</h2>
 
         {% if fixtures %}
 
@@ -135,12 +135,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Tournament</th>
-                        <th>Stage</th>
-                        <th>Match</th>
-                        <th>Format</th>
-                        <th>Actions</th>
+                        <th>📅 Date</th>
+                        <th>🏆 Tournament</th>
+                        <th>🎯 Stage</th>
+                        <th>👥 Match</th>
+                        <th>🎮 Format</th>
+                        <th>⚙ Actions</th>
                     </tr>
                 </thead>
 
@@ -167,14 +167,14 @@
                                     href="/predict-v2-result?player_a={{ fixture.player_a }}&player_b={{ fixture.player_b }}"
                                     class="action-button action-analyse"
                                 >
-                                    Analyse
+                                     📊 Analyse
                                 </a>
 
                                 <a
                                     href="/fixtures/edit/{{ fixture.id }}"
                                     class="action-button action-edit"
                                 >
-                                    Edit
+                                     ✏️ Edit
                                 </a>
 
                                 <form
@@ -182,12 +182,12 @@
                                     method="post"
                                     class="inline-action-form"
                                 >
-                                    <button
-                                        type="submit"
-                                        class="action-button action-duplicate"
-                                    >
-                                        Duplicate
-                                    </button>
+                                <button
+                                    type="submit"
+                                    class="action-button action-duplicate"
+                                >
+                                    📋 Copy
+                                </button>
                                 </form>
 
                                 <form
@@ -200,7 +200,7 @@
                                         class="action-button action-delete"
                                         onclick="return confirm('Delete this fixture?')"
                                     >
-                                        Delete
+                                    🗑 Delete
                                     </button>
                                 </form>
 
