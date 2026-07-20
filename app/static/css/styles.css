@@ -1019,14 +1019,14 @@ input {
 }
 
 .advanced-analysis summary::after {
-    content: "＋";
+    content: "ï¼‹";
     color: #00d084;
     font-size: 24px;
     font-weight: 400;
 }
 
 .advanced-analysis[open] summary::after {
-    content: "−";
+    content: "âˆ’";
 }
 
 .advanced-analysis-hint {
@@ -1259,20 +1259,35 @@ input {
 }
 
 .table-wrapper tbody tr{
-    transition:background .18s ease;
+    background:transparent;
 }
 
-.table-wrapper tbody tr:nth-child(even){
+.table-wrapper tbody td{
+    background:#22272d;
+    color:#f3f4f6;
+    vertical-align:middle;
+    transition:
+        background-color .18s ease,
+        color .18s ease;
+}
+
+.table-wrapper tbody tr:nth-child(even) td{
     background:#1b1f24;
 }
 
-.table-wrapper tbody tr:hover{
+.table-wrapper tbody tr:hover td{
     background:#263039;
+    color:#ffffff;
 }
 
-.table-wrapper td{
-    vertical-align:middle;
+.table-wrapper tbody td a{
+    color:#7ee8bd;
 }
+
+.table-wrapper tbody tr:hover td a{
+    color:#9af2cf;
+}
+
 /* ---------- Fixture Manager Table ---------- */
 
 .fixtures-layout .table-wrapper {
