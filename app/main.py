@@ -15,6 +15,8 @@ from app.routes.update_prediction import router as update_prediction_router
 from app.services.form_service import weighted_expected_180s
 from app.services.markets_service import one80_markets
 from app.routes.players import router as players_router
+from app.routes.value_board import router as value_board_router
+from app.routes.data_quality import router as data_quality_router
 from app.services.match_engine import (
     leg_win_probability,
     value_edge,
@@ -43,6 +45,8 @@ app.include_router(prediction_history_router)
 app.include_router(importer_router)
 app.include_router(fixtures_router)
 app.include_router(players_router)
+app.include_router(value_board_router)
+app.include_router(data_quality_router)
 
 
 @app.get("/")

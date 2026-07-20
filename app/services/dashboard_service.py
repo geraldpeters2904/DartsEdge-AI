@@ -1,43 +1,56 @@
 from datetime import date
-from app.models.match import Match
+
 from app.models.player import Player
+from app.models.match import Match
 from app.models.prediction import Prediction
-from app.services.best_bets_service import build_best_bets
-from app.services.player_profile_service import get_player_profile
+
+from app.services.value_board_service import build_value_board
+from app.services.data_quality_service import get_data_quality
+
+
+def _confidence_label(probability):
+    if probability >= 75:
+        return "High Confidence"
+    elif probability >= 65:
+        return "Good Confidence"
+    elif probability >= 55:
+        return "Moderate Confidence"
+    else:
+        return "Low Confidence"
+
+
+def _star_rating(probability):
+    if probability >= 80:
+        return 5
+    elif probability >= 72:
+        return 4
+    elif probability >= 64:
+        return 3
+    elif probability >= 56:
+        return 2
+    else:
+        return 1
 
 
 def build_dashboard_data(db):
-    today_fixtures = [
-    {
-        "id": match.id,
-        "date": match.date,
-        "tournament": match.tournament,
-        "stage": match.stage,
-        "player_a": match.player_a,
-        "player_b": match.player_b,
-        "match_format": match.match_format,
-    }
-    for match in (
+
+    today = date.today()
+
+    player_count = db.query(Player).count()
+    match_count = db.query(Match).count()
+    prediction_count = db.query(Prediction).count()
+
+    today_fixtures = (
         db.query(Match)
         .filter(
-            Match.date == date.today(),
-            Match.status == "scheduled",
+            Match.date == today,
+            Match.status == "scheduled"
         )
         .order_by(Match.id.asc())
         .all()
     )
-]
-    player_count = db.query(Player).count()
-    match_count = db.query(Match).count()
-    today_fixture_count = (
-    db.query(Match)
-    .filter(
-        Match.date == date.today(),
-        Match.status == "scheduled",
-    )
-    .count()
-)
-    prediction_count = db.query(Prediction).count()
+
+    today_fixture_count = len(today_fixtures)
 
     completed_predictions = (
         db.query(Prediction)
@@ -45,101 +58,152 @@ def build_dashboard_data(db):
         .all()
     )
 
-    correct_predictions = len(
-        [
-            prediction
-            for prediction in completed_predictions
-            if prediction.winner_correct == 1
-        ]
-    )
-
-    winner_accuracy = (
-        round(
-            (correct_predictions / len(completed_predictions)) * 100,
-            1,
+    if completed_predictions:
+        correct = sum(
+            1 for p in completed_predictions
+            if p.winner_correct
         )
-        if completed_predictions
-        else 0
-    )
 
-    players = db.query(Player).all()
-    profiles = []
-
-    for player in players:
-        profile = get_player_profile(db, player.name)
-
-        if profile:
-            profiles.append(profile)
-
-    profiles.sort(
-        key=lambda profile: profile["dartsedge_rating"],
-        reverse=True,
-    )
-
-    top_players = profiles[:5]
-
-    recent_matches = [
-        {
-            "date": match.date,
-            "player_a": match.player_a,
-            "player_b": match.player_b,
-            "winner": match.winner,
-            "score": match.score,
-        }
-        for match in (
-            db.query(Match)
-            .filter(Match.status == "completed")
-            .order_by(Match.date.desc())
-            .limit(5)
-            .all()
+        winner_accuracy = round(
+            correct / len(completed_predictions) * 100,
+            1
         )
-    ]
+    else:
+        winner_accuracy = 0
 
-    best_bets = build_best_bets(
-        db,
-        limit=5,
-    )
-    scheduled_fixture_count = (
-        db.query(Match)
-        .filter(Match.status == "scheduled")
-        .count()
-    )
-
-    results_awaiting_count = (
+    results_awaiting = (
         db.query(Match)
         .filter(
             Match.status == "scheduled",
-            Match.date < date.today(),
+            Match.date < today
         )
-        .count()
+        .order_by(Match.date.desc())
+        .limit(10)
+        .all()
     )
-    results_awaiting = (
-    db.query(Match)
-    .filter(
-        Match.status == "scheduled",
-        Match.date < date.today(),
+
+    recent_matches = (
+        db.query(Match)
+        .filter(Match.status == "completed")
+        .order_by(Match.date.desc(), Match.id.desc())
+        .limit(10)
+        .all()
     )
-    .order_by(Match.date.asc())
-    .limit(5)
-    .all()
-)
-    today_best_bets = build_best_bets(
-        db,
-        limit=3,
+
+    player_rows = (
+        db.query(Player)
+        .order_by(Player.elo.desc())
+        .limit(10)
+        .all()
     )
+
+    top_players = []
+
+    for player in player_rows:
+
+        elo = player.elo or 0
+        average = player.average or 0
+        checkout = player.checkout or 0
+        one80_rate = player.one80_rate or 0
+
+        rating = round(
+            (elo * 0.60)
+            + (average * 2.0)
+            + checkout
+            + (one80_rate * 20),
+            1
+        )
+
+        top_players.append(
+            {
+                "name": player.name,
+                "elo": round(elo, 1),
+                "dartsedge_rating": rating,
+            }
+        )
+
+    top_players.sort(
+        key=lambda x: x["dartsedge_rating"],
+        reverse=True
+    )
+
+    best_bets = []
+
+    try:
+
+        value_rows = build_value_board(db)
+
+        for row in value_rows:
+
+            probability = round(row["probability"], 1)
+
+            best_bets.append(
+                {
+                    "player_a": row["player_a"],
+                    "player_b": row["player_b"],
+                    "selection": row["selection"],
+                    "probability": probability,
+                    "confidence": _confidence_label(probability),
+                    "stars": _star_rating(probability),
+                }
+            )
+
+        best_bets.sort(
+            key=lambda x: x["probability"],
+            reverse=True
+        )
+
+        best_bets = best_bets[:4]
+
+    except Exception as error:
+
+        print(f"Dashboard value board warning: {error}")
+
+        best_bets = []
+
+    try:
+
+        quality = get_data_quality(db)
+        database_health = quality.get("health_score", 0)
+
+    except Exception as error:
+
+        print(f"Dashboard health warning: {error}")
+
+        database_health = 0
+
+    latest_predictions = (
+        db.query(Prediction)
+        .order_by(Prediction.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    best_bet = best_bets[0] if best_bets else None
+
     return {
+
+        "today": today,
+
         "player_count": player_count,
         "match_count": match_count,
-        "prediction_count": prediction_count,
-        "winner_accuracy": winner_accuracy,
-        "top_players": top_players,
-        "recent_matches": recent_matches,
-        "best_bets": best_bets,
         "today_fixture_count": today_fixture_count,
+        "prediction_count": prediction_count,
+
+        "winner_accuracy": winner_accuracy,
+
+        "best_bets": best_bets,
+        "best_bet": best_bet,
+
         "today_fixtures": today_fixtures,
-        "scheduled_fixture_count": scheduled_fixture_count,
-        "results_awaiting_count": results_awaiting_count,
-        "today_best_bets": today_best_bets,
-        "today": date.today(),
+
         "results_awaiting": results_awaiting,
+
+        "top_players": top_players,
+
+        "recent_matches": recent_matches,
+
+        "database_health": database_health,
+
+        "latest_predictions": latest_predictions,
     }

@@ -2,20 +2,24 @@ def calculate_value_bet(
     probability,
     bookmaker_odds,
 ):
+    if probability <= 0 or probability > 1:
+        return None
+
     if bookmaker_odds <= 1:
         return None
 
     fair_odds = round(1 / probability, 2)
-
     implied_probability = 1 / bookmaker_odds
 
-    edge = (
-        probability - implied_probability
-    ) * 100
+    edge = round(
+        (probability - implied_probability) * 100,
+        1,
+    )
 
-    expected_value = (
-        probability * bookmaker_odds
-    ) - 1
+    expected_value = round(
+        ((probability * bookmaker_odds) - 1) * 100,
+        1,
+    )
 
     if edge >= 10:
         recommendation = "VALUE BET"
@@ -36,8 +40,12 @@ def calculate_value_bet(
     return {
         "fair_odds": fair_odds,
         "bookmaker_odds": bookmaker_odds,
-        "edge": round(edge, 1),
-        "expected_value": round(expected_value * 100, 1),
+        "implied_probability": round(
+            implied_probability * 100,
+            1,
+        ),
+        "edge": edge,
+        "expected_value": expected_value,
         "recommendation": recommendation,
         "stars": stars,
     }

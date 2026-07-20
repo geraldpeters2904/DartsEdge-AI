@@ -243,23 +243,23 @@ def predict_ui(
                 "selected_player_b": player_b,
             },
         )
-        @router.get("/value-bet-page")
-        def value_bet_page(request: Request):
-
-            return templates.TemplateResponse(
-            "value_bets.html",
-            {
-                "request": request,
-            },
-    )
-
     finally:
         db.close()
+
+
 @router.get("/value-bet-page")
-def value_bet_page(request: Request):
+def value_bet_page(
+    request: Request,
+    probability: float = None,
+    selection: str = None,
+    opponent: str = None,
+):
     return templates.TemplateResponse(
         "value_bets.html",
         {
             "request": request,
+            "probability": probability,
+            "selection": selection,
+            "opponent": opponent,
         },
     )

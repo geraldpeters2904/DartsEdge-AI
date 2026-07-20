@@ -88,7 +88,48 @@
 {% include "components/prediction_factors.html" %}
 
 {% include "components/recommendation_card.html" %}
+{% set recommended_selection = result.recommendation.selection %}
 
+{% if recommended_selection == result.player_a %}
+    {% set selected_probability = result.win_prob_a %}
+    {% set opponent = result.player_b %}
+{% else %}
+    {% set selected_probability = result.win_prob_b %}
+    {% set opponent = result.player_a %}
+{% endif %}
+
+<div class="prediction-value-action">
+
+    <form action="/value-bet-page" method="get">
+
+        <input
+            type="hidden"
+            name="probability"
+            value="{{ (selected_probability * 100) | round(1) }}"
+        >
+
+        <input
+            type="hidden"
+            name="selection"
+            value="{{ recommended_selection }}"
+        >
+
+        <input
+            type="hidden"
+            name="opponent"
+            value="{{ opponent }}"
+        >
+
+        <button
+            type="submit"
+            class="analyse-match-button"
+        >
+            💰 Analyse Value
+        </button>
+
+    </form>
+
+</div>
 
 <details class="advanced-analysis">
 
