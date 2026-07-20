@@ -1552,3 +1552,105 @@ input {
     font-weight:700;
 
 }
+/* Mission Control: lead AI best bet */
+
+.best-bets-section {
+    overflow: hidden;
+}
+
+.lead-bet-card {
+    margin-top: 18px;
+    padding: 28px;
+    border: 1px solid rgba(255, 193, 7, 0.35);
+    border-radius: 16px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 193, 7, 0.12),
+            rgba(255, 255, 255, 0.02)
+        );
+}
+
+.lead-bet-label {
+    margin-bottom: 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.lead-bet-match {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-size: 1.45rem;
+    font-weight: 800;
+}
+
+.lead-bet-match small {
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.55;
+    text-transform: uppercase;
+}
+
+.lead-bet-selection {
+    margin-top: 18px;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.lead-bet-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.lead-bet-metric {
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.lead-bet-metric span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+    opacity: 0.65;
+}
+
+.lead-bet-metric strong {
+    font-size: 1.35rem;
+}
+
+.lead-bet-action {
+    display: inline-flex;
+    margin-top: 22px;
+}
+
+.secondary-bets-heading {
+    margin: 26px 0 14px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.65;
+}
+
+@media (max-width: 700px) {
+    .lead-bet-card {
+        padding: 20px;
+    }
+
+    .lead-bet-match {
+        font-size: 1.15rem;
+    }
+
+    .lead-bet-metrics {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,67 +1,121 @@
-<div class="card">
+<div class="card best-bets-section">
 
     <div class="section-heading-row">
-
         <div>
-            <h2>⭐ Today's Best Bets</h2>
-
+            <h2>⭐ AI Best Bets</h2>
             <p class="page-subtitle">
                 Highest-rated opportunities from today's fixtures.
             </p>
         </div>
-
     </div>
 
     {% if best_bets %}
 
-    <div class="best-bets-grid">
+        {% set lead_bet = best_bets[0] %}
 
-        {% for bet in best_bets %}
+        <div class="lead-bet-card">
 
-        <div class="best-bet-card">
+            <div class="lead-bet-label">
+                AI BEST BET OF THE DAY
+            </div>
 
             <div class="best-bet-stars">
-
-                {% for _ in range(bet.stars) %}
+                {% for _ in range(lead_bet.stars) %}
                     ★
                 {% endfor %}
 
-                {% for _ in range(5 - bet.stars) %}
+                {% for _ in range(5 - lead_bet.stars) %}
                     ☆
                 {% endfor %}
-
             </div>
 
-            <h3>
-                {{ bet.player_a | display_name }}
-                vs
-                {{ bet.player_b | display_name }}
-            </h3>
-
-            <div class="best-bet-pick">
-                🎯 {{ bet.selection | display_name }}
+            <div class="lead-bet-match">
+                <span>{{ lead_bet.player_a | display_name }}</span>
+                <small>vs</small>
+                <span>{{ lead_bet.player_b | display_name }}</span>
             </div>
 
-            <div class="best-bet-probability">
-                {{ bet.probability }}%
+            <div class="lead-bet-selection">
+                🎯 {{ lead_bet.selection | display_name }}
             </div>
 
-            <div class="best-bet-confidence">
-                {{ bet.confidence }}
+            <div class="lead-bet-metrics">
+
+                <div class="lead-bet-metric">
+                    <span>Win Probability</span>
+                    <strong>{{ lead_bet.probability }}%</strong>
+                </div>
+
+                <div class="lead-bet-metric">
+                    <span>Confidence</span>
+                    <strong>{{ lead_bet.confidence }}</strong>
+                </div>
+
             </div>
 
             <a
-                class="analyse-link"
-                href="/predict-v2-result?player_a={{ bet.player_a }}&player_b={{ bet.player_b }}"
+                class="analyse-link lead-bet-action"
+                href="/predict-v2-result?player_a={{ lead_bet.player_a }}&player_b={{ lead_bet.player_b }}"
             >
                 Analyse Match →
             </a>
 
         </div>
 
-        {% endfor %}
+        {% if best_bets | length > 1 %}
 
-    </div>
+        <div class="secondary-bets-heading">
+            Other Recommended Bets
+        </div>
+
+        <div class="best-bets-grid">
+
+            {% for bet in best_bets[1:] %}
+
+            <div class="best-bet-card">
+
+                <div class="best-bet-stars">
+                    {% for _ in range(bet.stars) %}
+                        ★
+                    {% endfor %}
+
+                    {% for _ in range(5 - bet.stars) %}
+                        ☆
+                    {% endfor %}
+                </div>
+
+                <h3>
+                    {{ bet.player_a | display_name }}
+                    vs
+                    {{ bet.player_b | display_name }}
+                </h3>
+
+                <div class="best-bet-pick">
+                    🎯 {{ bet.selection | display_name }}
+                </div>
+
+                <div class="best-bet-probability">
+                    {{ bet.probability }}%
+                </div>
+
+                <div class="best-bet-confidence">
+                    {{ bet.confidence }}
+                </div>
+
+                <a
+                    class="analyse-link"
+                    href="/predict-v2-result?player_a={{ bet.player_a }}&player_b={{ bet.player_b }}"
+                >
+                    Analyse Match →
+                </a>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
 
     {% else %}
 
