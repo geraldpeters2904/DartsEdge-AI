@@ -1,0 +1,119 @@
+<section class="trading-opportunities-card">
+
+    <div class="section-kicker">
+        AI TRADING OPPORTUNITIES
+    </div>
+
+    <div class="trading-opportunities-heading">
+        <div>
+            <h2>🎯 Market Opportunities</h2>
+
+            <p>
+                Compare the model's fair price with bookmaker odds.
+            </p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="data-table">
+
+            <thead>
+                <tr>
+                    <th>Market</th>
+                    <th>Selection</th>
+                    <th>Fair Odds</th>
+                    <th>Minimum</th>
+                    <th>Bookmaker</th>
+                    <th>Edge</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for opportunity in result.trading_opportunities %}
+
+                <tr>
+
+                    <td>{{ opportunity.market }}</td>
+                
+                    <td>
+                        <strong>
+                            {{ opportunity.selection | display_name }}
+                        </strong>
+                    </td>
+                
+                    <td>
+                        {{ "%.2f"|format(opportunity.fair_odds) }}
+                    </td>
+                
+                    <td>
+                        <td>
+                            <span
+                                class="minimum-odds"
+                                data-minimum="{{ opportunity.minimum_odds }}"
+                            >
+                                {{ "%.2f"|format(opportunity.minimum_odds) }}
+                            </span>
+                        </td>
+                    </td>
+                
+                    <td style="width:130px">
+                
+                        <input
+                            type="number"
+                            class="bookmaker-odds"
+                            step="0.01"
+                            min="1.01"
+                            placeholder="1.80"
+                            data-fair="{{ opportunity.fair_odds }}"
+                        >
+                
+                    </td>
+                
+                    <td>
+                
+                        <span class="edge-value">
+                            —
+                        </span>
+                
+                    </td>
+                
+                    <td>
+                
+                        <span class="value-status badge badge-secondary">
+                            Waiting
+                        </span>
+                
+                    </td>
+                
+                    <td>
+                
+                        <button
+                            class="secondary-button add-paper-trade"
+                            disabled
+                        >
+                            ➕
+                        </button>
+                
+                    </td>
+                
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <p class="page-subtitle">
+        Enter the bookmaker's current decimal odds to calculate the value.
+    </p>
+    
+    <script src="/static/js/trading_opportunities.js"></script>
+    
+    </section>

@@ -1,4 +1,6 @@
-
+from app.services.trading_opportunities_service import (
+    build_trading_opportunities,
+)
 from app.models.player import Player
 from app.services.confidence_service import build_confidence_breakdown
 from app.services.explanation_service import build_match_explanation
@@ -119,5 +121,7 @@ def build_prediction(db, player_a, player_b):
     }
 
     result["recommendation"] = build_recommendation(result)
-
+    result["trading_opportunities"] = (
+    build_trading_opportunities(result)
+)
     return result

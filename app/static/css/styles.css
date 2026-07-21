@@ -1654,3 +1654,34 @@ input {
         grid-template-columns: 1fr;
     }
 }
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-primary {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+.badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
