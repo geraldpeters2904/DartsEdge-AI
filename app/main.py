@@ -1,3 +1,6 @@
+from app.routes.new_paper_trade import router as new_paper_trade_router
+from app.models.paper_trade import PaperTrade
+from app.routes.paper_trades import router as paper_trades_router
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.routes.fixtures import router as fixtures_router
@@ -33,7 +36,7 @@ app.mount(
 )
 
 create_database()
-
+app.include_router(paper_trades_router)
 app.include_router(dashboard_router)
 app.include_router(update_prediction_router)
 app.include_router(predict_router)
@@ -47,6 +50,7 @@ app.include_router(fixtures_router)
 app.include_router(players_router)
 app.include_router(value_board_router)
 app.include_router(data_quality_router)
+app.include_router(new_paper_trade_router)
 
 
 @app.get("/")

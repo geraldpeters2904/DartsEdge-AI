@@ -21,6 +21,7 @@ def prediction_history_page(request: Request):
 
         rows = [
             {
+                "id": prediction.id,
                 "created_at": prediction.created_at,
                 "player_a": prediction.player_a,
                 "player_b": prediction.player_b,

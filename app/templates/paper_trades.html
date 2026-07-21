@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="match-selector-card">
+
+    <div class="match-selector-heading">
+
+        <div class="section-kicker">
+            PAPER TRADING
+        </div>
+
+        <h1>📄 Paper Trades</h1>
+
+        <p>
+            Manage and review your simulated trades.
+        </p>
+
+    </div>
+
+</section>
+{% if saved %}
+<div class="success-message">
+    Paper trade saved successfully.
+</div>
+{% endif %}
+{% if trades %}
+
+<div class="table-wrapper">
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Market</th>
+                <th>Selection</th>
+                <th>Bookmaker</th>
+                <th>Odds</th>
+                <th>Stake</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% for trade in trades %}
+
+        <tr>
+
+            <td>{{ trade.market }}</td>
+            <td>{{ trade.selection }}</td>
+            <td>{{ trade.bookmaker }}</td>
+            <td>{{ trade.odds }}</td>
+            <td>{{ trade.stake }}</td>
+            <td>{{ trade.status }}</td>
+
+        </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% else %}
+
+<section class="card">
+
+    <h2>📭 No paper trades yet</h2>
+
+    <p>
+        Save a prediction and add your first paper trade.
+    </p>
+
+    <a
+        href="/prediction-history"
+        class="analyse-match-button"
+    >
+        Go to Prediction History
+    </a>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

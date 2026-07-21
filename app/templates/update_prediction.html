@@ -2,55 +2,191 @@
 
 {% block content %}
 
-<h1>✅ Update Prediction Result</h1>
+<section class="match-selector-card">
+
+    <div class="match-selector-heading">
+        <div class="section-kicker">RESULTS CENTRE</div>
+
+        <h1>✅ Settle Predictions</h1>
+
+        <p>
+            Enter the actual match result to update the
+            DartsEdge accuracy records.
+        </p>
+    </div>
+
+</section>
+
+
+{% if saved %}
 
 <div class="card">
+    <strong>✅ Result saved successfully.</strong>
+</div>
 
-<form action="/update-prediction-result" method="post">
+{% endif %}
 
-<label>Prediction</label><br>
 
-<select name="prediction_id">
+{% if error %}
 
-{% for p in predictions %}
+<div class="form-error">
+    {{ error }}
+</div>
 
-<option value="{{ p.id }}">
-{{ p.created_at }} |
-{{ p.player_a }} vs {{ p.player_b }}
-</option>
+{% endif %}
 
-{% endfor %}
 
-</select>
+{% if predictions %}
 
-<br><br>
+<div class="results-centre-list">
 
-<label>Actual Winner</label><br>
+    {% for p in predictions %}
 
-<input
-type="text"
-name="actual_winner"
-style="width:300px;">
+    <section class="card result-entry-card">
 
-<br><br>
+        <div class="section-kicker">
+            SAVED PREDICTION
+        </div>
 
-<label>Actual First 180 Player</label><br>
+        <h2>
+            {{ p.player_a | display_name }}
+            vs
+            {{ p.player_b | display_name }}
+        </h2>
 
-<input
-type="text"
-name="actual_first_180_player"
-style="width:300px;">
+        <p>
+            {{ p.created_at }}
+        </p>
 
-<br><br>
+        <div class="kpi-grid">
 
-<button type="submit">
+            <div class="kpi-card">
 
-Update Prediction
+                <div class="kpi-label">
+                    Predicted Winner
+                </div>
 
-</button>
+                <div class="kpi-value kpi-value-name">
+                    {{ p.predicted_winner | display_name }}
+                </div>
 
-</form>
+            </div>
+
+            <div class="kpi-card">
+
+                <div class="kpi-label">
+                    Confidence
+                </div>
+
+                <div class="kpi-value">
+                    {{ p.confidence }}%
+                </div>
+
+            </div>
+
+        </div>
+
+        <form
+            action="/update-prediction-result"
+            method="post"
+            class="match-selector-form"
+        >
+
+            <input
+                type="hidden"
+                name="prediction_id"
+                value="{{ p.id }}"
+            >
+
+            <div class="match-selector-field">
+
+                <label for="winner-{{ p.id }}">
+                    Actual Winner
+                </label>
+
+                <select
+                    id="winner-{{ p.id }}"
+                    name="actual_winner"
+                    required
+                >
+                    <option value="">
+                        Select winner
+                    </option>
+
+                    <option value="{{ p.player_a }}">
+                        {{ p.player_a | display_name }}
+                    </option>
+
+                    <option value="{{ p.player_b }}">
+                        {{ p.player_b | display_name }}
+                    </option>
+                </select>
+
+            </div>
+
+            <div class="match-selector-field">
+
+                <label for="first-180-{{ p.id }}">
+                    Actual First 180 Player
+                </label>
+
+                <select
+                    id="first-180-{{ p.id }}"
+                    name="actual_first_180_player"
+                >
+                    <option value="">
+                        Not recorded
+                    </option>
+
+                    <option value="{{ p.player_a }}">
+                        {{ p.player_a | display_name }}
+                    </option>
+
+                    <option value="{{ p.player_b }}">
+                        {{ p.player_b | display_name }}
+                    </option>
+                </select>
+
+            </div>
+
+            <div class="match-selector-action">
+
+                <button
+                    type="submit"
+                    class="analyse-match-button"
+                >
+                    ✅ Save Result
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+    {% endfor %}
 
 </div>
+
+{% else %}
+
+<section class="card">
+
+    <h2>🎉 No predictions awaiting results</h2>
+
+    <p>
+        All saved predictions have been settled.
+    </p>
+
+    <a
+        href="/predict-v2"
+        class="analyse-match-button"
+    >
+        Analyse Another Match
+    </a>
+
+</section>
+
+{% endif %}
 
 {% endblock %}
