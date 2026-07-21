@@ -94,6 +94,12 @@
                         <button
                             class="secondary-button add-paper-trade"
                             disabled
+
+                            data-prediction-id="{{ opportunity.prediction_id }}"
+                            data-market="{{ opportunity.market }}"
+                            data-selection="{{ opportunity.selection }}"
+                            data-fair="{{ opportunity.fair_odds }}"
+                            data-minimum="{{ opportunity.minimum_odds }}"                   
                         >
                             ➕
                         </button>

@@ -160,6 +160,13 @@ def predict_v2_result(
                 status_code=404,
             )
 
+        saved_prediction = save_prediction(db, result)
+
+        result["prediction_id"] = saved_prediction.id
+
+        for opportunity in result["trading_opportunities"]:
+            opportunity["prediction_id"] = saved_prediction.id
+
         result["value_bet"] = None
 
         if bookmaker_odds is not None:
