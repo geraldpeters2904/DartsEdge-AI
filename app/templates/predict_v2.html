@@ -129,6 +129,29 @@
 
     </form>
 
+    <form action="/save-prediction" method="post">
+
+        <input
+            type="hidden"
+            name="player_a"
+            value="{{ result.player_a }}"
+        >
+
+        <input
+            type="hidden"
+            name="player_b"
+            value="{{ result.player_b }}"
+        >
+
+        <button
+            type="submit"
+            class="analyse-match-button"
+        >
+            💾 Save Prediction
+        </button>
+
+    </form>
+
 </div>
 
 <details class="advanced-analysis">

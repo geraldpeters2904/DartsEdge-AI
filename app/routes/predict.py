@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
-
+from fastapi.responses import RedirectResponse
+from app.services.prediction_storage_service import save_prediction
 from app.db import SessionLocal
 from app.models.player import Player
 from app.services.prediction_pipeline import build_prediction
@@ -189,7 +190,39 @@ def predict_v2_result(
     finally:
         db.close()
 
+@router.post("/save-prediction")
+async def save_prediction_route(
+    request: Request,
+):
+    form = await request.form()
 
+    player_a = form.get("player_a")
+    player_b = form.get("player_b")
+
+    if not player_a or not player_b:
+        return {"error": "Player names not supplied."}
+
+    db = SessionLocal()
+
+    try:
+        result = build_prediction(
+            db,
+            player_a,
+            player_b,
+        )
+
+        if not result:
+            return {"error": "Prediction could not be generated."}
+
+        save_prediction(db, result)
+
+        return RedirectResponse(
+            url="/prediction-history",
+            status_code=303,
+        )
+
+    finally:
+        db.close()
 @router.get("/predict-ui")
 def predict_ui(
     request: Request,
