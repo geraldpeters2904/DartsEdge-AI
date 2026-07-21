@@ -42,6 +42,109 @@
         {% endif %}
     </div>
 </div>
+<div class="card">
+
+    <div class="section-heading-row">
+        <div>
+            <h2>💼 Paper Trading Portfolio</h2>
+            <p class="page-subtitle">
+                Current paper-trading activity and performance.
+            </p>
+        </div>
+
+        <a
+            href="/paper-trades"
+            class="secondary-button"
+        >
+            View Paper Trades
+        </a>
+    </div>
+
+    <div class="kpi-grid">
+
+        <div class="kpi-card">
+            <div class="kpi-label">Total Trades</div>
+            <div class="kpi-value">
+                {{ paper_trade_count }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Open Trades</div>
+            <div class="kpi-value">
+                {{ open_paper_trades }}
+            </div>
+
+            {% if open_paper_trades > 0 %}
+            <span class="badge badge-warning">
+                Active
+            </span>
+            {% else %}
+            <span class="badge badge-low">
+                None Open
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Settled Trades</div>
+            <div class="kpi-value">
+                {{ settled_paper_trades }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Won</div>
+            <div class="kpi-value">
+                {{ won_paper_trades }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Lost</div>
+            <div class="kpi-value">
+                {{ lost_paper_trades }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Strike Rate</div>
+            <div class="kpi-value">
+                {{ paper_strike_rate }}%
+            </div>
+
+            {% if paper_strike_rate >= 60 %}
+            <span class="badge badge-good">
+                Strong
+            </span>
+            {% elif paper_strike_rate > 0 %}
+            <span class="badge badge-warning">
+                Developing
+            </span>
+            {% else %}
+            <span class="badge badge-low">
+                Awaiting Results
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Average Odds</div>
+            <div class="kpi-value">
+                {{ "%.2f"|format(average_paper_odds) }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Total Stake</div>
+            <div class="kpi-value">
+                £{{ "%.2f"|format(total_paper_stake) }}
+            </div>
+        </div>
+
+    </div>
+
+</div>
 {% include "dashboard/best_bets.html" %}
 <div class="card">
 

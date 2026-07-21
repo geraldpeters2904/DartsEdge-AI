@@ -50,11 +50,38 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
 
+                if (result.already_exists) {
+                    button.textContent =
+                        "✓ Already Saved";
+
+                    button.classList.remove("saved");
+                    button.classList.add(
+                        "already-saved"
+                    );
+
+                    button.disabled = true;
+
+                    alert(
+                        result.message ||
+                        "This paper trade already exists."
+                    );
+
+                    return;
+                }
+
                 button.textContent = "✓ Saved";
+
+                button.classList.remove(
+                    "already-saved"
+                );
+
                 button.classList.add("saved");
                 button.disabled = true;
 
-                alert("Paper trade saved successfully.");
+                alert(
+                    result.message ||
+                    "Paper trade saved successfully."
+                );
 
             } catch (error) {
                 console.error(
@@ -92,7 +119,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 row.querySelector(".value-status");
 
             button.textContent = "➕";
-            button.classList.remove("saved");
+
+            button.classList.remove(
+                "saved",
+                "already-saved"
+            );
 
             if (
                 Number.isNaN(fairOdds) ||

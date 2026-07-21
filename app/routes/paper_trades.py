@@ -4,7 +4,11 @@ from pydantic import BaseModel, Field
 from app.db import SessionLocal
 from app.models.paper_trade import PaperTrade
 from app.models.prediction import Prediction
-from app.services.paper_trade_service import get_all_paper_trades
+from app.services.paper_trade_service import (
+    get_all_paper_trades,
+    open_trade_exists_for_match,
+    settle_paper_trade,
+)
 from app.templates_config import templates
 
 
@@ -18,6 +22,10 @@ class PaperTradeCreate(BaseModel):
     odds: float
     stake: float = Field(default=1.0, gt=0)
     bookmaker: str = "Trading Opportunities"
+
+
+class PaperTradeSettlement(BaseModel):
+    status: str
 
 
 @router.get("/paper-trades")
@@ -74,12 +82,29 @@ def create_paper_trade(payload: PaperTradeCreate):
                 detail="Decimal odds must be greater than 1.00",
             )
 
+        if open_trade_exists_for_match(
+            db,
+            prediction,
+            payload.market,
+            payload.selection,
+        ):
+            return {
+                "success": True,
+                "already_exists": True,
+                "message": (
+                    "An OPEN paper trade already exists "
+                    "for this market."
+                ),
+            }
+
         trade = PaperTrade(
             prediction_id=prediction.id,
             market=payload.market.strip(),
             selection=payload.selection,
-            bookmaker=payload.bookmaker.strip()
-            or "Trading Opportunities",
+            bookmaker=(
+                payload.bookmaker.strip()
+                or "Trading Opportunities"
+            ),
             odds=payload.odds,
             stake=payload.stake,
             status="OPEN",
@@ -91,6 +116,7 @@ def create_paper_trade(payload: PaperTradeCreate):
 
         return {
             "success": True,
+            "already_exists": False,
             "trade_id": trade.id,
             "message": "Paper trade saved successfully",
         }
@@ -105,6 +131,57 @@ def create_paper_trade(payload: PaperTradeCreate):
         raise HTTPException(
             status_code=500,
             detail="Unable to save paper trade",
+        )
+
+    finally:
+        db.close()
+
+
+@router.post("/api/paper-trades/{trade_id}/settle")
+def settle_trade(
+    trade_id: int,
+    payload: PaperTradeSettlement,
+):
+    db = SessionLocal()
+
+    try:
+        trade = settle_paper_trade(
+            db,
+            trade_id,
+            payload.status,
+        )
+
+        if trade is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Paper trade not found",
+            )
+
+        return {
+            "success": True,
+            "trade_id": trade.id,
+            "status": trade.status,
+            "profit_loss": trade.profit_loss,
+        }
+
+    except ValueError as error:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to settle paper trade",
         )
 
     finally:
