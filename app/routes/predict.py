@@ -1,3 +1,5 @@
+
+from app.services.kelly_service import calculate_kelly_stake
 from app.services.trade_rating_service import calculate_trade_rating
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
@@ -169,9 +171,20 @@ def predict_v2_result(
 
             rating = calculate_trade_rating(opportunity)
 
+            kelly = calculate_kelly_stake(
+                probability=opportunity["probability"],
+                bookmaker_odds=opportunity["minimum_odds"],
+            )
+
             opportunity["trade_score"] = rating["score"]
             opportunity["trade_stars"] = rating["stars"]
             opportunity["trade_grade"] = rating["grade"]
+
+            opportunity["kelly_percent"] = kelly["kelly_percent"]
+            opportunity["recommended_stake"] = kelly["recommended_stake"]
+            opportunity["expected_value"] = kelly["expected_value_percent"]
+            opportunity["risk_level"] = kelly["risk_level"]
+
             opportunity["prediction_id"] = saved_prediction.id
 
         result["value_bet"] = None

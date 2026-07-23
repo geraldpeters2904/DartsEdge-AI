@@ -28,6 +28,10 @@
                     <th>Bookmaker</th>
                     <th>Edge</th>
                     <th>Status</th>
+                    <th>Kelly %</th>
+                    <th>Stake (£)</th>
+                    <th>EV %</th>
+                    <th>Risk</th>
                     <th></th>
                 </tr>
             </thead>
@@ -65,7 +69,13 @@
                         </div>
 
                     </td>
+                    <td>{{ opportunity.kelly_percent }}%</td>
 
+                    <td>£{{ "%.2f"|format(opportunity.recommended_stake) }}</td>
+                    
+                    <td>{{ opportunity.expected_value }}%</td>
+                    
+                    <td>{{ opportunity.risk_level }}</td>
                     <td>
                         {{ "%.2f"|format(opportunity.fair_odds) }}
                     </td>
