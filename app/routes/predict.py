@@ -1,3 +1,4 @@
+from app.services.trade_rating_service import calculate_trade_rating
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from app.services.prediction_storage_service import save_prediction
@@ -165,6 +166,12 @@ def predict_v2_result(
         result["prediction_id"] = saved_prediction.id
 
         for opportunity in result["trading_opportunities"]:
+
+            rating = calculate_trade_rating(opportunity)
+
+            opportunity["trade_score"] = rating["score"]
+            opportunity["trade_stars"] = rating["stars"]
+            opportunity["trade_grade"] = rating["grade"]
             opportunity["prediction_id"] = saved_prediction.id
 
         result["value_bet"] = None

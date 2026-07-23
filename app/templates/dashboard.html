@@ -262,44 +262,7 @@
         <canvas id="equityCurveChart"></canvas>
     </div>
 
-    <div class="table-wrapper">
-
-        <table>
-
-            <thead>
-                <tr>
-                    <th>Trade</th>
-                    <th>Selection</th>
-                    <th>Profit/Loss</th>
-                    <th>Bankroll</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                {% for row in equity_curve %}
-
-                <tr>
-                    <td>{{ row.trade }}</td>
-
-                    <td>{{ row.selection }}</td>
-
-                    <td>
-                        £{{ "%.2f"|format(row.profit_loss) }}
-                    </td>
-
-                    <td>
-                        £{{ "%.2f"|format(row.bankroll) }}
-                    </td>
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
-
-    </div>
+    
 
     {% else %}
 
