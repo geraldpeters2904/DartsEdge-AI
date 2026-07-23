@@ -1,4 +1,4 @@
-
+from app.services.value_scanner_service import rank_opportunities
 from app.services.kelly_service import calculate_kelly_stake
 from app.services.trade_rating_service import calculate_trade_rating
 from fastapi import APIRouter, Request
@@ -187,6 +187,9 @@ def predict_v2_result(
 
             opportunity["prediction_id"] = saved_prediction.id
 
+        result["trading_opportunities"] = rank_opportunities(
+            result["trading_opportunities"]
+        )
         result["value_bet"] = None
 
         if bookmaker_odds is not None:
