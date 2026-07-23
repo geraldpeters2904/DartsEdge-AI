@@ -70,6 +70,90 @@ def open_trade_exists_for_match(
     )
 
 
+def get_portfolio_summary(
+    db,
+    starting_bankroll=5000.00,
+):
+    trades = db.query(PaperTrade).all()
+
+    settled_trades = [
+        trade
+        for trade in trades
+        if trade.status in VALID_SETTLEMENT_STATUSES
+    ]
+
+    total_profit_loss = round(
+        sum(
+            float(trade.profit_loss or 0)
+            for trade in settled_trades
+        ),
+        2,
+    )
+
+    settled_stake = round(
+        sum(
+            float(trade.stake or 0)
+            for trade in settled_trades
+        ),
+        2,
+    )
+
+    current_bankroll = round(
+        float(starting_bankroll) + total_profit_loss,
+        2,
+    )
+
+    if settled_stake > 0:
+        roi = round(
+            (total_profit_loss / settled_stake) * 100,
+            2,
+        )
+    else:
+        roi = 0.0
+
+    profit_values = [
+        float(trade.profit_loss or 0)
+        for trade in settled_trades
+    ]
+
+    biggest_win = round(
+        max(
+            [
+                value
+                for value in profit_values
+                if value > 0
+            ],
+            default=0.0,
+        ),
+        2,
+    )
+
+    biggest_loss = round(
+        min(
+            [
+                value
+                for value in profit_values
+                if value < 0
+            ],
+            default=0.0,
+        ),
+        2,
+    )
+
+    return {
+        "starting_bankroll": round(
+            float(starting_bankroll),
+            2,
+        ),
+        "current_bankroll": current_bankroll,
+        "total_profit_loss": total_profit_loss,
+        "portfolio_roi": roi,
+        "settled_stake": settled_stake,
+        "biggest_win": biggest_win,
+        "biggest_loss": biggest_loss,
+    }
+
+
 def settle_paper_trade(
     db,
     trade_id,

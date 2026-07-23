@@ -1,5 +1,4 @@
 from datetime import date
-
 from app.models.player import Player
 from app.models.match import Match
 from app.models.prediction import Prediction
@@ -7,6 +6,7 @@ from app.models.paper_trade import PaperTrade
 
 from app.services.value_board_service import build_value_board
 from app.services.data_quality_service import get_data_quality
+from app.services.paper_trade_service import get_portfolio_summary
 
 
 def _confidence_label(probability):
@@ -258,6 +258,11 @@ def build_dashboard_data(db):
         else 0
     )
 
+    portfolio_summary = get_portfolio_summary(
+        db,
+        starting_bankroll=5000.00,
+    )
+
     best_bet = best_bets[0] if best_bets else None
 
     return {
@@ -290,4 +295,26 @@ def build_dashboard_data(db):
         "total_paper_stake": total_paper_stake,
         "average_paper_odds": average_paper_odds,
         "paper_strike_rate": paper_strike_rate,
+
+        "starting_bankroll": portfolio_summary[
+            "starting_bankroll"
+        ],
+        "current_bankroll": portfolio_summary[
+            "current_bankroll"
+        ],
+        "total_profit_loss": portfolio_summary[
+            "total_profit_loss"
+        ],
+        "portfolio_roi": portfolio_summary[
+            "portfolio_roi"
+        ],
+        "settled_stake": portfolio_summary[
+            "settled_stake"
+        ],
+        "biggest_win": portfolio_summary[
+            "biggest_win"
+        ],
+        "biggest_loss": portfolio_summary[
+            "biggest_loss"
+        ],
     }

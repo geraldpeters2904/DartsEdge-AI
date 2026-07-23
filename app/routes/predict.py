@@ -197,6 +197,8 @@ def predict_v2_result(
     finally:
         db.close()
 
+
+
 @router.post("/save-prediction")
 async def save_prediction_route(
     request: Request,
@@ -230,6 +232,8 @@ async def save_prediction_route(
 
     finally:
         db.close()
+
+
 @router.get("/predict-ui")
 def predict_ui(
     request: Request,
