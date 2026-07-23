@@ -5,6 +5,7 @@
 {% include "dashboard/hero.html" %}
 
 <div class="kpi-grid">
+
     <div class="kpi-card players">
         <div class="kpi-label">Players</div>
         <div class="kpi-value">{{ player_count }}</div>
@@ -14,16 +15,18 @@
         <div class="kpi-label">Matches</div>
         <div class="kpi-value">{{ match_count }}</div>
     </div>
+
     <div class="kpi-card fixtures">
         <div class="kpi-label">Today's Fixtures</div>
         <div class="kpi-value">{{ today_fixture_count }}</div>
-    
+
         {% if today_fixture_count > 0 %}
         <span class="badge badge-good">Scheduled</span>
         {% else %}
         <span class="badge badge-low">None Today</span>
         {% endif %}
     </div>
+
     <div class="kpi-card predictions">
         <div class="kpi-label">Predictions</div>
         <div class="kpi-value">{{ prediction_count }}</div>
@@ -41,12 +44,17 @@
         <span class="badge badge-low">Needs Data</span>
         {% endif %}
     </div>
+
 </div>
+
+
 <div class="card">
 
     <div class="section-heading-row">
+
         <div>
             <h2>💼 Paper Trading Portfolio</h2>
+
             <p class="page-subtitle">
                 Current paper-trading activity and performance.
             </p>
@@ -58,12 +66,14 @@
         >
             View Paper Trades
         </a>
+
     </div>
 
     <div class="kpi-grid">
 
         <div class="kpi-card">
             <div class="kpi-label">Total Trades</div>
+
             <div class="kpi-value">
                 {{ paper_trade_count }}
             </div>
@@ -71,6 +81,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Open Trades</div>
+
             <div class="kpi-value">
                 {{ open_paper_trades }}
             </div>
@@ -88,6 +99,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Settled Trades</div>
+
             <div class="kpi-value">
                 {{ settled_paper_trades }}
             </div>
@@ -95,6 +107,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Won</div>
+
             <div class="kpi-value">
                 {{ won_paper_trades }}
             </div>
@@ -102,6 +115,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Lost</div>
+
             <div class="kpi-value">
                 {{ lost_paper_trades }}
             </div>
@@ -109,6 +123,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Strike Rate</div>
+
             <div class="kpi-value">
                 {{ paper_strike_rate }}%
             </div>
@@ -130,6 +145,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Average Odds</div>
+
             <div class="kpi-value">
                 {{ "%.2f"|format(average_paper_odds) }}
             </div>
@@ -137,6 +153,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Total Stake</div>
+
             <div class="kpi-value">
                 £{{ "%.2f"|format(total_paper_stake) }}
             </div>
@@ -145,6 +162,8 @@
     </div>
 
 </div>
+
+
 <div class="card">
 
     <h2>💰 Portfolio Analytics</h2>
@@ -153,6 +172,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Starting Bankroll</div>
+
             <div class="kpi-value">
                 £{{ "%.2f"|format(starting_bankroll) }}
             </div>
@@ -160,6 +180,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Current Bankroll</div>
+
             <div class="kpi-value">
                 £{{ "%.2f"|format(current_bankroll) }}
             </div>
@@ -189,6 +210,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">ROI</div>
+
             <div class="kpi-value">
                 {{ "%.2f"|format(portfolio_roi) }}%
             </div>
@@ -196,6 +218,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Settled Stake</div>
+
             <div class="kpi-value">
                 £{{ "%.2f"|format(settled_stake) }}
             </div>
@@ -203,6 +226,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Biggest Win</div>
+
             <div class="kpi-value">
                 £{{ "%.2f"|format(biggest_win) }}
             </div>
@@ -210,6 +234,7 @@
 
         <div class="kpi-card">
             <div class="kpi-label">Biggest Loss</div>
+
             <div class="kpi-value">
                 £{{ "%.2f"|format(biggest_loss) }}
             </div>
@@ -218,12 +243,82 @@
     </div>
 
 </div>
+
+
 {% include "dashboard/best_bets.html" %}
+
+
+<div class="card">
+
+    <h2>📈 Equity Curve</h2>
+
+    <p class="page-subtitle">
+        Running paper-trading bankroll after each settled trade.
+    </p>
+
+    {% if equity_curve %}
+
+    <div style="position: relative; height: 360px; width: 100%; margin-bottom: 24px;">
+        <canvas id="equityCurveChart"></canvas>
+    </div>
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Trade</th>
+                    <th>Selection</th>
+                    <th>Profit/Loss</th>
+                    <th>Bankroll</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for row in equity_curve %}
+
+                <tr>
+                    <td>{{ row.trade }}</td>
+
+                    <td>{{ row.selection }}</td>
+
+                    <td>
+                        £{{ "%.2f"|format(row.profit_loss) }}
+                    </td>
+
+                    <td>
+                        £{{ "%.2f"|format(row.bankroll) }}
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+        <p>No settled paper trades yet.</p>
+    </div>
+
+    {% endif %}
+
+</div>
+
+
 <div class="card">
 
     <div class="section-heading-row">
+
         <div>
             <h2>📅 Today’s Fixtures</h2>
+
             <p class="page-subtitle">
                 Scheduled matches for today.
             </p>
@@ -235,12 +330,15 @@
         >
             Manage Fixtures
         </a>
+
     </div>
 
     {% if today_fixtures %}
 
     <div class="table-wrapper">
+
         <table>
+
             <thead>
                 <tr>
                     <th>Tournament</th>
@@ -252,7 +350,9 @@
             </thead>
 
             <tbody>
+
                 {% for fixture in today_fixtures %}
+
                 <tr>
                     <td>{{ fixture.tournament }}</td>
                     <td>{{ fixture.stage }}</td>
@@ -274,14 +374,19 @@
                         </a>
                     </td>
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
 
     {% else %}
 
     <div class="empty-state">
+
         <p>No fixtures are scheduled for today.</p>
 
         <a
@@ -290,14 +395,18 @@
         >
             Add Today’s Fixtures
         </a>
+
     </div>
 
     {% endif %}
 
 </div>
+
+
 <div class="card">
 
     <div class="section-heading-row">
+
         <div>
             <h2>⚠ Results Awaiting Entry</h2>
 
@@ -312,12 +421,15 @@
         >
             Update Results
         </a>
+
     </div>
 
     {% if results_awaiting %}
 
     <div class="table-wrapper">
+
         <table>
+
             <thead>
                 <tr>
                     <th>Date</th>
@@ -328,7 +440,9 @@
             </thead>
 
             <tbody>
+
                 {% for fixture in results_awaiting %}
+
                 <tr>
                     <td>{{ fixture.date }}</td>
                     <td>{{ fixture.tournament }}</td>
@@ -348,9 +462,13 @@
                         </a>
                     </td>
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
 
     {% else %}
@@ -362,12 +480,16 @@
     {% endif %}
 
 </div>
+
+
 <div class="dashboard-grid">
 
     <div class="card">
+
         <h2>🏆 Top Rated Players</h2>
 
         <table>
+
             <tr>
                 <th>Rank</th>
                 <th>Player</th>
@@ -376,66 +498,76 @@
             </tr>
 
             {% for player in top_players %}
+
             <tr>
                 <td>{{ loop.index }}</td>
+
                 <td>
                     <a href="/player-profile/{{ player.name }}">
                         {{ player.name }}
                     </a>
                 </td>
+
                 <td>{{ player.dartsedge_rating }}</td>
                 <td>{{ player.elo }}</td>
             </tr>
+
             {% endfor %}
+
         </table>
+
     </div>
+
 
     <div class="card">
 
         <h2>⚡ Quick Actions</h2>
-    
+
         <div class="quick-actions-grid">
-    
+
             <a href="/predict-v2" class="quick-action-card">
                 🎯
                 <span>Prediction Centre</span>
             </a>
-    
+
             <a href="/fixtures" class="quick-action-card">
                 📅
                 <span>Fixtures</span>
             </a>
-    
+
             <a href="/rankings" class="quick-action-card">
                 🏆
                 <span>Rankings</span>
             </a>
-    
+
             <a href="/accuracy" class="quick-action-card">
                 📊
                 <span>Accuracy</span>
             </a>
-    
+
             <a href="/prediction-history" class="quick-action-card">
                 📈
                 <span>History</span>
             </a>
-    
+
             <a href="/import" class="quick-action-card">
                 📥
                 <span>Import</span>
             </a>
-    
+
         </div>
-    
+
     </div>
 
 </div>
 
+
 <div class="card">
+
     <h2>🎮 Recent Matches</h2>
 
     <table>
+
         <tr>
             <th>Date</th>
             <th>Match</th>
@@ -444,14 +576,108 @@
         </tr>
 
         {% for match in recent_matches %}
+
         <tr>
             <td>{{ match.date }}</td>
             <td>{{ match.player_a }} vs {{ match.player_b }}</td>
             <td>{{ match.winner }}</td>
             <td>{{ match.score }}</td>
         </tr>
+
         {% endfor %}
+
     </table>
+
 </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const equityCurveData = {{ equity_curve | default([], true) | tojson }};
+
+        const equityCanvas = document.getElementById("equityCurveChart");
+
+        if (!equityCanvas || equityCurveData.length === 0) {
+            return;
+        }
+
+        const equityLabels = equityCurveData.map(function (row) {
+            return "Trade " + row.trade;
+        });
+
+        const bankrollValues = equityCurveData.map(function (row) {
+            return Number(row.bankroll);
+        });
+
+        new Chart(equityCanvas, {
+            type: "line",
+
+            data: {
+                labels: equityLabels,
+
+                datasets: [
+                    {
+                        label: "Bankroll",
+                        data: bankrollValues,
+                        borderWidth: 3,
+                        tension: 0.25,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: false
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+
+                plugins: {
+                    legend: {
+                        display: true
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return "Bankroll: £" +
+                                    Number(context.raw).toFixed(2);
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function (value) {
+                                return "£" + value;
+                            }
+                        },
+
+                        title: {
+                            display: true,
+                            text: "Bankroll"
+                        }
+                    },
+
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Settled Trade"
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 
 {% endblock %}

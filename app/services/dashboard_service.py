@@ -3,7 +3,7 @@ from app.models.player import Player
 from app.models.match import Match
 from app.models.prediction import Prediction
 from app.models.paper_trade import PaperTrade
-
+from app.services.equity_service import get_equity_curve
 from app.services.value_board_service import build_value_board
 from app.services.data_quality_service import get_data_quality
 from app.services.paper_trade_service import get_portfolio_summary
@@ -39,7 +39,7 @@ def build_dashboard_data(db):
     player_count = db.query(Player).count()
     match_count = db.query(Match).count()
     prediction_count = db.query(Prediction).count()
-
+    
     today_fixtures = (
         db.query(Match)
         .filter(
@@ -257,7 +257,7 @@ def build_dashboard_data(db):
         if won_paper_trades + lost_paper_trades
         else 0
     )
-
+    equity_curve = get_equity_curve(db)
     portfolio_summary = get_portfolio_summary(
         db,
         starting_bankroll=5000.00,
@@ -317,4 +317,5 @@ def build_dashboard_data(db):
         "biggest_loss": portfolio_summary[
             "biggest_loss"
         ],
+        "equity_curve": equity_curve,
     }
