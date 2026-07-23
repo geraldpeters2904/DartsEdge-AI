@@ -145,6 +145,79 @@
     </div>
 
 </div>
+<div class="card">
+
+    <h2>💰 Portfolio Analytics</h2>
+
+    <div class="kpi-grid">
+
+        <div class="kpi-card">
+            <div class="kpi-label">Starting Bankroll</div>
+            <div class="kpi-value">
+                £{{ "%.2f"|format(starting_bankroll) }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Current Bankroll</div>
+            <div class="kpi-value">
+                £{{ "%.2f"|format(current_bankroll) }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Profit / Loss</div>
+
+            <div class="kpi-value">
+                £{{ "%.2f"|format(total_profit_loss) }}
+            </div>
+
+            {% if total_profit_loss > 0 %}
+            <span class="badge badge-good">
+                Profit
+            </span>
+            {% elif total_profit_loss < 0 %}
+            <span class="badge badge-low">
+                Loss
+            </span>
+            {% else %}
+            <span class="badge badge-warning">
+                Break Even
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">ROI</div>
+            <div class="kpi-value">
+                {{ "%.2f"|format(portfolio_roi) }}%
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Settled Stake</div>
+            <div class="kpi-value">
+                £{{ "%.2f"|format(settled_stake) }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Biggest Win</div>
+            <div class="kpi-value">
+                £{{ "%.2f"|format(biggest_win) }}
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Biggest Loss</div>
+            <div class="kpi-value">
+                £{{ "%.2f"|format(biggest_loss) }}
+            </div>
+        </div>
+
+    </div>
+
+</div>
 {% include "dashboard/best_bets.html" %}
 <div class="card">
 
