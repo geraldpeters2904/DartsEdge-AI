@@ -1,0 +1,42 @@
+<div class="kpi-grid">
+
+    <div class="kpi-card players">
+        <div class="kpi-label">Players</div>
+        <div class="kpi-value">{{ player_count }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Matches</div>
+        <div class="kpi-value">{{ match_count }}</div>
+    </div>
+
+    <div class="kpi-card fixtures">
+        <div class="kpi-label">Today's Fixtures</div>
+        <div class="kpi-value">{{ today_fixture_count }}</div>
+
+        {% if today_fixture_count > 0 %}
+        <span class="badge badge-good">Scheduled</span>
+        {% else %}
+        <span class="badge badge-low">None Today</span>
+        {% endif %}
+    </div>
+
+    <div class="kpi-card predictions">
+        <div class="kpi-label">Predictions</div>
+        <div class="kpi-value">{{ prediction_count }}</div>
+    </div>
+
+    <div class="kpi-card accuracy">
+        <div class="kpi-label">Winner Accuracy</div>
+        <div class="kpi-value">{{ winner_accuracy }}%</div>
+
+        {% if winner_accuracy >= 70 %}
+        <span class="badge badge-good">Strong</span>
+        {% elif winner_accuracy >= 55 %}
+        <span class="badge badge-warning">Developing</span>
+        {% else %}
+        <span class="badge badge-low">Needs Data</span>
+        {% endif %}
+    </div>
+
+</div>
