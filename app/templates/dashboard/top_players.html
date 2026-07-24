@@ -1,0 +1,19 @@
+<div class="card">
+    <h2>🏆 Top Rated Players</h2>
+    <table>
+        <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Rating</th>
+            <th>Elo</th>
+        </tr>
+        {% for player in top_players %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="/player-profile/{{ player.name }}">{{ player.name }}</a></td>
+            <td>{{ player.dartsedge_rating }}</td>
+            <td>{{ player.elo }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
