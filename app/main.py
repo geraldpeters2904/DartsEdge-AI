@@ -1,3 +1,4 @@
+from app.routes.settings import router as settings_router
 from app.routes.new_paper_trade import router as new_paper_trade_router
 from app.models.paper_trade import PaperTrade
 from app.routes.paper_trades import router as paper_trades_router
@@ -51,6 +52,7 @@ app.include_router(players_router)
 app.include_router(value_board_router)
 app.include_router(data_quality_router)
 app.include_router(new_paper_trade_router)
+app.include_router(settings_router)
 
 
 @app.get("/")
@@ -90,6 +92,7 @@ def match(player_a: str, player_b: str):
             "form_180_b": form_180_b,
             "markets_180": one80_markets(exp_180_a, exp_180_b),
             "value_bet": value_edge(final_prob_a),
+
         }
 
     finally:

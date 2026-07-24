@@ -1,6 +1,8 @@
 def calculate_value_bet(
     probability,
     bookmaker_odds,
+    minimum_edge=5.0,
+    minimum_confidence=60.0,
 ):
     if probability <= 0 or probability > 1:
         return None
@@ -21,11 +23,17 @@ def calculate_value_bet(
         1,
     )
 
-    if edge >= 10:
+    confidence = probability * 100
+
+    if confidence < minimum_confidence:
+        recommendation = "LOW CONFIDENCE"
+        stars = 1
+
+    elif edge >= (minimum_edge * 2):
         recommendation = "VALUE BET"
         stars = 5
 
-    elif edge >= 5:
+    elif edge >= minimum_edge:
         recommendation = "SMALL VALUE"
         stars = 4
 

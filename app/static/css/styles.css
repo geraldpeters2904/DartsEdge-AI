@@ -1685,3 +1685,57 @@ input {
     background: #fee2e2;
     color: #991b1b;
 }
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(240px, 1fr)
+    );
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 600;
+}
+
+.form-group input[type="number"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.form-group input[type="number"]:focus {
+    outline: none;
+    border-color: #4f6bed;
+    box-shadow: 0 0 0 3px rgba(79, 107, 237, 0.12);
+}
+
+.form-group small {
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.checkbox-group {
+    justify-content: center;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
