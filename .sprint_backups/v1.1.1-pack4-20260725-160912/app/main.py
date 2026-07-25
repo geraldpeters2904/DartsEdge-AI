@@ -1,4 +1,3 @@
-from app.routes.ai_coach import router as ai_coach_router
 from app.routes.portfolio_health import router as portfolio_health_router
 from app.routes.settings import router as settings_router
 from app.routes.mission_control import router as mission_control_router
@@ -42,7 +41,6 @@ app.mount(
 
 create_database()
 app.include_router(paper_trades_router)
-app.include_router(ai_coach_router)
 app.include_router(mission_control_router)
 app.include_router(opportunities_router)
 app.include_router(portfolio_health_router)

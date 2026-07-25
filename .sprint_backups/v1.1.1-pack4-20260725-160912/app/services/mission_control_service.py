@@ -2,7 +2,6 @@ from datetime import date
 from typing import Any, Dict, List
 
 from app.models.paper_trade import PaperTrade
-from app.services.ai_coach_service import build_ai_coach_data
 from app.services.dashboard_service import build_dashboard_data
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
@@ -137,7 +136,6 @@ def build_mission_control_data(db) -> Dict[str, Any]:
     dashboard = build_dashboard_data(db)
     ranked_opportunities = build_ranked_opportunities(db, limit=5)
     portfolio_health = build_portfolio_health(db)
-    coach_data = build_ai_coach_data(db)
 
     model_health = [
         _status("Winner accuracy", dashboard["winner_accuracy"], 65, 55),
@@ -155,6 +153,5 @@ def build_mission_control_data(db) -> Dict[str, Any]:
         "portfolio_health": portfolio_health,
         "model_health": model_health,
         "alerts": _build_alerts(dashboard),
-        "ai_coach": coach_data["primary"],
-        "coach_recommendation_count": coach_data["recommendation_count"],
+        "ai_coach": portfolio_health["coach"],
     }
