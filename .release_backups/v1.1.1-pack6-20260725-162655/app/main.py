@@ -1,5 +1,3 @@
-from app.routes.diagnostics import router as diagnostics_router
-from app.version import APP_NAME, VERSION
 from app.routes.ai_coach import router as ai_coach_router
 from app.routes.portfolio_health import router as portfolio_health_router
 from app.routes.settings import router as settings_router
@@ -34,7 +32,7 @@ from app.services.match_engine import (
 )
 
 
-app = FastAPI(title=APP_NAME, version=VERSION)
+app = FastAPI()
 
 app.mount(
     "/static",
@@ -43,7 +41,6 @@ app.mount(
 )
 
 create_database()
-app.include_router(diagnostics_router)
 app.include_router(paper_trades_router)
 app.include_router(ai_coach_router)
 app.include_router(mission_control_router)

@@ -1,37 +1,36 @@
 # Changelog
 
-## v0.5
+All notable changes to DartsEdge AI are recorded here.
 
-- Added Monte Carlo simulation engine
-- Added correct score probabilities
-- Added handicap markets
-- Added total legs markets
-- Added match summary card
-- Added match intelligence display
-- Fixed selected players remaining after prediction
+## [1.1.1] - 2026-07-25
 
-## v0.4
+### Added
+- Mission Control command centre.
+- Opportunity ranking with explicit model-signal versus confirmed-value states.
+- Portfolio Health analytics and settings-driven risk warnings.
+- AI Coach prioritised operational recommendations.
+- System diagnostics page plus `/version` and `/health` endpoints.
+- Reproducible runtime and development dependency files.
 
-- Added player profile service
-- Added weighted 180 form
-- Added 180 market probabilities
-- Added match intelligence engine
+### Changed
+- Consolidated dashboard styling and responsive navigation.
+- Added active navigation states and accessibility improvements.
+- Added visible release and build information.
 
-## v0.3
+### Fixed
+- Declared `httpx` as a development dependency for FastAPI TestClient tests.
 
-- Added dashboard
-- Added browser CSV import
-- Added duplicate match protection
-- Added statistics page
+## [0.5]
+- Added Monte Carlo simulation, correct-score, handicap and total-legs markets.
 
-## v0.2
+## [0.4]
+- Added player profiles, weighted 180 form, 180 markets and match intelligence.
 
-- Added SQLite database
-- Added player and match models
-- Added Elo updates
-- Added player stats
+## [0.3]
+- Added dashboard, CSV import, duplicate protection and statistics.
 
-## v0.1
+## [0.2]
+- Added SQLite database, players, matches, Elo and player statistics.
 
-- Initial FastAPI app
-- Basic player prediction endpoint
+## [0.1]
+- Initial FastAPI application and prediction endpoint.

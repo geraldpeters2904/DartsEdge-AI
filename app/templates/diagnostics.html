@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Diagnostics · DartsEdge AI{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">System</p>
+        <h1>Diagnostics</h1>
+        <p class="page-intro">Release, runtime and service health information for support and verification.</p>
+    </div>
+    <span class="status-pill status-{{ 'good' if diagnostics.overall_status == 'healthy' else 'warning' }}">
+        {{ diagnostics.overall_status|title }}
+    </span>
+</header>
+
+<section class="metric-grid">
+    <article class="metric-card"><span class="metric-label">Version</span><strong>{{ diagnostics.release.version }}</strong><small>Build {{ diagnostics.release.build }}</small></article>
+    <article class="metric-card"><span class="metric-label">Release</span><strong>{{ diagnostics.release.release }}</strong><small>{{ diagnostics.release.name }}</small></article>
+    <article class="metric-card"><span class="metric-label">Python</span><strong>{{ diagnostics.runtime.python }}</strong><small>Runtime</small></article>
+    <article class="metric-card"><span class="metric-label">FastAPI</span><strong>{{ diagnostics.runtime.fastapi }}</strong><small>Starlette {{ diagnostics.runtime.starlette }}</small></article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><div><p class="eyebrow">Health checks</p><h2>Core services</h2></div></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Component</th><th>Status</th><th>Detail</th></tr></thead>
+            <tbody>
+            {% for check in diagnostics.checks %}
+                <tr>
+                    <td><strong>{{ check.name }}</strong></td>
+                    <td><span class="status-pill status-{{ 'good' if check.status == 'healthy' else 'bad' }}">{{ check.status|title }}</span></td>
+                    <td>{{ check.detail }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><div><p class="eyebrow">Environment</p><h2>Installed components</h2></div></div>
+    <div class="detail-grid">
+        <div><span>SQLAlchemy</span><strong>{{ diagnostics.runtime.sqlalchemy }}</strong></div>
+        <div><span>httpx</span><strong>{{ diagnostics.runtime.httpx }}</strong></div>
+        <div class="detail-wide"><span>Platform</span><strong>{{ diagnostics.runtime.platform }}</strong></div>
+    </div>
+</section>
+{% endblock %}
