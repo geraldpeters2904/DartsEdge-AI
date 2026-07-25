@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="mission-hero">
+    <div>
+        <div class="section-kicker">Sprint 1.1.1 · Pack 3</div>
+        <h1>Portfolio Health</h1>
+        <p>Bankroll performance, open exposure and practical risk controls from your paper trades.</p>
+    </div>
+    <span class="portfolio-health-badge portfolio-health-{{ risk_level }}">
+        {{ risk_level|upper }} · {{ health_score }}/100
+    </span>
+</section>
+
+<section class="mission-kpi-grid portfolio-kpi-grid">
+    <article class="mission-kpi-card">
+        <span>Current bankroll</span>
+        <strong>£{{ '%.2f'|format(current_bankroll) }}</strong>
+        <small>Started at £{{ '%.2f'|format(starting_bankroll) }}</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Available bankroll</span>
+        <strong>£{{ '%.2f'|format(available_bankroll) }}</strong>
+        <small>After open stakes</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Open exposure</span>
+        <strong>£{{ '%.2f'|format(open_exposure) }}</strong>
+        <small>{{ exposure_percent }}% of bankroll</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Lifetime P/L</span>
+        <strong class="{% if total_profit_loss >= 0 %}text-positive{% else %}text-risk{% endif %}">
+            {% if total_profit_loss > 0 %}+{% endif %}£{{ '%.2f'|format(total_profit_loss) }}
+        </strong>
+        <small>{{ roi }}% ROI</small>
+    </article>
+</section>
+
+<section class="portfolio-health-layout">
+    <div class="portfolio-health-main">
+        <article class="card mission-panel">
+            <div class="section-heading-row">
+                <div>
+                    <div class="section-kicker">Risk allowance</div>
+                    <h2>Exposure utilisation</h2>
+                </div>
+                <a class="secondary-button" href="/settings">Edit limits</a>
+            </div>
+            <div class="portfolio-risk-meter">
+                <div class="portfolio-risk-fill portfolio-risk-fill-{{ risk_level }}"
+                     style="width: {{ [risk_utilisation, 100]|min }}%"></div>
+            </div>
+            <div class="portfolio-risk-scale">
+                <span>{{ exposure_percent }}% bankroll exposed</span>
+                <strong>{{ risk_utilisation }}% of {{ max_daily_risk }}% limit used</strong>
+            </div>
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-kicker">Exposure concentration</div>
+            <h2>Open risk by player</h2>
+            {% if exposure_by_player %}
+            <div class="portfolio-exposure-list">
+                {% for row in exposure_by_player %}
+                <div class="portfolio-exposure-row">
+                    <div><strong>{{ row.label }}</strong><span>{{ row.positions }} position(s)</span></div>
+                    <div><strong>£{{ '%.2f'|format(row.exposure) }}</strong><span>{{ row.exposure_percent }}%</span></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>No open player exposure.</p></div>
+            {% endif %}
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-kicker">Market allocation</div>
+            <h2>Open risk by market</h2>
+            {% if exposure_by_market %}
+            <div class="portfolio-exposure-list">
+                {% for row in exposure_by_market %}
+                <div class="portfolio-exposure-row">
+                    <div><strong>{{ row.label }}</strong><span>{{ row.positions }} position(s)</span></div>
+                    <div><strong>£{{ '%.2f'|format(row.exposure) }}</strong><span>{{ row.exposure_percent }}%</span></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>No open market exposure.</p></div>
+            {% endif %}
+        </article>
+    </div>
+
+    <aside class="portfolio-health-side">
+        <article class="card mission-coach mission-coach-{{ coach.tone }}">
+            <div class="section-kicker">AI Coach</div>
+            <h2>{{ coach.headline }}</h2>
+            <p>{{ coach.message }}</p>
+            <a class="primary-button" href="/paper-trades">Review trades</a>
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-kicker">Recent performance</div>
+            <h2>Profit and loss</h2>
+            <div class="portfolio-stat-list">
+                <div><span>Today</span><strong class="{% if today_profit_loss >= 0 %}text-positive{% else %}text-risk{% endif %}">{% if today_profit_loss > 0 %}+{% endif %}£{{ '%.2f'|format(today_profit_loss) }}</strong></div>
+                <div><span>Last 7 days</span><strong class="{% if week_profit_loss >= 0 %}text-positive{% else %}text-risk{% endif %}">{% if week_profit_loss > 0 %}+{% endif %}£{{ '%.2f'|format(week_profit_loss) }}</strong></div>
+                <div><span>Last 30 days</span><strong class="{% if month_profit_loss >= 0 %}text-positive{% else %}text-risk{% endif %}">{% if month_profit_loss > 0 %}+{% endif %}£{{ '%.2f'|format(month_profit_loss) }}</strong></div>
+            </div>
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-kicker">Trading metrics</div>
+            <h2>Portfolio statistics</h2>
+            <div class="portfolio-stat-list">
+                <div><span>Open positions</span><strong>{{ open_positions }}</strong></div>
+                <div><span>Settled positions</span><strong>{{ settled_positions }}</strong></div>
+                <div><span>Win rate</span><strong>{{ win_rate }}%</strong></div>
+                <div><span>Average odds</span><strong>{{ '%.2f'|format(average_odds) }}</strong></div>
+                <div><span>Average stake</span><strong>£{{ '%.2f'|format(average_stake) }}</strong></div>
+                <div><span>Kelly setting</span><strong>{{ kelly_fraction }}×</strong></div>
+                <div><span>Largest open stake</span><strong>£{{ '%.2f'|format(largest_position) }}</strong></div>
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}

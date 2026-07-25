@@ -4,7 +4,6 @@ from typing import Any, Dict, List
 from app.models.paper_trade import PaperTrade
 from app.services.dashboard_service import build_dashboard_data
 from app.services.opportunity_ranking_service import build_ranked_opportunities
-from app.services.portfolio_health_service import build_portfolio_health
 
 
 def _status(label: str, value: float, good: float, warning: float) -> Dict[str, Any]:
@@ -135,12 +134,23 @@ def _build_ai_coach(dashboard: Dict[str, Any]) -> Dict[str, str]:
 def build_mission_control_data(db) -> Dict[str, Any]:
     dashboard = build_dashboard_data(db)
     ranked_opportunities = build_ranked_opportunities(db, limit=5)
-    portfolio_health = build_portfolio_health(db)
+
+    current_bankroll = float(dashboard["current_bankroll"] or 0)
+    open_stake = sum(
+        float(trade.stake or 0)
+        for trade in db.query(PaperTrade)
+        .filter(PaperTrade.status == "OPEN")
+        .all()
+    )
+    exposure_percent = round(
+        (open_stake / current_bankroll) * 100,
+        2,
+    ) if current_bankroll > 0 else 0.0
 
     model_health = [
         _status("Winner accuracy", dashboard["winner_accuracy"], 65, 55),
         _status("Database health", dashboard["database_health"], 85, 70),
-        _status("Portfolio health", portfolio_health["health_score"], 80, 60),
+        _status("Portfolio ROI", dashboard["portfolio_roi"], 1, 0),
     ]
 
     return {
@@ -148,10 +158,9 @@ def build_mission_control_data(db) -> Dict[str, Any]:
         "mission_control_date": date.today(),
         "ranked_opportunities": ranked_opportunities,
         "opportunity_count": len(ranked_opportunities),
-        "open_stake": portfolio_health["open_exposure"],
-        "exposure_percent": portfolio_health["exposure_percent"],
-        "portfolio_health": portfolio_health,
+        "open_stake": round(open_stake, 2),
+        "exposure_percent": exposure_percent,
         "model_health": model_health,
         "alerts": _build_alerts(dashboard),
-        "ai_coach": portfolio_health["coach"],
+        "ai_coach": _build_ai_coach(dashboard),
     }

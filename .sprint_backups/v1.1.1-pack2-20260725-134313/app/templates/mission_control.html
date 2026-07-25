@@ -24,9 +24,9 @@
         </small>
     </article>
     <article class="mission-kpi-card">
-        <span>Portfolio health</span>
-        <strong>{{ portfolio_health.health_score }}/100</strong>
-        <small>£{{ '%.2f'|format(open_stake) }} exposed · {{ exposure_percent }}%</small>
+        <span>Open exposure</span>
+        <strong>£{{ '%.2f'|format(open_stake) }}</strong>
+        <small>{{ exposure_percent }}% of current bankroll</small>
     </article>
     <article class="mission-kpi-card">
         <span>Winner accuracy</span>
@@ -43,7 +43,7 @@
                     <div class="section-kicker">Opportunity ranking</div>
                     <h2>Current model signals</h2>
                 </div>
-                <a class="secondary-button" href="/opportunities">View full ranking</a>
+                <a class="secondary-button" href="/value-bet-page">Open value scanner</a>
             </div>
 
             {% if ranked_opportunities %}
@@ -60,11 +60,11 @@
                         <strong>{{ opportunity.probability }}%</strong>
                     </div>
                     <div class="mission-opportunity-metric">
-                        <span>Model score</span>
-                        <strong>{{ opportunity.model_score }}</strong>
+                        <span>Priority</span>
+                        <strong>{{ opportunity.priority_score }}</strong>
                     </div>
                     <span class="badge {% if opportunity.stars >= 4 %}badge-success{% elif opportunity.stars >= 3 %}badge-warning{% else %}badge-secondary{% endif %}">
-                        {{ opportunity.action }}
+                        {{ opportunity.confidence }}
                     </span>
                 </div>
                 {% endfor %}
@@ -99,7 +99,7 @@
             <div class="section-kicker">AI Coach</div>
             <h2>{{ ai_coach.headline }}</h2>
             <p>{{ ai_coach.message }}</p>
-            <a class="primary-button" href="/portfolio-health">Open Portfolio Health</a>
+            <a class="primary-button" href="{{ ai_coach.url }}">{{ ai_coach.action }}</a>
         </article>
 
         <article class="card mission-panel">
@@ -121,8 +121,7 @@
             <div class="mission-actions">
                 <a href="/predict-v2">🎯 Analyse match</a>
                 <a href="/fixtures">📅 Manage fixtures</a>
-                <a href="/portfolio-health">💼 Portfolio health</a>
-                <a href="/paper-trades">📄 Paper trades</a>
+                <a href="/paper-trades">💼 Paper portfolio</a>
                 <a href="/data-quality">🩺 Data quality</a>
             </div>
         </article>

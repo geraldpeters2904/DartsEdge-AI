@@ -1,4 +1,3 @@
-from app.routes.portfolio_health import router as portfolio_health_router
 from app.routes.settings import router as settings_router
 from app.routes.mission_control import router as mission_control_router
 from app.routes.opportunities import router as opportunities_router
@@ -43,7 +42,6 @@ create_database()
 app.include_router(paper_trades_router)
 app.include_router(mission_control_router)
 app.include_router(opportunities_router)
-app.include_router(portfolio_health_router)
 app.include_router(dashboard_router)
 app.include_router(update_prediction_router)
 app.include_router(predict_router)

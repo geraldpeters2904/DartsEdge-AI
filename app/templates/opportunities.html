@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="mission-hero">
+    <div>
+        <div class="section-kicker">Sprint 1.1.1</div>
+        <h1>Opportunity Ranking</h1>
+        <p>Prioritised model signals, with betting value confirmed only when market odds are available.</p>
+    </div>
+    <a class="secondary-button" href="/mission-control">Back to Mission Control</a>
+</section>
+
+<section class="mission-kpi-grid opportunity-kpi-grid">
+    <article class="mission-kpi-card">
+        <span>Ranked signals</span>
+        <strong>{{ opportunity_count }}</strong>
+        <small>Scheduled matches analysed</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Confirmed value</span>
+        <strong>{{ confirmed_value_count }}</strong>
+        <small>Requires positive edge at market odds</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Ranking method</span>
+        <strong>4-factor</strong>
+        <small>Probability, confidence, stars and urgency</small>
+    </article>
+</section>
+
+<article class="card mission-panel">
+    <div class="section-heading-row">
+        <div>
+            <div class="section-kicker">Decision board</div>
+            <h2>Current opportunities</h2>
+        </div>
+        <div class="opportunity-legend">
+            <span><i class="mission-status-dot mission-status-good"></i> Value confirmed</span>
+            <span><i class="mission-status-dot mission-status-warning"></i> Check odds</span>
+            <span><i class="mission-status-dot mission-status-risk"></i> Pass</span>
+        </div>
+    </div>
+
+    {% if opportunities %}
+    <div class="opportunity-table-wrap">
+        <table class="opportunity-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Fixture</th>
+                    <th>Selection</th>
+                    <th>Model</th>
+                    <th>Fair odds</th>
+                    <th>Market odds</th>
+                    <th>Edge</th>
+                    <th>Decision</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opportunity in opportunities %}
+                <tr>
+                    <td><span class="mission-rank">#{{ opportunity.rank }}</span></td>
+                    <td>
+                        <strong>{{ opportunity.player_a }} v {{ opportunity.player_b }}</strong>
+                        <small class="opportunity-subline">
+                            {{ opportunity.date.strftime('%d %b %Y') if opportunity.date else 'Date unavailable' }}
+                            {% if opportunity.tournament %} · {{ opportunity.tournament }}{% endif %}
+                        </small>
+                    </td>
+                    <td>
+                        <strong>{{ opportunity.selection }}</strong>
+                        <small class="opportunity-subline">{{ opportunity.confidence }} · {{ opportunity.stars }}★</small>
+                    </td>
+                    <td>
+                        <strong>{{ opportunity.probability }}%</strong>
+                        <small class="opportunity-subline">Score {{ opportunity.model_score }}</small>
+                    </td>
+                    <td>{{ '%.2f'|format(opportunity.fair_odds) if opportunity.fair_odds else '—' }}</td>
+                    <td>{{ '%.2f'|format(opportunity.market_odds) if opportunity.market_odds else 'Required' }}</td>
+                    <td>
+                        {% if opportunity.edge_percent is not none %}
+                            {{ '%+.2f'|format(opportunity.edge_percent) }}%
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="opportunity-decision opportunity-decision-{{ opportunity.status_tone }}">
+                            {{ opportunity.action }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No scheduled fixtures could be ranked.</p>
+        <a class="primary-button" href="/fixtures">Open fixtures</a>
+    </div>
+    {% endif %}
+</article>
+
+<article class="card opportunity-methodology">
+    <div class="section-kicker">Important distinction</div>
+    <h2>Strong prediction does not automatically mean value</h2>
+    <p>
+        The model score ranks the strength and urgency of each prediction. A bet is marked
+        <strong>Value confirmed</strong> only when bookmaker odds imply a lower probability than
+        the DartsEdge model and the expected value is positive.
+    </p>
+</article>
+{% endblock %}
