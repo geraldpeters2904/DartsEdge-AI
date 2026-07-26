@@ -1,4 +1,3 @@
-from app.routes.data_providers import router as data_providers_router
 from app.routes.model_performance_lab import router as model_performance_lab_router
 from app.models.prediction_audit import PredictionAudit
 from app.models.prediction_audit_outcome import PredictionAuditOutcome
@@ -50,7 +49,6 @@ app.mount(
 )
 
 create_database()
-app.include_router(data_providers_router)
 app.include_router(audit_trail_router)
 app.include_router(shadow_comparison_router)
 app.include_router(model_performance_lab_router)
