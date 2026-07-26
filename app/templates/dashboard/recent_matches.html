@@ -1,0 +1,19 @@
+<div class="card">
+    <h2>🎮 Recent Matches</h2>
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Match</th>
+            <th>Winner</th>
+            <th>Score</th>
+        </tr>
+        {% for match in recent_matches %}
+        <tr>
+            <td>{{ match.date }}</td>
+            <td>{{ match.player_a }} vs {{ match.player_b }}</td>
+            <td>{{ match.winner }}</td>
+            <td>{{ match.score }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>

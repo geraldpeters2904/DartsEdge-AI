@@ -1,0 +1,7 @@
+-r requirements.txt
+httpx==0.28.1
+pytest>=8,<9
+pytest-cov>=5,<7
+black>=24,<27
+isort>=5.13,<7
+flake8>=7,<8

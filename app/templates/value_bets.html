@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-hero">
+    <div>
+        <h1>💰 Value Bet Scanner</h1>
+
+        <p class="page-subtitle">
+            Compare your model probability with bookmaker odds.
+        </p>
+    </div>
+</div>
+
+
+<div class="card">
+
+    <h2>Enter Bookmaker Odds</h2>
+
+    {% if selection %}
+        <p>
+            <strong>Selection:</strong>
+            {{ selection | display_name }}
+        </p>
+    {% endif %}
+
+    {% if opponent %}
+        <p>
+            <strong>Opponent:</strong>
+            {{ opponent | display_name }}
+        </p>
+    {% endif %}
+
+    <form method="get" action="/value-bet#value-analysis">
+
+        <div class="fixture-form-grid">
+
+            <div>
+                <label for="probability">
+                    Model Probability (%)
+                </label>
+
+                <input
+                    id="probability"
+                    type="number"
+                    name="probability"
+                    step="0.1"
+                    min="0.1"
+                    max="100"
+                    value="{{ probability if probability is not none else '' }}"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="bookmaker_odds">
+                    Bookmaker Odds
+                </label>
+
+                <input
+                    id="bookmaker_odds"
+                    type="number"
+                    name="bookmaker_odds"
+                    step="0.01"
+                    min="1.01"
+                    value="{{ bookmaker_odds if bookmaker_odds is not none else '' }}"
+                    placeholder="For example: 1.90"
+                    autofocus
+                    required
+                >
+            </div>
+
+        </div>
+
+        <input
+            type="hidden"
+            name="selection"
+            value="{{ selection or '' }}"
+        >
+
+        <input
+            type="hidden"
+            name="opponent"
+            value="{{ opponent or '' }}"
+        >
+
+        <button
+            class="primary-button"
+            type="submit"
+        >
+            📊 Calculate Value
+        </button>
+
+        <button
+            type="button"
+            class="secondary-button"
+            onclick="window.history.back()"
+        >
+            ← Back to Prediction
+        </button>
+
+    </form>
+
+</div>
+
+
+{% if error %}
+
+<div class="card" id="value-analysis">
+    <p class="error-message">{{ error }}</p>
+</div>
+
+{% endif %}
+
+
+{% if value_bet %}
+
+<div class="card" id="value-analysis">
+
+    <h2>Value Analysis</h2>
+
+    {% if selection %}
+        <p>
+            <strong>{{ selection | display_name }}</strong>
+            {% if opponent %}
+                versus {{ opponent | display_name }}
+            {% endif %}
+        </p>
+    {% endif %}
+
+    <div class="kpi-grid">
+
+        <div class="kpi-card">
+            <div class="kpi-label">Model Probability</div>
+            <div class="kpi-value">{{ probability }}%</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Bookmaker Odds</div>
+            <div class="kpi-value">{{ bookmaker_odds }}</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Fair Odds</div>
+            <div class="kpi-value">{{ value_bet.fair_odds }}</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Value Edge</div>
+            <div class="kpi-value">{{ value_bet.edge }}%</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Expected Value</div>
+            <div class="kpi-value">{{ value_bet.expected_value }}</div>
+        </div>
+
+    </div>
+
+    <div class="value-summary">
+
+        <div class="value-stars">
+
+            {% for _ in range(value_bet.stars) %}
+                ★
+            {% endfor %}
+
+            {% for _ in range(5 - value_bet.stars) %}
+                ☆
+            {% endfor %}
+
+        </div>
+
+        <div class="value-recommendation">
+            {{ value_bet.recommendation }}
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

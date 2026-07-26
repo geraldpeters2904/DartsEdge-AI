@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="match-selector-card">
+
+    <div class="match-selector-heading">
+        <div class="section-kicker">PREDICTION CENTRE</div>
+        <h1>🎯 Analyse a Match</h1>
+        <p>Select two players to generate a full DartsEdge analysis.</p>
+    </div>
+
+    {% if error %}
+    <div class="form-error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form
+        action="/predict-v2-result"
+        method="get"
+        class="match-selector-form"
+    >
+
+        <div class="match-selector-field">
+            <label for="player-a">Player A</label>
+
+            <select
+                id="player-a"
+                name="player_a"
+                required
+            >
+                {% for player in players %}
+                <option
+                    value="{{ player.name }}"
+                    {% if player.name == selected_player_a %}
+                    selected
+                    {% endif %}
+                >
+                    {{ player.name | display_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="match-selector-versus">
+            <span>VS</span>
+        </div>
+
+        <div class="match-selector-field">
+            <label for="player-b">Player B</label>
+
+            <select
+                id="player-b"
+                name="player_b"
+                required
+            >
+                {% for player in players %}
+                <option
+                    value="{{ player.name }}"
+                    {% if player.name == selected_player_b %}
+                    selected
+                    {% endif %}
+                >
+                    {{ player.name | display_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="match-selector-action">
+            <button type="submit" class="analyse-match-button">
+                🔍 Analyse Match
+            </button>
+        </div>
+
+    </form>
+
+</section>
+
+
+{% if result %}
+
+{% include "components/prediction_hero.html" %}
+
+{% include "components/verdict_card.html" %}
+
+{% include "components/prediction_factors.html" %}
+
+{% include "components/recommendation_card.html" %}
+{% include "components/trading_opportunities.html" %}
+{% set recommended_selection = result.recommendation.selection %}
+
+{% if recommended_selection == result.player_a %}
+    {% set selected_probability = result.win_prob_a %}
+    {% set opponent = result.player_b %}
+{% else %}
+    {% set selected_probability = result.win_prob_b %}
+    {% set opponent = result.player_a %}
+{% endif %}
+
+<div class="prediction-value-action">
+
+    <form action="/value-bet-page" method="get">
+
+        <input
+            type="hidden"
+            name="probability"
+            value="{{ (selected_probability * 100) | round(1) }}"
+        >
+
+        <input
+            type="hidden"
+            name="selection"
+            value="{{ recommended_selection }}"
+        >
+
+        <input
+            type="hidden"
+            name="opponent"
+            value="{{ opponent }}"
+        >
+
+        <button
+            type="submit"
+            class="analyse-match-button"
+        >
+            💰 Analyse Value
+        </button>
+
+    </form>
+
+    <form action="/save-prediction" method="post">
+
+        <input
+            type="hidden"
+            name="player_a"
+            value="{{ result.player_a }}"
+        >
+
+        <input
+            type="hidden"
+            name="player_b"
+            value="{{ result.player_b }}"
+        >
+
+        <button
+            type="submit"
+            class="analyse-match-button"
+        >
+            💾 Save Prediction
+        </button>
+
+    </form>
+
+</div>
+
+<details class="advanced-analysis">
+
+    <summary>
+        <span>
+            📊 Advanced Analysis
+        </span>
+
+        <span class="advanced-analysis-hint">
+            View detailed evidence
+        </span>
+    </summary>
+
+    <div class="advanced-analysis-content">
+
+        <div class="kpi-grid">
+
+            <div class="kpi-card">
+                <div class="kpi-label">Predicted Winner</div>
+
+                <div class="kpi-value kpi-value-name">
+                    {{ result.intelligence.favoured_player | display_name }}
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Confidence</div>
+
+                <div class="kpi-value">
+                    {{ result.intelligence.confidence }}%
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Expected 180s</div>
+
+                <div class="kpi-value kpi-value-name">
+                    {{ result.expected_180s_a }}
+                    vs
+                    {{ result.expected_180s_b }}
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">First 180 Favourite</div>
+
+                <div class="kpi-value kpi-value-name">
+                    {% if result.first_180.player_a > result.first_180.player_b %}
+                        {{ result.player_a | display_name }}
+                    {% elif result.first_180.player_b > result.first_180.player_a %}
+                        {{ result.player_b | display_name }}
+                    {% else %}
+                        Level
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        {% include "components/player_comparison.html" %}
+
+        {% include "components/head_to_head.html" %}
+
+        {% include "components/confidence_breakdown.html" %}
+
+        {% include "components/ai_panel.html" %}
+
+    </div>
+
+</details>
+
+{% endif %}
+
+{% endblock %}

@@ -2,99 +2,20 @@
 
 {% block content %}
 
-<h1>🏠 DartsEdge AI Dashboard</h1>
-
-<div class="kpi-grid">
-    <div class="kpi-card">
-        <div class="kpi-label">Players</div>
-        <div class="kpi-value">{{ player_count }}</div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">Matches</div>
-        <div class="kpi-value">{{ match_count }}</div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">Predictions</div>
-        <div class="kpi-value">{{ prediction_count }}</div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">Winner Accuracy</div>
-        <div class="kpi-value">{{ winner_accuracy }}%</div>
-
-        {% if winner_accuracy >= 70 %}
-        <span class="badge badge-good">Strong</span>
-        {% elif winner_accuracy >= 55 %}
-        <span class="badge badge-warning">Developing</span>
-        {% else %}
-        <span class="badge badge-low">Needs Data</span>
-        {% endif %}
-    </div>
-</div>
+{% include "dashboard/hero.html" %}
+{% include "dashboard/kpis.html" %}
+{% include "dashboard/paper_trading.html" %}
+{% include "dashboard/portfolio.html" %}
+{% include "dashboard/best_bets.html" %}
+{% include "dashboard/equity_curve.html" %}
+{% include "dashboard/fixtures.html" %}
+{% include "dashboard/awaiting_results.html" %}
 
 <div class="dashboard-grid">
-
-    <div class="card">
-        <h2>🏆 Top Rated Players</h2>
-
-        <table>
-            <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Rating</th>
-                <th>Elo</th>
-            </tr>
-
-            {% for player in top_players %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>
-                    <a href="/player-profile/{{ player.name }}">
-                        {{ player.name }}
-                    </a>
-                </td>
-                <td>{{ player.dartsedge_rating }}</td>
-                <td>{{ player.elo }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-
-    <div class="card">
-        <h2>⚡ Quick Actions</h2>
-
-        <p><a href="/predict-v2">🎯 Open Prediction Centre</a></p>
-        <p><a href="/rankings">🏆 View Rankings</a></p>
-        <p><a href="/prediction-history">📈 Prediction History</a></p>
-        <p><a href="/accuracy">📊 Model Accuracy</a></p>
-        <p><a href="/update-prediction-result">✅ Update Results</a></p>
-        <p><a href="/import">📥 Import Matches</a></p>
-    </div>
-
+    {% include "dashboard/top_players.html" %}
+    {% include "dashboard/quick_actions.html" %}
 </div>
 
-<div class="card">
-    <h2>🎮 Recent Matches</h2>
-
-    <table>
-        <tr>
-            <th>Date</th>
-            <th>Match</th>
-            <th>Winner</th>
-            <th>Score</th>
-        </tr>
-
-        {% for match in recent_matches %}
-        <tr>
-            <td>{{ match.date }}</td>
-            <td>{{ match.player_a }} vs {{ match.player_b }}</td>
-            <td>{{ match.winner }}</td>
-            <td>{{ match.score }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
+{% include "dashboard/recent_matches.html" %}
 
 {% endblock %}

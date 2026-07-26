@@ -1,0 +1,284 @@
+cat > app/templates/paper_trades.html <<'HTML'
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="match-selector-card">
+
+    <div class="match-selector-heading">
+
+        <div class="section-kicker">
+            PAPER TRADING
+        </div>
+
+        <h1>📄 Paper Trades</h1>
+
+        <p>
+            Manage, settle and review your simulated trades.
+        </p>
+
+    </div>
+
+</section>
+
+{% if saved %}
+<div class="success-message">
+    Paper trade saved successfully.
+</div>
+{% endif %}
+
+<div
+    id="paper-trade-message"
+    class="success-message"
+    style="display: none;"
+></div>
+
+{% if trades %}
+
+<div class="table-wrapper">
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Market</th>
+                <th>Selection</th>
+                <th>Bookmaker</th>
+                <th>Odds</th>
+                <th>Stake</th>
+                <th>Status</th>
+                <th>Profit / Loss</th>
+                <th>Settled</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% for trade in trades %}
+
+        <tr id="paper-trade-row-{{ trade.id }}">
+
+            <td>{{ trade.market }}</td>
+
+            <td>{{ trade.selection }}</td>
+
+            <td>{{ trade.bookmaker }}</td>
+
+            <td>
+                {{ "%.2f"|format(trade.odds) }}
+            </td>
+
+            <td>
+                £{{ "%.2f"|format(trade.stake) }}
+            </td>
+
+            <td>
+                {% if trade.status == "WON" %}
+                <span class="badge badge-good">
+                    WON
+                </span>
+
+                {% elif trade.status == "LOST" %}
+                <span class="badge badge-low">
+                    LOST
+                </span>
+
+                {% elif trade.status == "VOID" %}
+                <span class="badge">
+                    VOID
+                </span>
+
+                {% else %}
+                <span class="badge badge-warning">
+                    OPEN
+                </span>
+                {% endif %}
+            </td>
+
+            <td>
+                {% if trade.profit_loss is not none %}
+
+                    {% if trade.profit_loss > 0 %}
+                    <span class="profit-positive">
+                        +£{{ "%.2f"|format(trade.profit_loss) }}
+                    </span>
+
+                    {% elif trade.profit_loss < 0 %}
+                    <span class="profit-negative">
+                        -£{{ "%.2f"|format(trade.profit_loss | abs) }}
+                    </span>
+
+                    {% else %}
+                    <span>
+                        £0.00
+                    </span>
+                    {% endif %}
+
+                {% else %}
+                —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if trade.settled_at %}
+                    {{ trade.settled_at.strftime("%d %b %Y %H:%M") }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if trade.status == "OPEN" %}
+
+                <div class="paper-trade-actions">
+
+                    <button
+                        type="button"
+                        class="action-button action-analyse settle-trade-button"
+                        data-trade-id="{{ trade.id }}"
+                        data-status="WON"
+                    >
+                        🟢 Won
+                    </button>
+
+                    <button
+                        type="button"
+                        class="action-button action-delete settle-trade-button"
+                        data-trade-id="{{ trade.id }}"
+                        data-status="LOST"
+                    >
+                        🔴 Lost
+                    </button>
+
+                    <button
+                        type="button"
+                        class="action-button action-edit settle-trade-button"
+                        data-trade-id="{{ trade.id }}"
+                        data-status="VOID"
+                    >
+                        ⚪ Void
+                    </button>
+
+                </div>
+
+                {% else %}
+                Settled
+                {% endif %}
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% else %}
+
+<section class="card">
+
+    <h2>📭 No paper trades yet</h2>
+
+    <p>
+        Save a prediction and add your first paper trade.
+    </p>
+
+    <a
+        href="/prediction-history"
+        class="analyse-match-button"
+    >
+        Go to Prediction History
+    </a>
+
+</section>
+
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const buttons = document.querySelectorAll(
+        ".settle-trade-button"
+    );
+
+    const messageBox = document.getElementById(
+        "paper-trade-message"
+    );
+
+    buttons.forEach((button) => {
+        button.addEventListener("click", async () => {
+            const tradeId = button.dataset.tradeId;
+            const status = button.dataset.status;
+
+            const confirmed = window.confirm(
+                `Settle this trade as ${status}?`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const row = document.getElementById(
+                `paper-trade-row-${tradeId}`
+            );
+
+            const rowButtons = row.querySelectorAll(
+                ".settle-trade-button"
+            );
+
+            rowButtons.forEach((rowButton) => {
+                rowButton.disabled = true;
+            });
+
+            try {
+                const response = await fetch(
+                    `/api/paper-trades/${tradeId}/settle`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            status: status,
+                        }),
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.detail
+                        || "Unable to settle paper trade"
+                    );
+                }
+
+                messageBox.textContent =
+                    `Trade settled as ${result.status}. `
+                    + `Profit/loss: £${Number(
+                        result.profit_loss
+                    ).toFixed(2)}`;
+
+                messageBox.style.display = "block";
+
+                window.setTimeout(() => {
+                    window.location.reload();
+                }, 700);
+
+            } catch (error) {
+                window.alert(error.message);
+
+                rowButtons.forEach((rowButton) => {
+                    rowButton.disabled = false;
+                });
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}
+HTML

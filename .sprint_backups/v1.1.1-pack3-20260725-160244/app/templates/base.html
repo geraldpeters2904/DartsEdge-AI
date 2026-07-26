@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>DartsEdge AI</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/styles.css?v=8"
+    >
+</head>
+
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">🎯</div>
+
+            <div>
+                <div class="sidebar-brand-name">
+                    DartsEdge
+                </div>
+
+                <div class="sidebar-brand-subtitle">
+                    AI Analytics
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="/mission-control">
+                <span>🛰️</span>
+                <span>Mission Control</span>
+            </a>
+
+            <a href="/opportunities">
+                <span>📋</span>
+                <span>Opportunities</span>
+            </a>
+
+            <a href="/dashboard">
+                <span>🏠</span>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="/predict-v2">
+                <span>🎯</span>
+                <span>Prediction Centre</span>
+            </a>
+
+            <a href="/value-bet-page">
+                <span>💰</span>
+                <span>Value Scanner</span>
+            </a>
+
+            <a href="/fixtures">
+                <span>📅</span>
+                <span>Fixtures</span>
+            </a>
+
+            <a href="/players">
+                <span>👥</span>
+                <span>Players</span>
+            </a>
+
+            <a href="/rankings">
+                <span>🏆</span>
+                <span>Rankings</span>
+            </a>
+
+            <a href="/statistics">
+                <span>📊</span>
+                <span>Statistics</span>
+            </a>
+
+            <a href="/prediction-history">
+                <span>📈</span>
+                <span>Prediction History</span>
+            </a>
+
+            <a href="/accuracy">
+                <span>🎯</span>
+                <span>Accuracy</span>
+            </a>
+
+            <a href="/import">
+                <span>📥</span>
+                <span>Import</span>
+            </a>
+
+            <a href="/data-quality">
+                <span>🩺</span>
+                <span>Data Quality</span>
+            </a>
+            <a href="/settings">
+                <span>⚙️</span>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+    </aside>
+
+    <main class="content">
+
+        <div class="content-inner">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

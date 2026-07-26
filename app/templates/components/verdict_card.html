@@ -1,0 +1,86 @@
+<div class="card verdict-card">
+
+    <div class="section-kicker">AI MATCH VERDICT</div>
+
+    <h2>🧠 {{ result.explanation.headline | display_name }}</h2>
+
+    <p class="verdict-summary">
+        {{ result.explanation.summary }}
+    </p>
+
+    <div class="verdict-meta">
+
+        <div class="verdict-meta-item">
+            <span>Confidence</span>
+
+            {% if result.explanation.confidence == "High" %}
+                <strong class="text-positive">High</strong>
+            {% elif result.explanation.confidence == "Moderate" %}
+                <strong class="text-warning">Moderate</strong>
+            {% else %}
+                <strong class="text-risk">Low</strong>
+            {% endif %}
+        </div>
+
+        <div class="verdict-meta-item">
+            <span>Simulation Support</span>
+            <strong>{{ result.explanation.simulation_pct }}%</strong>
+        </div>
+
+    </div>
+
+    <div class="verdict-columns">
+
+        <div class="verdict-column">
+
+            <h3>✅ Why the model likes this pick</h3>
+
+            {% if result.explanation.strengths %}
+
+            <ul class="verdict-list verdict-strengths">
+
+                {% for item in result.explanation.strengths %}
+                <li>
+                    <span class="verdict-icon">✓</span>
+                    <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+
+            </ul>
+
+            {% else %}
+
+            <p>No clear strengths identified.</p>
+
+            {% endif %}
+
+        </div>
+
+        <div class="verdict-column">
+
+            <h3>⚠ Things to watch</h3>
+
+            {% if result.explanation.risks %}
+
+            <ul class="verdict-list verdict-risks">
+
+                {% for item in result.explanation.risks %}
+                <li>
+                    <span class="verdict-icon">!</span>
+                    <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+
+            </ul>
+
+            {% else %}
+
+            <p>No significant risk factors identified.</p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Prediction Audit Trail · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><div class="section-kicker">MODEL GOVERNANCE</div><h1>🧾 Prediction Audit Trail</h1><p>Immutable snapshots of every prediction generated through the Prediction Centre.</p></div>
+  <a class="action-button action-analyse" href="/audit-trail/export.csv?player={{ filters.player }}&profile={{ filters.profile }}&source={{ filters.source }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}">Export CSV</a>
+</div>
+<div class="card">
+<form method="get" action="/audit-trail" class="audit-filter-grid">
+  <label>Player<input name="player" value="{{ filters.player }}" placeholder="Search either player"></label>
+  <label>Profile<select name="profile"><option value="">All profiles</option>{% for item in profiles %}<option value="{{ item }}" {% if filters.profile == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+  <label>Source<select name="source"><option value="">All sources</option><option value="prediction-centre" {% if filters.source == 'prediction-centre' %}selected{% endif %}>Prediction Centre</option><option value="save-prediction" {% if filters.source == 'save-prediction' %}selected{% endif %}>Saved prediction</option></select></label>
+  <label>From<input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label>To<input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <button class="analyse-match-button" type="submit">Apply filters</button>
+</form>
+</div>
+<div class="card table-scroll">
+<table>
+<thead><tr><th>Created</th><th>Match</th><th>Official selection</th><th>Legacy</th><th>Shadow</th><th>Profile</th><th>Confidence</th><th></th></tr></thead>
+<tbody>
+{% for row in records %}
+<tr>
+<td>{{ row.created_at.strftime('%d %b %Y %H:%M') }}</td>
+<td><strong>{{ row.player_a | display_name }}</strong><br><span class="muted">vs {{ row.player_b | display_name }}</span></td>
+<td>{{ row.official_selection | display_name }} · {{ (row.official_probability * 100) | round(1) }}%</td>
+<td>{{ (row.legacy_probability_a * 100) | round(1) }}% A</td>
+<td>{% if row.intelligence_probability_a is not none %}{{ (row.intelligence_probability_a * 100) | round(1) }}% A{% else %}—{% endif %}</td>
+<td>{{ row.profile_name or '—' }}{% if row.profile_version %} v{{ row.profile_version }}{% endif %}</td>
+<td>{{ row.prediction_confidence or '—' }} / {{ row.explanation_confidence or '—' }}</td>
+<td><a class="action-button action-analyse" href="/audit-trail/{{ row.audit_uuid }}">View</a></td>
+</tr>
+{% else %}<tr><td colspan="8" class="muted">No audited predictions match these filters. Generate a prediction to create the first immutable snapshot.</td></tr>{% endfor %}
+</tbody></table>
+</div>
+{% endblock %}

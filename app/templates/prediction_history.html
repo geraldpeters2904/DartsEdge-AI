@@ -15,6 +15,7 @@
         <th>Confidence</th>
         <th>Ratings</th>
         <th>First 180</th>
+        <th>Action</th>
     </tr>
 
     {% for p in predictions %}
@@ -27,6 +28,16 @@
         <td>{{ p.confidence }}</td>
         <td>{{ p.rating_a }} / {{ p.rating_b }}</td>
         <td>{{ p.first_180_a }} / {{ p.first_180_b }}</td>
+        <td>
+
+            <a
+                href="/paper-trades/new/{{ p.id }}"
+                class="action-button action-analyse"
+            >
+                ➕ Paper Trade
+            </a>
+        
+        </td>
     </tr>
     {% endfor %}
 </table>

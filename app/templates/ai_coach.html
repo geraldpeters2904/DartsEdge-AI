@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="mission-hero">
+    <div>
+        <div class="section-kicker">Sprint 1.1.1 · Pack 4</div>
+        <h1>AI Coach</h1>
+        <p>A rules-based daily briefing combining portfolio risk, opportunity quality and data readiness.</p>
+    </div>
+    <div class="mission-date">{{ coach_date.strftime('%A, %d %B %Y') }}</div>
+</section>
+
+<section class="mission-kpi-grid ai-coach-kpi-grid">
+    <article class="mission-kpi-card">
+        <span>Recommendations</span>
+        <strong>{{ recommendation_count }}</strong>
+        <small>{{ urgent_count }} urgent · {{ warning_count }} warnings</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Confirmed value</span>
+        <strong>{{ confirmed_value_count }}</strong>
+        <small>{{ ranked_opportunity_count }} ranked signal(s)</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Portfolio health</span>
+        <strong>{{ portfolio.health_score }}/100</strong>
+        <small>{{ portfolio.exposure_percent }}% bankroll exposed</small>
+    </article>
+    <article class="mission-kpi-card">
+        <span>Database health</span>
+        <strong>{{ dashboard.database_health }}%</strong>
+        <small>{{ dashboard.prediction_count }} prediction(s) recorded</small>
+    </article>
+</section>
+
+<section class="ai-coach-layout">
+    <div class="ai-coach-main">
+        <article class="card ai-coach-primary ai-coach-primary-{{ primary.tone }}">
+            <div class="section-kicker">Highest-priority action</div>
+            <div class="ai-coach-priority-row">
+                <div>
+                    <span class="ai-coach-category">{{ primary.category }}</span>
+                    <h2>{{ primary.title }}</h2>
+                    <p>{{ primary.message }}</p>
+                </div>
+                <span class="ai-coach-priority-score">Priority {{ primary.priority }}</span>
+            </div>
+            <a class="primary-button" href="{{ primary.url }}">{{ primary.action }}</a>
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-heading-row">
+                <div>
+                    <div class="section-kicker">Daily action list</div>
+                    <h2>Recommended next steps</h2>
+                </div>
+            </div>
+            <div class="ai-coach-advice-list">
+                {% for item in recommendations %}
+                <div class="ai-coach-advice ai-coach-advice-{{ item.tone }}">
+                    <div class="ai-coach-advice-marker"></div>
+                    <div class="ai-coach-advice-copy">
+                        <div class="ai-coach-advice-heading">
+                            <span>{{ item.category }}</span>
+                            <strong>{{ item.title }}</strong>
+                        </div>
+                        <p>{{ item.message }}</p>
+                    </div>
+                    <a href="{{ item.url }}">{{ item.action }}</a>
+                </div>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+
+    <aside class="ai-coach-side">
+        <article class="card mission-panel">
+            <div class="section-kicker">Decision discipline</div>
+            <h2>Coach principles</h2>
+            <div class="ai-coach-principles">
+                <div><strong>1</strong><span>Probability is not value until bookmaker odds are checked.</span></div>
+                <div><strong>2</strong><span>Risk limits override opportunity scores.</span></div>
+                <div><strong>3</strong><span>Passing is preferable to forcing a marginal position.</span></div>
+                <div><strong>4</strong><span>Small samples require conservative conclusions.</span></div>
+            </div>
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-kicker">Quick actions</div>
+            <div class="mission-actions">
+                <a href="/opportunities">📋 Opportunity ranking</a>
+                <a href="/portfolio-health">💼 Portfolio health</a>
+                <a href="/paper-trades">📄 Paper trades</a>
+                <a href="/data-quality">🩺 Data quality</a>
+                <a href="/settings">⚙️ Risk settings</a>
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}

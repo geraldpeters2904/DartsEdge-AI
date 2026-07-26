@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Player Intelligence · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="section-heading-row"><div><div class="section-kicker">Sprint 1.2 · Shadow mode</div><h1>🧠 Player Intelligence</h1><p class="page-subtitle">Inspect the configurable multi-factor rating without changing the official prediction engine.</p></div></div>
+<div class="card">
+<form method="get" action="/player-intelligence" class="settings-grid">
+<div class="form-group"><label for="player">Player</label><select id="player" name="player" required><option value="">Select a player</option>{% for item in players %}<option value="{{ item.name }}" {% if selected_player == item.name %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+<div class="form-group" style="align-self:end"><button type="submit">Build intelligence profile</button></div>
+</form></div>
+<div class="card"><h2>Weight profiles</h2><div class="opportunity-table-wrap"><table><thead><tr><th>Profile</th><th>Version</th><th>Status</th><th>Description</th></tr></thead><tbody>{% for profile in profiles %}<tr><td><strong>{{ profile.name }}</strong></td><td>{{ profile.version }}</td><td>{% if profile.is_active %}<span class="badge badge-good">Active</span>{% else %}<span class="badge badge-secondary">Available</span>{% endif %}</td><td>{{ profile.description }}</td></tr>{% endfor %}</tbody></table></div></div>
+{% if selected_player and not result %}<div class="card"><span class="badge badge-warning">Player not found</span></div>{% endif %}
+{% if result %}
+<div class="kpi-grid"><div class="kpi-card"><span class="kpi-label">Player</span><strong class="kpi-value">{{ result.player }}</strong></div><div class="kpi-card"><span class="kpi-label">Intelligence rating</span><strong class="kpi-value">{{ result.rating }}</strong></div><div class="kpi-card"><span class="kpi-label">Active profile</span><strong class="kpi-value">{{ result.profile.name }}</strong><small>Version {{ result.profile.version }}</small></div><div class="kpi-card"><span class="kpi-label">Evidence</span><strong class="kpi-value">{{ result.data_matches }}</strong><small>recorded matches</small></div></div>
+<div class="card"><div class="section-heading-row"><div><h2>Component breakdown</h2><p class="page-subtitle">Contribution equals component score × profile weight. Neutral placeholders are clearly marked until richer data is connected.</p></div><span class="badge badge-warning">Shadow mode</span></div><div class="opportunity-table-wrap"><table><thead><tr><th>Factor</th><th>Weight</th><th>Score</th><th>Contribution</th><th>Data</th></tr></thead><tbody>{% for item in result.components %}<tr><td><strong>{{ item.label }}</strong></td><td>{{ item.weight }}%</td><td>{{ item.score }}</td><td>{{ item.contribution }}</td><td>{% if item.available %}<span class="badge badge-good">Connected</span>{% else %}<span class="badge badge-secondary">Neutral placeholder</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card summary"><strong>Safety status:</strong> the existing prediction engine remains the official model. Player Intelligence is calculated alongside it for comparison only.</div>
+{% endif %}
+{% endblock %}

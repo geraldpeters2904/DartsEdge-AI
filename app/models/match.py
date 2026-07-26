@@ -12,6 +12,7 @@ class Match(Base):
     tournament = Column(String, default="MODUS")
     stage = Column(String, default="Group")
     match_format = Column(String, default="Best of 7")
+    status = Column(String, default="scheduled")
 
     player_a = Column(String)
     player_b = Column(String)

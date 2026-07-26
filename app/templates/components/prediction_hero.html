@@ -1,0 +1,97 @@
+<div class="card prediction-hero
+{% if result.recommendation.stars >= 4 %}
+prediction-high
+{% elif result.recommendation.stars == 3 %}
+prediction-medium
+{% else %}
+prediction-low
+{% endif %}
+">
+
+    <div class="prediction-hero-top">
+        <div>
+            <div class="section-kicker">MATCH PREDICTION</div>
+
+            <h1>
+                {{ result.player_a | display_name }}
+                vs
+                {{ result.player_b | display_name }}
+            </h1>
+        </div>
+
+        <div class="prediction-hero-stars">
+            {% for _ in range(result.recommendation.stars) %}
+                ★
+            {% endfor %}
+
+            {% for _ in range(5 - result.recommendation.stars) %}
+                ☆
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="prediction-hero-main">
+
+        <div>
+            <div class="kpi-label">Recommended Pick</div>
+
+            <div class="prediction-hero-pick">
+                {{ result.recommendation.selection | display_name }}
+            </div>
+
+            <div class="prediction-hero-confidence">
+                {{ result.recommendation.probability }}% win probability
+            </div>
+        </div>
+
+        <div class="prediction-hero-meter">
+            <div class="prediction-hero-meter-track">
+                <div
+                    class="prediction-hero-meter-fill"
+                    style="width: {{ result.recommendation.probability }}%;">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="prediction-hero-metrics">
+
+        <div class="prediction-hero-metric">
+            <span>Fair Odds</span>
+            <strong>{{ result.recommendation.fair_odds }}</strong>
+        </div>
+
+        <div class="prediction-hero-metric">
+            <span>Minimum Value Odds</span>
+            <strong>{{ result.recommendation.minimum_odds }}</strong>
+        </div>
+
+        <div class="prediction-hero-metric">
+            <span>Confidence</span>
+            <strong>{{ result.recommendation.confidence }}</strong>
+        </div>
+
+        {% if result.value_bet %}
+        <div class="prediction-hero-metric">
+            <span>Value Verdict</span>
+
+            {% if result.value_bet.recommendation == "VALUE BET" %}
+                <strong class="text-positive">
+                    {{ result.value_bet.recommendation }}
+                </strong>
+            {% elif result.value_bet.recommendation in ["SMALL VALUE", "FAIR PRICE"] %}
+                <strong class="text-warning">
+                    {{ result.value_bet.recommendation }}
+                </strong>
+            {% else %}
+                <strong class="text-risk">
+                    {{ result.value_bet.recommendation }}
+                </strong>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>

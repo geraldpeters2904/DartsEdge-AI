@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>✏️ Edit Fixture</h1>
+        <p class="page-subtitle">
+            Update the fixture details below.
+        </p>
+    </div>
+</div>
+
+<section class="card">
+
+    <form
+        method="post"
+        action="/fixtures/edit/{{ fixture.id }}"
+        class="fixture-form"
+    >
+
+        <div class="fixture-form-grid">
+
+            <div class="form-field">
+                <label for="fixture_date">Date</label>
+
+                <input
+                    id="fixture_date"
+                    name="fixture_date"
+                    type="date"
+                    value="{{ fixture.date }}"
+                    required
+                >
+            </div>
+
+            <div class="form-field">
+                <label for="tournament">Tournament</label>
+
+                <input
+                    id="tournament"
+                    name="tournament"
+                    type="text"
+                    value="{{ fixture.tournament }}"
+                    required
+                >
+            </div>
+
+            <div class="form-field">
+                <label for="stage">Stage</label>
+
+                <input
+                    id="stage"
+                    name="stage"
+                    type="text"
+                    value="{{ fixture.stage }}"
+                    required
+                >
+            </div>
+
+            <div class="form-field">
+                <label for="match_format">Format</label>
+
+                <select
+                    id="match_format"
+                    name="match_format"
+                    required
+                >
+                    <option
+                        value="Best of 7"
+                        {% if fixture.match_format == "Best of 7" %}selected{% endif %}
+                    >
+                        Best of 7
+                    </option>
+
+                    <option
+                        value="Best of 9"
+                        {% if fixture.match_format == "Best of 9" %}selected{% endif %}
+                    >
+                        Best of 9
+                    </option>
+
+                    <option
+                        value="Best of 11"
+                        {% if fixture.match_format == "Best of 11" %}selected{% endif %}
+                    >
+                        Best of 11
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="player_a">Player A</label>
+
+                <select
+                    id="player_a"
+                    name="player_a"
+                    required
+                >
+                    {% for player in players %}
+                    <option
+                        value="{{ player.name }}"
+                        {% if player.name == fixture.player_a %}selected{% endif %}
+                    >
+                        {{ player.name | display_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="player_b">Player B</label>
+
+                <select
+                    id="player_b"
+                    name="player_b"
+                    required
+                >
+                    {% for player in players %}
+                    <option
+                        value="{{ player.name }}"
+                        {% if player.name == fixture.player_b %}selected{% endif %}
+                    >
+                        {{ player.name | display_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+            <button
+                type="submit"
+                class="primary-button"
+            >
+                Save Changes
+            </button>
+
+            <a
+                href="/fixtures"
+                class="secondary-button"
+            >
+                Cancel
+            </a>
+        </div>
+
+    </form>
+
+</section>
+
+{% endblock %}

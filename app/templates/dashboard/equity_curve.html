@@ -1,0 +1,87 @@
+<div class="card">
+    <h2>📈 Equity Curve</h2>
+    <p class="page-subtitle">Running paper-trading bankroll after each settled trade.</p>
+
+    {% if equity_curve %}
+    <div style="position: relative; height: 360px; width: 100%; margin-bottom: 24px;">
+        <canvas id="equityCurveChart"></canvas>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No settled paper trades yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const equityCurveData = {{ equity_curve | default([], true) | tojson }};
+    const equityCanvas = document.getElementById("equityCurveChart");
+
+    if (!equityCanvas || equityCurveData.length === 0) {
+        return;
+    }
+
+    const equityLabels = equityCurveData.map(function (row) {
+        return "Trade " + row.trade;
+    });
+
+    const bankrollValues = equityCurveData.map(function (row) {
+        return Number(row.bankroll);
+    });
+
+    new Chart(equityCanvas, {
+        type: "line",
+        data: {
+            labels: equityLabels,
+            datasets: [{
+                label: "Bankroll",
+                data: bankrollValues,
+                borderWidth: 3,
+                tension: 0.25,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: "index",
+                intersect: false
+            },
+            plugins: {
+                legend: { display: true },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return "Bankroll: £" + Number(context.raw).toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function (value) {
+                            return "£" + value;
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: "Bankroll"
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: "Settled Trade"
+                    }
+                }
+            }
+        }
+    });
+});
+</script>

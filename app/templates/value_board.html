@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>📋 Daily Value Board</h1>
+
+<p>
+    Today's scheduled fixtures analysed using the same model as the
+    Prediction Centre.
+</p>
+
+{% if rows %}
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Match</th>
+            <th>Tournament</th>
+            <th>Selection</th>
+            <th>Win %</th>
+            <th>Fair Odds</th>
+            <th>Market Odds</th>
+            <th>Edge</th>
+            <th>Action</th>
+            <th>Analysis</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for row in rows %}
+
+        <tr>
+            <td>
+                <strong>{{ row.player_a | display_name }}</strong>
+                <br>
+                <span>vs {{ row.player_b | display_name }}</span>
+            </td>
+
+            <td>
+                {{ row.tournament }}
+                <br>
+                <small>{{ row.stage }}</small>
+            </td>
+
+            <td>
+                <strong>
+                    {{ row.selection | display_name }}
+                </strong>
+            </td>
+
+            <td>
+                {{ "%.1f"|format(row.probability) }}%
+            </td>
+
+            <td>
+                {% if row.fair_odds is not none %}
+                    {{ "%.2f"|format(row.fair_odds) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if row.market_odds is not none %}
+                    {{ "%.2f"|format(row.market_odds) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if row.edge is not none %}
+
+                    {% if row.edge > 0 %}
+                        <span class="text-positive">
+                            +{{ "%.1f"|format(row.edge) }}%
+                        </span>
+                    {% else %}
+                        <span class="text-negative">
+                            {{ "%.1f"|format(row.edge) }}%
+                        </span>
+                    {% endif %}
+
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if row.action == "Back" %}
+                    🟢 Back
+                {% elif row.action == "Watch" %}
+                    🟡 Watch
+                {% elif row.action == "Pass" %}
+                    🔴 Pass
+                {% else %}
+                    ⚪ Awaiting Odds
+                {% endif %}
+            </td>
+
+            <td>
+                <a
+                    class="small-button"
+                    href="/predict-v2-result?player_a={{ row.player_a | urlencode }}&player_b={{ row.player_b | urlencode }}"
+                >
+                    View Prediction
+                </a>
+            </td>
+        </tr>
+
+    {% endfor %}
+
+    </tbody>
+</table>
+
+{% else %}
+
+<div class="empty-state">
+    <h2>No fixtures scheduled for today</h2>
+
+    <p>
+        Add today's matches on the Fixtures page and they will
+        automatically appear here.
+    </p>
+
+    <a href="/fixtures" class="small-button">
+        📅 Open Fixtures
+    </a>
+</div>
+
+{% endif %}
+
+{% endblock %}

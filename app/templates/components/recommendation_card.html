@@ -73,7 +73,7 @@
     <div class="recommendation-metric bookmaker-odds-section">
         <span>Bookmaker Odds</span>
 
-        <form action="/predict-v2-result" method="get">
+        <form action="/predict-v2-result#value-analysis" method="get">
             <input
                 type="hidden"
                 name="player_a"
@@ -98,14 +98,14 @@
                 value=""
                 required>
 
-            <button type="submit" class="small-button">
-                Analyse Value
-            </button>
+                <button type="submit" class="small-button">
+                    📊 Calculate Value
+                </button>
         </form>
     </div>
 
     {% if result.value_bet %}
-    <div class="value-result">
+    <div class="value-result" id="value-analysis">
         <h3>Value Analysis</h3>
 
         <div class="recommendation-metrics">

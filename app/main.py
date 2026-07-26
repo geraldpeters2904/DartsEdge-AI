@@ -1,6 +1,22 @@
+from app.routes.model_performance_lab import router as model_performance_lab_router
+from app.models.prediction_audit import PredictionAudit
+from app.models.prediction_audit_outcome import PredictionAuditOutcome
+from app.routes.shadow_comparison import router as shadow_comparison_router
+from app.routes.audit_trail import router as audit_trail_router
+from app.routes.player_intelligence import router as player_intelligence_router
+from app.routes.diagnostics import router as diagnostics_router
+from app.version import APP_NAME, VERSION
+from app.routes.ai_coach import router as ai_coach_router
+from app.routes.portfolio_health import router as portfolio_health_router
+from app.routes.settings import router as settings_router
+from app.routes.mission_control import router as mission_control_router
+from app.routes.opportunities import router as opportunities_router
+from app.routes.new_paper_trade import router as new_paper_trade_router
+from app.models.paper_trade import PaperTrade
+from app.routes.paper_trades import router as paper_trades_router
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
+from app.routes.fixtures import router as fixtures_router
 from app.db import SessionLocal, create_database
 from app.models.player import Player
 from app.routes.accuracy import router as accuracy_router
@@ -14,6 +30,9 @@ from app.routes.statistics import router as statistics_router
 from app.routes.update_prediction import router as update_prediction_router
 from app.services.form_service import weighted_expected_180s
 from app.services.markets_service import one80_markets
+from app.routes.players import router as players_router
+from app.routes.value_board import router as value_board_router
+from app.routes.data_quality import router as data_quality_router
 from app.services.match_engine import (
     leg_win_probability,
     value_edge,
@@ -21,7 +40,7 @@ from app.services.match_engine import (
 )
 
 
-app = FastAPI()
+app = FastAPI(title=APP_NAME, version=VERSION)
 
 app.mount(
     "/static",
@@ -30,7 +49,16 @@ app.mount(
 )
 
 create_database()
-
+app.include_router(audit_trail_router)
+app.include_router(shadow_comparison_router)
+app.include_router(model_performance_lab_router)
+app.include_router(player_intelligence_router)
+app.include_router(diagnostics_router)
+app.include_router(paper_trades_router)
+app.include_router(ai_coach_router)
+app.include_router(mission_control_router)
+app.include_router(opportunities_router)
+app.include_router(portfolio_health_router)
 app.include_router(dashboard_router)
 app.include_router(update_prediction_router)
 app.include_router(predict_router)
@@ -40,6 +68,12 @@ app.include_router(player_profile_router)
 app.include_router(statistics_router)
 app.include_router(prediction_history_router)
 app.include_router(importer_router)
+app.include_router(fixtures_router)
+app.include_router(players_router)
+app.include_router(value_board_router)
+app.include_router(data_quality_router)
+app.include_router(new_paper_trade_router)
+app.include_router(settings_router)
 
 
 @app.get("/")
@@ -79,6 +113,7 @@ def match(player_a: str, player_b: str):
             "form_180_b": form_180_b,
             "markets_180": one80_markets(exp_180_a, exp_180_b),
             "value_bet": value_edge(final_prob_a),
+
         }
 
     finally:
