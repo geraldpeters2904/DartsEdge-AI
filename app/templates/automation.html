@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Automation · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><p class="eyebrow">Operations</p><h1>Automation</h1><p class="muted">Run controlled data and briefing jobs. Pack 6 starts in manual mode so nothing runs unexpectedly.</p></div>
+  <span class="status-badge warning">Manual mode</span>
+</div>
+{% if message %}<div class="alert-card">{{ message }}</div>{% endif %}
+<div class="dashboard-grid">
+{% for job in jobs %}
+<section class="panel">
+  <div class="panel-heading"><div><h2>{{ job.name }}</h2><p class="muted">{{ job.description }}</p></div>
+  {% if job.running %}<span class="status-badge warning">Running</span>{% elif job.last_run and job.last_run.status == 'success' %}<span class="status-badge good">Healthy</span>{% elif job.last_run %}<span class="status-badge risk">Failed</span>{% else %}<span class="status-badge neutral">Not run</span>{% endif %}</div>
+  {% if job.last_run %}<p class="muted">Last run: {{ job.last_run.started_at }} · {{ job.last_run.duration_seconds or 0 }}s · {{ job.last_run.records_processed }} processed</p>{% endif %}
+  <form method="post" action="/automation/run/{{ job.id }}"><button class="button" type="submit" {% if job.running %}disabled{% endif %}>Run now</button></form>
+</section>
+{% endfor %}
+</div>
+<section class="panel"><div class="panel-heading"><div><h2>Job history</h2><p class="muted">Persistent operational record of each attempted run.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Started</th><th>Job</th><th>Status</th><th>Duration</th><th>Processed</th><th>Detail</th></tr></thead><tbody>
+{% for run in history %}<tr><td>{{ run.started_at }}</td><td>{{ run.job_name }}</td><td><span class="status-badge {% if run.status == 'success' %}good{% elif run.status == 'failed' %}risk{% else %}warning{% endif %}">{{ run.status }}</span></td><td>{{ run.duration_seconds or 0 }}s</td><td>{{ run.records_processed }}</td><td>{{ run.detail or run.error or '—' }}</td></tr>{% else %}<tr><td colspan="6" class="muted">No automation jobs have run yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

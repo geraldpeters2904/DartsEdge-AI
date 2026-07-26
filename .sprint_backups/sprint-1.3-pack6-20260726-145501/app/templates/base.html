@@ -22,8 +22,6 @@
         <nav class="sidebar-nav">
             {% set current_path = request.url.path %}
             <a href="/mission-control" class="{% if current_path == '/mission-control' %}active{% endif %}"><span>🛰️</span><span>Mission Control</span></a>
-            <a href="/automation" class="{% if current_path == '/automation' %}active{% endif %}"><span>⏱️</span><span>Automation</span></a>
-            <a href="/strategies" class="{% if current_path == '/strategies' %}active{% endif %}"><span>🧭</span><span>Strategies</span></a>
             <a href="/daily-briefing" class="{% if current_path == '/daily-briefing' %}active{% endif %}"><span>☀️</span><span>Daily Briefing</span></a>
             <a href="/opportunities" class="{% if current_path == '/opportunities' %}active{% endif %}"><span>📋</span><span>Opportunities</span></a>
             <a href="/portfolio-health" class="{% if current_path == '/portfolio-health' %}active{% endif %}"><span>💼</span><span>Portfolio Health</span></a>

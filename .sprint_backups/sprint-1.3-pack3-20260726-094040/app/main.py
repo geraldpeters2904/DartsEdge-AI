@@ -1,10 +1,3 @@
-from app.models.strategy_profile import StrategyProfile
-from app.routes.strategies import router as strategies_router
-from app.models.automation_job_run import AutomationJobRun
-from app.routes.automation import router as automation_router
-from app.routes.daily_briefing import router as daily_briefing_router
-from app.routes.expected_value import router as expected_value_router
-from app.routes.odds_providers import router as odds_providers_router
 from app.routes.data_providers import router as data_providers_router
 from app.routes.model_performance_lab import router as model_performance_lab_router
 from app.models.prediction_audit import PredictionAudit
@@ -57,12 +50,7 @@ app.mount(
 )
 
 create_database()
-app.include_router(strategies_router)
-app.include_router(automation_router)
-app.include_router(daily_briefing_router)
 app.include_router(data_providers_router)
-app.include_router(odds_providers_router)
-app.include_router(expected_value_router)
 app.include_router(audit_trail_router)
 app.include_router(shadow_comparison_router)
 app.include_router(model_performance_lab_router)

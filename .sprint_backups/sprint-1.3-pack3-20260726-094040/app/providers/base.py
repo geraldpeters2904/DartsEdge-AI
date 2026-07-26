@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date
 from typing import Any, Iterable, Mapping
 
 
@@ -39,31 +39,6 @@ class FixtureRecord:
         )
 
 
-@dataclass(frozen=True)
-class OddsRecord:
-    event_date: date
-    tournament: str
-    player_a: str
-    player_b: str
-    bookmaker: str
-    market: str
-    selection: str
-    decimal_odds: float
-    captured_at: datetime
-    external_id: str | None = None
-    source_metadata: Mapping[str, Any] = field(default_factory=dict)
-
-    def natural_key(self) -> tuple[str, str, str, str, str, str]:
-        return (
-            self.event_date.isoformat(),
-            self.tournament.strip().casefold(),
-            self.player_a.strip().casefold(),
-            self.player_b.strip().casefold(),
-            self.market.strip().casefold(),
-            self.selection.strip().casefold(),
-        )
-
-
 class DataProvider(ABC):
     provider_id: str
     display_name: str
@@ -77,9 +52,4 @@ class DataProvider(ABC):
     def fetch_fixtures(self, start_date: date, end_date: date) -> Iterable[FixtureRecord]:
         if not self.capabilities.fixtures:
             raise NotImplementedError(f"{self.display_name} does not provide fixtures")
-        return []
-
-    def fetch_odds(self, start_date: date, end_date: date) -> Iterable[OddsRecord]:
-        if not self.capabilities.odds:
-            raise NotImplementedError(f"{self.display_name} does not provide odds")
         return []

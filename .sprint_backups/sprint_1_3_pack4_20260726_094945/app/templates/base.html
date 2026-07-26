@@ -22,9 +22,6 @@
         <nav class="sidebar-nav">
             {% set current_path = request.url.path %}
             <a href="/mission-control" class="{% if current_path == '/mission-control' %}active{% endif %}"><span>🛰️</span><span>Mission Control</span></a>
-            <a href="/automation" class="{% if current_path == '/automation' %}active{% endif %}"><span>⏱️</span><span>Automation</span></a>
-            <a href="/strategies" class="{% if current_path == '/strategies' %}active{% endif %}"><span>🧭</span><span>Strategies</span></a>
-            <a href="/daily-briefing" class="{% if current_path == '/daily-briefing' %}active{% endif %}"><span>☀️</span><span>Daily Briefing</span></a>
             <a href="/opportunities" class="{% if current_path == '/opportunities' %}active{% endif %}"><span>📋</span><span>Opportunities</span></a>
             <a href="/portfolio-health" class="{% if current_path == '/portfolio-health' %}active{% endif %}"><span>💼</span><span>Portfolio Health</span></a>
             <a href="/ai-coach" class="{% if current_path == '/ai-coach' %}active{% endif %}"><span>🤖</span><span>AI Coach</span></a>
@@ -47,7 +44,6 @@
             <div class="sidebar-section-label">System</div>
             <a href="/data-providers" class="{% if current_path == '/data-providers' %}active{% endif %}"><span>🔌</span><span>Data Providers</span></a>
             <a href="/odds-providers" class="{% if current_path == '/odds-providers' %}active{% endif %}"><span>💷</span><span>Odds Providers</span></a>
-            <a href="/expected-value" class="{% if current_path == '/expected-value' %}active{% endif %}"><span>📈</span><span>Expected Value</span></a>
             <a href="/import" class="{% if current_path == '/import' %}active{% endif %}"><span>📥</span><span>Import</span></a>
             <a href="/data-quality" class="{% if current_path == '/data-quality' %}active{% endif %}"><span>🩺</span><span>Data Quality</span></a>
             <a href="/settings" class="{% if current_path == '/settings' %}active{% endif %}"><span>⚙️</span><span>Settings</span></a>

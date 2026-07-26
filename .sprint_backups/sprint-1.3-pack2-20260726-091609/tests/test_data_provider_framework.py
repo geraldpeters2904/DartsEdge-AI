@@ -69,7 +69,7 @@ class DataProviderFrameworkTests(unittest.TestCase):
     def test_provider_page_route(self):
         response = TestClient(app).get("/data-providers")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Data Providers", response.text)
+        self.assertIn("Data Provider Framework", response.text)
 
 
 if __name__ == "__main__":
