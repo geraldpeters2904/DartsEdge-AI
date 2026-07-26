@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Shadow Comparison · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><div class="section-kicker">MODEL EVALUATION</div><h1>⚖️ Shadow Comparison</h1><p>Compare the official legacy probability with Player Intelligence in shadow mode. Only settled audit records count toward performance metrics.</p></div>
+</div>
+
+<div class="metrics-grid">
+  <div class="metric-card"><div class="metric-label">Settled comparisons</div><div class="metric-value">{{ comparison.settled_count }}</div></div>
+  <div class="metric-card"><div class="metric-label">Legacy accuracy</div><div class="metric-value">{% if comparison.legacy.accuracy is not none %}{{ (comparison.legacy.accuracy * 100)|round(1) }}%{% else %}—{% endif %}</div></div>
+  <div class="metric-card"><div class="metric-label">Intelligence accuracy</div><div class="metric-value">{% if comparison.intelligence.accuracy is not none %}{{ (comparison.intelligence.accuracy * 100)|round(1) }}%{% else %}—{% endif %}</div></div>
+  <div class="metric-card"><div class="metric-label">Accuracy difference</div><div class="metric-value">{% if comparison.accuracy_delta is not none %}{{ '%+.1f'|format(comparison.accuracy_delta * 100) }}%{% else %}—{% endif %}</div></div>
+</div>
+
+<div class="card">
+  <div class="section-heading-row"><div><div class="section-kicker">MODEL LEADERBOARD</div><h2>Evidence summary</h2></div><span class="{% if comparison.sample_ready %}badge-success{% else %}badge-warning{% endif %}">{% if comparison.sample_ready %}Evaluation sample ready{% else %}Early sample · target {{ comparison.minimum_sample }}{% endif %}</span></div>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Model</th><th>Settled</th><th>Accuracy</th><th>Brier score</th><th>Calibration error</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for model in [comparison.legacy, comparison.intelligence] %}
+      <tr><td><strong>{{ model.name }}</strong></td><td>{{ model.settled }}</td><td>{% if model.accuracy is not none %}{{ (model.accuracy*100)|round(1) }}%{% else %}—{% endif %}</td><td>{{ model.brier if model.brier is not none else '—' }}</td><td>{% if model.calibration_error is not none %}{{ (model.calibration_error*100)|round(1) }}%{% else %}—{% endif %}</td><td>{% if comparison.leader == model.name %}<span class="badge-success">Leading</span>{% else %}<span class="badge-secondary">Shadow evaluation</span>{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted">Lower Brier score and lower calibration error are better. No model should be promoted from shadow mode until the sample is large enough and performance is consistent.</p>
+</div>
+
+<div class="card table-scroll">
+<table>
+<thead><tr><th>Created</th><th>Match</th><th>Legacy</th><th>Intelligence</th><th>Actual result</th><th>Comparison</th><th></th></tr></thead>
+<tbody>
+{% for row in comparison.rows %}
+<tr>
+<td>{{ row.audit.created_at.strftime('%d %b %Y %H:%M') }}</td>
+<td><strong>{{ row.player_a|display_name }}</strong><br><span class="muted">vs {{ row.player_b|display_name }}</span></td>
+<td>{{ row.legacy_pick|display_name }}<br><span class="muted">{% if row.legacy_probability_a >= 0.5 %}{{ (row.legacy_probability_a * 100)|round(1) }}%{% else %}{{ ((1 - row.legacy_probability_a) * 100)|round(1) }}%{% endif %}</span></td>
+<td>{% if row.shadow_pick %}{{ row.shadow_pick|display_name }}<br><span class="muted">{% if row.intelligence_probability_a >= 0.5 %}{{ (row.intelligence_probability_a * 100)|round(1) }}%{% else %}{{ ((1 - row.intelligence_probability_a) * 100)|round(1) }}%{% endif %}</span>{% else %}—{% endif %}</td>
+<td>{% if row.actual_winner %}<strong>{{ row.actual_winner|display_name }}</strong>{% else %}<form method="post" action="/shadow-comparison/{{ row.audit.audit_uuid }}/settle" class="inline-settle-form"><select name="actual_winner"><option value="{{ row.player_a }}">{{ row.player_a|display_name }}</option><option value="{{ row.player_b }}">{{ row.player_b|display_name }}</option></select><button class="action-button action-analyse" type="submit">Settle</button></form>{% endif %}</td>
+<td><span class="{% if row.winner_model == 'Intelligence' %}badge-success{% elif row.winner_model == 'Legacy' %}badge-warning{% else %}badge-secondary{% endif %}">{{ row.winner_model }}</span></td>
+<td><a class="action-button action-analyse" href="/audit-trail/{{ row.audit.audit_uuid }}">Audit</a></td>
+</tr>
+{% else %}<tr><td colspan="7" class="muted">No audited predictions yet. Generate predictions in Prediction Centre first.</td></tr>{% endfor %}
+</tbody></table>
+</div>
+{% endblock %}

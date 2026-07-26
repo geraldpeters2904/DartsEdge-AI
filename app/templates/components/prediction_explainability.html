@@ -1,0 +1,82 @@
+{% if result.explainability %}
+<details class="card explainability-panel" open>
+    <summary class="explainability-summary">
+        <span>
+            <span class="section-kicker">PLAYER INTELLIGENCE · SHADOW MODE</span>
+            <strong>Why this prediction?</strong>
+        </span>
+        <span class="status-badge status-{{ result.explainability.explanation_confidence.label | lower }}">
+            Explanation confidence: {{ result.explainability.explanation_confidence.label }}
+        </span>
+    </summary>
+
+    <div class="explainability-body">
+        <div class="explainability-overview">
+            <div>
+                <span>Official selection</span>
+                <strong>{{ result.explainability.selection | display_name }}</strong>
+            </div>
+            <div>
+                <span>Official probability</span>
+                <strong>{{ result.explainability.official_probability }}%</strong>
+            </div>
+            <div>
+                <span>Prediction confidence</span>
+                <strong>{{ result.explainability.prediction_confidence }}</strong>
+            </div>
+            <div>
+                <span>Active profile</span>
+                <strong>{{ result.explainability.profile.name }} v{{ result.explainability.profile.version }}</strong>
+            </div>
+        </div>
+
+        <p class="explainability-lead">{{ result.explainability.summary }}</p>
+
+        <div class="explainability-columns">
+            <section>
+                <h3>Factors supporting the selection</h3>
+                {% if result.explainability.positive_factors %}
+                    {% for factor in result.explainability.positive_factors %}
+                    <div class="explainability-factor factor-positive">
+                        <div>
+                            <strong>{{ factor.label }}</strong>
+                            <span>{{ factor.strength | title }} advantage · {{ factor.weight | round(0) }}% profile weight</span>
+                        </div>
+                        <b>+{{ factor.impact }}</b>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="muted">No material positive factor separation is available.</p>
+                {% endif %}
+            </section>
+
+            <section>
+                <h3>Factors reducing confidence</h3>
+                {% if result.explainability.negative_factors %}
+                    {% for factor in result.explainability.negative_factors %}
+                    <div class="explainability-factor factor-negative">
+                        <div>
+                            <strong>{{ factor.label }}</strong>
+                            <span>{{ factor.strength | title }} disadvantage · {{ factor.weight | round(0) }}% profile weight</span>
+                        </div>
+                        <b>{{ factor.impact }}</b>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="muted">No material negative factor separation is available.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        {% if result.explainability.unavailable_factors %}
+        <div class="explainability-coverage">
+            <strong>Data coverage</strong>
+            <p>{{ result.explainability.explanation_confidence.message }}</p>
+            <p>Neutral placeholders: {% for factor in result.explainability.unavailable_factors %}{{ factor.label }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+        </div>
+        {% endif %}
+
+        <p class="explainability-disclaimer">{{ result.explainability.disclaimer }}</p>
+    </div>
+</details>
+{% endif %}

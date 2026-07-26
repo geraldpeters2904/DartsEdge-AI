@@ -13,8 +13,8 @@ class ReleaseStabilizationTests(unittest.TestCase):
 
     def test_version_metadata(self):
         payload = version_payload()
-        self.assertEqual(payload["version"], "1.1.1")
-        self.assertEqual(payload["build"], "006")
+        self.assertEqual(payload["version"], VERSION)
+        self.assertEqual(payload["build"], BUILD)
 
     def test_version_endpoint(self):
         response = self.client.get("/version")
@@ -32,7 +32,7 @@ class ReleaseStabilizationTests(unittest.TestCase):
         response = self.client.get("/diagnostics")
         self.assertEqual(response.status_code, 200)
         self.assertIn("Diagnostics", response.text)
-        self.assertIn("Build 006", response.text)
+        self.assertIn(f"Build {BUILD}", response.text)
 
     def test_primary_pages_remain_available(self):
         for path in ("/mission-control", "/opportunities", "/portfolio-health", "/ai-coach", "/dashboard"):

@@ -51,6 +51,11 @@ def build_diagnostics(db: Session) -> dict[str, Any]:
             "status": "healthy",
             "detail": "Opportunity, portfolio and AI Coach services registered",
         },
+        {
+            "name": "Intelligence Engine",
+            "status": "healthy",
+            "detail": "Player Intelligence, explainability, audit, shadow comparison and Performance Lab registered",
+        },
     ]
 
     overall = "healthy" if all(item["status"] == "healthy" for item in checks) else "degraded"

@@ -1,3 +1,9 @@
+from app.routes.model_performance_lab import router as model_performance_lab_router
+from app.models.prediction_audit import PredictionAudit
+from app.models.prediction_audit_outcome import PredictionAuditOutcome
+from app.routes.shadow_comparison import router as shadow_comparison_router
+from app.routes.audit_trail import router as audit_trail_router
+from app.routes.player_intelligence import router as player_intelligence_router
 from app.routes.diagnostics import router as diagnostics_router
 from app.version import APP_NAME, VERSION
 from app.routes.ai_coach import router as ai_coach_router
@@ -43,6 +49,10 @@ app.mount(
 )
 
 create_database()
+app.include_router(audit_trail_router)
+app.include_router(shadow_comparison_router)
+app.include_router(model_performance_lab_router)
+app.include_router(player_intelligence_router)
 app.include_router(diagnostics_router)
 app.include_router(paper_trades_router)
 app.include_router(ai_coach_router)

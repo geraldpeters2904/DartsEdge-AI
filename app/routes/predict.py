@@ -7,6 +7,7 @@ from app.db import SessionLocal
 from app.models.player import Player
 from app.services.kelly_service import calculate_kelly_stake
 from app.services.prediction_pipeline import build_prediction
+from app.services.prediction_audit_service import create_prediction_audit
 from app.services.prediction_storage_service import save_prediction
 from app.services.settings_service import get_settings
 from app.services.trade_rating_service import calculate_trade_rating
@@ -169,6 +170,8 @@ def predict_v2_result(
 
         saved_prediction = save_prediction(db, result)
         result["prediction_id"] = saved_prediction.id
+        audit_record = create_prediction_audit(db, result, prediction_id=saved_prediction.id, source="prediction-centre")
+        result["audit_uuid"] = audit_record.audit_uuid
 
         bankroll = _setting(settings, "bankroll", 1000.0)
         kelly_fraction = _setting(settings, "kelly_fraction", 0.25)
@@ -258,7 +261,8 @@ async def save_prediction_route(request: Request):
         if not result:
             return {"error": "Prediction could not be generated."}
 
-        save_prediction(db, result)
+        saved = save_prediction(db, result)
+        create_prediction_audit(db, result, prediction_id=saved.id, source="save-prediction")
         return RedirectResponse(url="/prediction-history", status_code=303)
     finally:
         db.close()

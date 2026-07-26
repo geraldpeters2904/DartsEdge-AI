@@ -15,6 +15,7 @@ from app.services.simulation_service import simulate_match
 from app.services.prediction_factors_service import (
     build_prediction_factors,
 )
+from app.services.prediction_explainability_service import build_prediction_explainability
 
 
 def build_prediction(db, player_a, player_b):
@@ -119,6 +120,10 @@ def build_prediction(db, player_a, player_b):
         "head_to_head": head_to_head,
         "prediction_factors": prediction_factors,
     }
+
+    result["explainability"] = build_prediction_explainability(
+        db, player_a, player_b, final_prob_a
+    )
 
     result["recommendation"] = build_recommendation(result)
     result["trading_opportunities"] = (

@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>🎯 Match Analysis</h1>
+
+<form action="/predict-ui">
+    <label>Player A</label><br>
+    <select name="player_a">
+        {% for player in players %}
+        <option value="{{ player.name }}" {% if player.name == selected_player_a %}selected{% endif %}>
+            {{ player.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+
+    <label>Player B</label><br>
+    <select name="player_b">
+        {% for player in players %}
+        <option value="{{ player.name }}" {% if player.name == selected_player_b %}selected{% endif %}>
+            {{ player.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+
+    <button type="submit">Analyse Match</button>
+</form>
+
+{% if result %}
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">{{ result.player_a }} Win Probability</div>
+        <div class="kpi-value">{{ (result.win_prob_a * 100) | round(1) }}%</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">{{ result.player_b }} Win Probability</div>
+        <div class="kpi-value">{{ (result.win_prob_b * 100) | round(1) }}%</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Favoured Player</div>
+        <div class="kpi-value" style="font-size:24px;">
+            {{ result.intelligence.favoured_player }}
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Confidence</div>
+        <div class="kpi-value">{{ result.intelligence.confidence }}</div>
+
+        {% if result.intelligence.confidence >= 80 %}
+        <span class="badge badge-good">High</span>
+        {% elif result.intelligence.confidence >= 60 %}
+        <span class="badge badge-warning">Medium</span>
+        {% else %}
+        <span class="badge badge-low">Low</span>
+        {% endif %}
+    </div>
+</div>
+<div class="card ai-panel">
+    <h2>🧠 AI Match Intelligence</h2>
+
+    <div class="ai-header">
+        <div>
+            <div class="kpi-label">Predicted Winner</div>
+            <div class="ai-winner">
+                {{ result.intelligence.favoured_player }}
+            </div>
+        </div>
+
+        <div class="ai-confidence">
+            <div class="kpi-label">Confidence</div>
+
+            <div class="confidence-bar">
+                <div
+                    class="confidence-fill"
+                    style="width: {{ result.intelligence.confidence }}%;">
+                </div>
+            </div>
+
+            <strong>{{ result.intelligence.confidence }}%</strong>
+
+            {% if result.intelligence.confidence >= 80 %}
+            <span class="badge badge-good">High</span>
+            {% elif result.intelligence.confidence >= 60 %}
+            <span class="badge badge-warning">Medium</span>
+            {% else %}
+            <span class="badge badge-low">Low</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div>
+            <h3>✅ Strengths</h3>
+
+            {% if result.explanation.strengths %}
+            <ul>
+                {% for item in result.explanation.strengths %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No clear statistical advantage identified.</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <h3>⚠ Risks</h3>
+
+            {% if result.explanation.risks %}
+            <ul>
+                {% for item in result.explanation.risks %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No major statistical risks identified.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3>📊 Model Evidence</h3>
+
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Monte Carlo support</td>
+            <td>{{ result.explanation.simulation_pct }}%</td>
+        </tr>
+        <tr>
+            <td>{{ result.player_a }} expected 180s</td>
+            <td>{{ result.explanation.expected_a }}</td>
+        </tr>
+        <tr>
+            <td>{{ result.player_b }} expected 180s</td>
+            <td>{{ result.explanation.expected_b }}</td>
+        </tr>
+        <tr>
+            <td>Rating difference</td>
+            <td>{{ result.explanation.rating_diff }}</td>
+        </tr>
+    </table>
+
+    <h3>💡 AI Verdict</h3>
+    <p>{{ result.explanation.verdict }}</p>
+</div>
+</div>
+<div class="card summary">
+    <h2>⭐ Match Summary</h2>
+
+    <p><strong>Match:</strong> {{ result.player_a }} vs {{ result.player_b }}</p>
+
+    <p><strong>Favoured Player:</strong></p>
+    <p class="big">{{ result.intelligence.favoured_player }}</p>
+
+    <p><strong>DartsEdge Rating:</strong></p>
+    <p>{{ result.player_a }}: {{ result.profile_a.dartsedge_rating }}</p>
+    <p>{{ result.player_b }}: {{ result.profile_b.dartsedge_rating }}</p>
+
+    <p><strong>Confidence:</strong> {{ result.intelligence.confidence }} / 100</p>
+
+    <p><strong>Win Probability:</strong></p>
+    <p>{{ result.player_a }}: {{ result.win_prob_a }}</p>
+    <p>{{ result.player_b }}: {{ result.win_prob_b }}</p>
+
+    <p><strong>Expected 180s:</strong></p>
+    <p>{{ result.player_a }}: {{ result.expected_180s_a }}</p>
+    <p>{{ result.player_b }}: {{ result.expected_180s_b }}</p>
+
+    <p><strong>Most 180s:</strong></p>
+    <p>{{ result.player_a }}: {{ result.markets_180.most_180s_a }}</p>
+    <p>{{ result.player_b }}: {{ result.markets_180.most_180s_b }}</p>
+</div>
+
+<div class="card">
+    <h2>Match Intelligence</h2>
+    <p><strong>Favoured Player:</strong> {{ result.intelligence.favoured_player }}</p>
+    <p><strong>Confidence:</strong> {{ result.intelligence.confidence }} / 100</p>
+
+    <h3>Reasons for {{ result.player_a }}</h3>
+    <ul>
+        {% for reason in result.intelligence.reasons_a %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Reasons for {{ result.player_b }}</h3>
+    <ul>
+        {% for reason in result.intelligence.reasons_b %}
+        <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% include "components/player_comparison.html" %}
+
+<div class="card">
+    <h2>180 Markets</h2>
+
+    <table>
+        <tr>
+            <th>Market</th>
+            <th>{{ result.player_a }}</th>
+            <th>{{ result.player_b }}</th>
+        </tr>
+        <tr>
+            <td>Expected 180s</td>
+            <td>{{ result.expected_180s_a }}</td>
+            <td>{{ result.expected_180s_b }}</td>
+        </tr>
+        <tr>
+            <td>Over 0.5 180s</td>
+            <td>{{ result.markets_180.player_a.over_0_5 }}</td>
+            <td>{{ result.markets_180.player_b.over_0_5 }}</td>
+        </tr>
+        <tr>
+            <td>Over 1.5 180s</td>
+            <td>{{ result.markets_180.player_a.over_1_5 }}</td>
+            <td>{{ result.markets_180.player_b.over_1_5 }}</td>
+        </tr>
+        <tr>
+            <td>Over 2.5 180s</td>
+            <td>{{ result.markets_180.player_a.over_2_5 }}</td>
+            <td>{{ result.markets_180.player_b.over_2_5 }}</td>
+        </tr>
+        <tr>
+            <td>Most 180s</td>
+            <td>{{ result.markets_180.most_180s_a }}</td>
+            <td>{{ result.markets_180.most_180s_b }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="card">
+    <h2>First 180 Market</h2>
+
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>Probability</th>
+            <th>Career First 180 %</th>
+            <th>Last 10 First 180 %</th>
+        </tr>
+        <tr>
+            <td>{{ result.player_a }}</td>
+            <td>{{ result.first_180.player_a }}</td>
+            <td>{{ result.first_180.profile_a.first_180_pct }}</td>
+            <td>{{ result.first_180.profile_a.last_10_pct }}</td>
+        </tr>
+        <tr>
+            <td>{{ result.player_b }}</td>
+            <td>{{ result.first_180.player_b }}</td>
+            <td>{{ result.first_180.profile_b.first_180_pct }}</td>
+            <td>{{ result.first_180.profile_b.last_10_pct }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Simulation Markets</h2>
+
+    <h3>Correct Score</h3>
+    <table>
+        <tr>
+            <th>Score</th>
+            <th>Probability</th>
+        </tr>
+        {% for score, probability in result.simulation.scores.items() %}
+        <tr>
+            <td>{{ score }}</td>
+            <td>{{ probability }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Handicap Markets</h3>
+    <p>{{ result.player_a }} -1.5: {{ result.simulation.handicaps.player_a_minus_1_5 }}</p>
+    <p>{{ result.player_a }} -2.5: {{ result.simulation.handicaps.player_a_minus_2_5 }}</p>
+    <p>{{ result.player_b }} +2.5: {{ result.simulation.handicaps.player_b_plus_2_5 }}</p>
+
+    <h3>Total Legs</h3>
+    <p>Over 5.5 legs: {{ result.simulation.total_legs.over_5_5 }}</p>
+    <p>Over 6.5 legs: {{ result.simulation.total_legs.over_6_5 }}</p>
+</div>
+
+<div class="card">
+    <h2>180 Form</h2>
+
+    <table>
+        <tr>
+            <th>Form</th>
+            <th>{{ result.player_a }}</th>
+            <th>{{ result.player_b }}</th>
+        </tr>
+        <tr>
+            <td>Last 5</td>
+            <td>{{ result.form_180_a.last_5 }}</td>
+            <td>{{ result.form_180_b.last_5 }}</td>
+        </tr>
+        <tr>
+            <td>Last 10</td>
+            <td>{{ result.form_180_a.last_10 }}</td>
+            <td>{{ result.form_180_b.last_10 }}</td>
+        </tr>
+        <tr>
+            <td>Career</td>
+            <td>{{ result.form_180_a.career }}</td>
+            <td>{{ result.form_180_b.career }}</td>
+        </tr>
+    </table>
+</div>
+
+{% endif %}
+
+{% endblock %}

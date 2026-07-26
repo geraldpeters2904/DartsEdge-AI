@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Audit Detail · DartsEdge AI{% endblock %}
+{% block content %}
+{% if not record %}<div class="card"><h1>Audit record not found</h1><a href="/audit-trail">Return to audit trail</a></div>{% else %}
+<div class="page-header"><div><div class="section-kicker">IMMUTABLE SNAPSHOT</div><h1>{{ record.player_a | display_name }} vs {{ record.player_b | display_name }}</h1><p>{{ record.created_at.strftime('%d %B %Y at %H:%M:%S') }} · {{ record.audit_uuid }}</p></div><a class="action-button action-analyse" href="/audit-trail">Back</a></div>
+<div class="kpi-grid">
+<div class="kpi-card"><div class="kpi-label">Official selection</div><div class="kpi-value kpi-value-name">{{ record.official_selection | display_name }}</div></div>
+<div class="kpi-card"><div class="kpi-label">Official probability</div><div class="kpi-value">{{ (record.official_probability * 100) | round(1) }}%</div></div>
+<div class="kpi-card"><div class="kpi-label">Profile</div><div class="kpi-value kpi-value-name">{{ record.profile_name }} v{{ record.profile_version }}</div></div>
+<div class="kpi-card"><div class="kpi-label">Model version</div><div class="kpi-value kpi-value-name">{{ record.model_version }}</div></div>
+</div>
+<div class="card"><h2>Explanation snapshot</h2><p>{{ snapshot.shadow.explainability.summary }}</p><p class="muted">Prediction confidence: {{ record.prediction_confidence }} · Explanation confidence: {{ record.explanation_confidence }} · Application: {{ record.application_version }}</p></div>
+<div class="card"><details><summary><strong>Raw immutable JSON snapshot</strong></summary><pre class="audit-json">{{ snapshot | tojson(indent=2) }}</pre></details></div>
+{% endif %}
+{% endblock %}

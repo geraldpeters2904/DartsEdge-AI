@@ -321,3 +321,48 @@ label { display: block; margin-top: 13px; color: #c6d3e2; font-weight: 650; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* Sprint 1.2 Pack 2: structured prediction explainability */
+.explainability-panel { margin-top: 18px; }
+.explainability-summary { display: flex; justify-content: space-between; gap: 18px; align-items: center; cursor: pointer; list-style: none; }
+.explainability-summary::-webkit-details-marker { display: none; }
+.explainability-summary strong { display: block; margin-top: 4px; font-size: 22px; }
+.explainability-body { padding-top: 22px; }
+.explainability-overview { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.explainability-overview > div { padding: 14px; border: 1px solid var(--border-soft); border-radius: 12px; background: rgba(7,16,26,.55); }
+.explainability-overview span { display: block; color: var(--muted); font-size: 12px; }
+.explainability-overview strong { display: block; margin-top: 6px; }
+.explainability-lead { margin: 20px 0; color: #d7e1ec; font-size: 16px; }
+.explainability-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.explainability-columns section { padding: 16px; border: 1px solid var(--border-soft); border-radius: 12px; }
+.explainability-columns h3 { margin-top: 0; font-size: 15px; }
+.explainability-factor { display: flex; justify-content: space-between; gap: 15px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
+.explainability-factor:last-child { border-bottom: 0; }
+.explainability-factor span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+.factor-positive b { color: var(--success); }
+.factor-negative b { color: var(--danger); }
+.explainability-coverage { margin-top: 18px; padding: 15px; border: 1px solid rgba(217,152,33,.35); border-radius: 12px; background: rgba(217,152,33,.08); }
+.explainability-coverage p { margin: 7px 0 0; color: #d5c39e; }
+.explainability-disclaimer { margin: 16px 0 0; color: var(--muted); font-size: 12px; }
+.status-high { color: var(--success); border-color: rgba(20,200,139,.35); }
+.status-medium { color: var(--warning); border-color: rgba(217,152,33,.35); }
+.status-low { color: var(--danger); border-color: rgba(231,71,92,.35); }
+@media (max-width: 900px) {
+  .explainability-overview { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .explainability-columns { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .explainability-summary { align-items: flex-start; flex-direction: column; }
+  .explainability-overview { grid-template-columns: 1fr; }
+}
+
+/* Sprint 1.2 Pack 3 — Prediction Audit Trail */
+.audit-filter-grid { display:grid; grid-template-columns:repeat(5,minmax(140px,1fr)) auto; gap:14px; align-items:end; }
+.audit-filter-grid label { display:grid; gap:7px; font-size:.82rem; color:var(--muted, #94a3b8); font-weight:700; }
+.audit-filter-grid input,.audit-filter-grid select { width:100%; }
+.table-scroll { overflow-x:auto; }
+.audit-json { white-space:pre-wrap; overflow-wrap:anywhere; max-height:620px; overflow:auto; padding:18px; border-radius:12px; background:#07101e; color:#cbd5e1; font-size:.78rem; line-height:1.55; }
+@media (max-width:1100px){.audit-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:640px){.audit-filter-grid{grid-template-columns:1fr;}}
+
+.inline-settle-form{display:flex;gap:8px;align-items:center}.inline-settle-form select{min-width:150px}.metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}.metric-card{padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.metric-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.metric-value{font-size:28px;font-weight:800;margin-top:8px}@media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.metrics-grid{grid-template-columns:1fr}.inline-settle-form{align-items:stretch;flex-direction:column}}
