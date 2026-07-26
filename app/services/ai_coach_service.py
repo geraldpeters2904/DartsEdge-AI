@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from app.services.dashboard_service import build_dashboard_data
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
+from app.services.strategy_service import get_active_strategy, strategy_summary
 
 
 TONE_ORDER = {"risk": 0, "warning": 1, "good": 2, "neutral": 3}
@@ -225,11 +226,22 @@ def build_ai_coach_data(db) -> Dict[str, Any]:
     dashboard = build_dashboard_data(db)
     portfolio = build_portfolio_health(db)
     opportunities = build_ranked_opportunities(db, limit=20)
+    active_strategy = strategy_summary(get_active_strategy(db))
+    strategy_advice = [_advice(
+        priority=55 if active_strategy["enforcement_mode"] == "active" else 20,
+        tone="warning" if active_strategy["enforcement_mode"] == "active" else "neutral",
+        category="Strategy",
+        title=f"{active_strategy['name']} strategy is {active_strategy['enforcement_mode']}",
+        message=("Strategy rules now control effective recommendations." if active_strategy["enforcement_mode"] == "active" else "Strategy rules remain advisory while shadow mode is enabled."),
+        action="Review strategy",
+        url="/strategies",
+    )]
 
     recommendations = (
         _portfolio_advice(portfolio)
         + _opportunity_advice(opportunities)
         + _data_advice(dashboard)
+        + strategy_advice
     )
     recommendations.sort(
         key=lambda item: (-item["priority"], TONE_ORDER.get(item["tone"], 9))

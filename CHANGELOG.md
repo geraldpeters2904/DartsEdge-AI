@@ -2,6 +2,32 @@
 
 All notable changes to DartsEdge AI are recorded here.
 
+## [1.4.0] - 2026-07-26
+
+### Added
+- Versioned strategy framework and five seeded strategy profiles.
+- Validated strategy rules for EV, edge, confidence, Kelly, exposure, stake, sample, odds, markets and competitions.
+- Strategy editor with immutable version history, duplication and JSON import/export.
+- Guarded Decision Engine with shadow and active enforcement.
+- Strategy Analytics with acceptance, rejection, settlement, ROI, win rate and drawdown.
+- GitHub Actions regression workflow for Python 3.9 and 3.12.
+
+### Changed
+- Updated application metadata to v1.4.0, build 001 — Strategy Engine.
+- Added dynamic version information to the sidebar footer.
+- Normalised legacy template rendering through the modern Starlette request-first API.
+- Organised documentation under architecture, API, user, developer, release and roadmap sections.
+
+### Fixed
+- Removed unclosed-file ResourceWarnings in Daily Briefing tests.
+- Removed TemplateResponse deprecation warnings under application control.
+- Made strategy tests independent of the user's persisted active-strategy choice.
+
+### Safety and compatibility
+- Intelligence remains in shadow mode.
+- Strategy enforcement is not enabled automatically.
+- Unsettled decisions remain excluded from performance results.
+
 ## [1.2.0] - 2026-07-26
 
 ### Added

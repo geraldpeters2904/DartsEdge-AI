@@ -12,6 +12,7 @@ from app.services.odds_provider_service import OddsProviderService
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.settings_service import get_settings
+from app.services.strategy_service import get_active_strategy, strategy_summary
 
 
 def _normalise(value: str | None) -> str:
@@ -74,6 +75,7 @@ def build_daily_briefing(db) -> Dict[str, Any]:
     top = positive[0] if positive else None
     data_diag = DataProviderService(db).diagnostics()
     odds_diag = OddsProviderService().diagnostics()
+    active_strategy = strategy_summary(get_active_strategy(db))
 
     system_healthy = data_diag["healthy"] >= 1 and odds_diag["healthy"] >= 1
     if portfolio["risk_level"] == "risk":
@@ -105,4 +107,6 @@ def build_daily_briefing(db) -> Dict[str, Any]:
         "performance": performance,
         "model_leader": leader,
         "provider_health": {"data": data_diag, "odds": odds_diag, "healthy": system_healthy},
+        "active_strategy": active_strategy,
+        "decision_engine_active": active_strategy["enforcement_mode"] == "active" and active_strategy["decision_rules_enabled"],
     }

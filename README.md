@@ -1,26 +1,23 @@
 # DartsEdge AI
 
-DartsEdge AI is a darts analytics and betting intelligence platform.
+DartsEdge AI is a FastAPI-based darts analytics and decision-support platform.
 
-## Current Features
+## v1.4.0 — Strategy Engine
 
-- Player database
-- Match database
-- CSV match import
-- Elo ratings
-- Player statistics
-- Player profile engine
-- Match intelligence
-- 180 markets
-- Monte Carlo simulation
-- Correct score probabilities
-- Handicap markets
-- Total legs markets
-- Match analysis dashboard
+The platform includes prediction intelligence, explainability, immutable audit records, model comparison, provider frameworks, expected-value analysis, automation, versioned strategies, guarded decision enforcement and settled strategy analytics.
 
-## Run the app
+## Run locally
 
 ```bash
 cd ~/dartsedge-ai/backend
 source venv/bin/activate
 uvicorn app.main:app --reload
+```
+
+## Test
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py'
+```
+
+Development dependencies are declared in `requirements-dev.txt`. CI runs the suite on Python 3.9 and 3.12.

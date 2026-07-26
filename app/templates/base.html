@@ -23,7 +23,8 @@
             {% set current_path = request.url.path %}
             <a href="/mission-control" class="{% if current_path == '/mission-control' %}active{% endif %}"><span>🛰️</span><span>Mission Control</span></a>
             <a href="/automation" class="{% if current_path == '/automation' %}active{% endif %}"><span>⏱️</span><span>Automation</span></a>
-            <a href="/strategies" class="{% if current_path == '/strategies' %}active{% endif %}"><span>🧭</span><span>Strategies</span></a>
+            <a href="/strategies" class="{% if current_path in ['/strategies', '/strategy-editor'] %}active{% endif %}"><span>🧭</span><span>Strategies</span></a>
+            <a href="/strategy-analytics" class="{% if current_path.startswith('/strategy-analytics') %}active{% endif %}"><span>📊</span><span>Strategy Analytics</span></a>
             <a href="/daily-briefing" class="{% if current_path == '/daily-briefing' %}active{% endif %}"><span>☀️</span><span>Daily Briefing</span></a>
             <a href="/opportunities" class="{% if current_path == '/opportunities' %}active{% endif %}"><span>📋</span><span>Opportunities</span></a>
             <a href="/portfolio-health" class="{% if current_path == '/portfolio-health' %}active{% endif %}"><span>💼</span><span>Portfolio Health</span></a>
@@ -53,7 +54,7 @@
             <a href="/settings" class="{% if current_path == '/settings' %}active{% endif %}"><span>⚙️</span><span>Settings</span></a>
             <a href="/diagnostics" class="{% if current_path == '/diagnostics' %}active{% endif %}"><span>🛠️</span><span>Diagnostics</span></a>
         </nav>
-        <div class="sidebar-footer">DartsEdge AI · v1.2.0 · Build 001</div>
+        <div class="sidebar-footer">DartsEdge AI · v{{ app_version }} · Build {{ app_build }}</div>
     </aside>
 
     <main class="content">

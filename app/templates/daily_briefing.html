@@ -6,6 +6,8 @@
   <div class="mission-date">{{ briefing_date.strftime('%A, %d %B %Y') }}</div>
 </section>
 
+<div class="alert {{ 'warning' if decision_engine_active else 'info' }}"><strong>{{ active_strategy.name }} strategy:</strong> {{ active_strategy.enforcement_mode|title }} mode. {% if decision_engine_active %}Strategy decisions are enforced.{% else %}Strategy decisions are advisory.{% endif %}</div>
+
 <article class="card mission-coach mission-coach-{{ tone }}" style="margin-bottom: 1.25rem;">
   <div class="section-kicker">Today’s position</div><h2>{{ headline }}</h2>
   {% if top_opportunity %}<p>{{ top_opportunity.selection }} is priced at {{ '%.2f'|format(top_opportunity.price.decimal_odds) }} with {{ top_opportunity.assessment.edge_percent }}% edge and {{ top_opportunity.assessment.expected_value_percent }}% EV. Suggested stake: £{{ '%.2f'|format(top_opportunity.assessment.suggested_stake) }}.</p>

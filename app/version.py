@@ -1,9 +1,9 @@
 """Application release metadata for DartsEdge AI."""
 
 APP_NAME = "DartsEdge AI"
-VERSION = "1.2.0"
+VERSION = "1.4.0"
 BUILD = "001"
-RELEASE_NAME = "Intelligence Engine"
+RELEASE_NAME = "Strategy Engine"
 MODEL_VERSION = "Intelligence-0.1-shadow"
 
 

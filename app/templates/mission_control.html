@@ -10,6 +10,11 @@
     <div class="mission-date">{{ mission_control_date.strftime('%A, %d %B %Y') }}</div>
 </section>
 
+<div class="alert {{ 'warning' if decision_engine_active else 'info' }}">
+  <strong>Decision Engine:</strong> {{ active_strategy.name }} v{{ active_strategy.version }} is in <strong>{{ active_strategy.enforcement_mode }}</strong> mode.
+  {% if decision_engine_active %}Strategy rules control effective recommendations.{% else %}Official recommendations remain in control while strategy decisions are compared.{% endif %}
+</div>
+
 <section class="mission-kpi-grid">
     <article class="mission-kpi-card">
         <span>Ranked opportunities</span>

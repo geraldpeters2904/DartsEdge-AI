@@ -18,6 +18,10 @@
     <label>Model probability (%)<input name="model_probability" type="number" min="0.01" max="100" step="0.01" required></label>
     <label>Decimal odds<input name="decimal_odds" type="number" min="1.01" step="0.01" required></label>
     <label>Bookmaker<input name="bookmaker" type="text" required placeholder="Bookmaker name"></label>
+    <label>Prediction confidence (%)<input name="confidence_percent" type="number" min="0" max="100" step="0.1" value="100"></label>
+    <label>Historical sample size<input name="sample_size" type="number" min="0" step="1" value="0"></label>
+    <label>Market<select name="market"><option value="match_winner">Match winner</option><option value="most_180s">Most 180s</option><option value="handicap">Leg handicap</option></select></label>
+    <label>Competition<input name="competition" type="text" placeholder="e.g. MODUS"></label>
     <button class="primary-button" type="submit">Calculate value</button>
   </form>
   {% if assessment %}
@@ -27,6 +31,32 @@
     <div class="mission-kpi-card"><span>Edge</span><strong>{{ '%+.2f'|format(assessment.edge_percent) }}%</strong><small>Model minus market</small></div>
     <div class="mission-kpi-card"><span>Expected value</span><strong>{{ '%+.2f'|format(assessment.expected_value_percent) }}%</strong><small>{{ assessment.decision }}</small></div>
     <div class="mission-kpi-card"><span>Kelly stake</span><strong>£{{ '%.2f'|format(assessment.recommended_stake) }}</strong><small>{{ assessment.kelly_percent }}% bankroll · {{ assessment.risk_level }}</small></div>
+  </div>
+  {% endif %}
+  {% if strategy_decision %}
+  <div class="card" style="margin-top:1rem">
+    <div class="section-heading-row">
+      <div><div class="section-kicker">Strategy decision</div><h3>{{ strategy_decision.strategy_name }} v{{ strategy_decision.strategy_version }}</h3></div>
+      {% if strategy_decision.qualifies %}<span class="badge badge-good">Qualifies</span>{% else %}<span class="badge badge-warning">Filtered</span>{% endif %}
+    </div>
+    <p><strong>Strategy stake:</strong> £{{ '%.2f'|format(strategy_decision.suggested_stake) }} <span class="muted">({{ strategy_decision.enforcement_mode }} mode)</span></p>
+    {% if strategy_decision.blockers %}<p><strong>Rule blockers:</strong></p><ul>{% for item in strategy_decision.blockers %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+    {% if strategy_decision.warnings %}<p><strong>Notes:</strong></p><ul>{% for item in strategy_decision.warnings %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if decision_engine %}
+  <div class="card" style="margin-top:1rem">
+    <div class="section-heading-row">
+      <div><div class="section-kicker">Effective decision</div><h3>{{ decision_engine.strategy_name }} v{{ decision_engine.strategy_version }}</h3></div>
+      {% if decision_engine.effective_decision in ['Accept','Consider'] %}<span class="badge badge-good">{{ decision_engine.effective_decision }}</span>{% elif decision_engine.effective_decision == 'Paper only' %}<span class="badge badge-warning">Paper only</span>{% else %}<span class="badge badge-risk">{{ decision_engine.effective_decision }}</span>{% endif %}
+    </div>
+    <div class="mission-kpi-grid">
+      <div class="mission-kpi-card"><span>Official</span><strong>{{ decision_engine.official_decision }}</strong><small>£{{ '%.2f'|format(decision_engine.official_stake) }}</small></div>
+      <div class="mission-kpi-card"><span>Strategy</span><strong>{{ decision_engine.strategy_decision }}</strong><small>£{{ '%.2f'|format(decision_engine.strategy_stake) }}</small></div>
+      <div class="mission-kpi-card"><span>Effective</span><strong>{{ decision_engine.effective_decision }}</strong><small>£{{ '%.2f'|format(decision_engine.effective_stake) }}</small></div>
+    </div>
+    {% if decision_engine.enforced %}<p class="alert warning">Active enforcement is enabled. The effective decision now controls the recommendation shown by the Decision Engine.</p>{% else %}<p class="muted">Shadow mode is enabled. The official EV recommendation remains in control while the strategy decision is displayed for comparison.</p>{% endif %}
   </div>
   {% endif %}
 </article>
@@ -55,5 +85,5 @@
   </tbody></table></div>{% else %}<div class="empty-state"><p>No odds snapshots stored yet.</p></div>{% endif %}
 </article>
 
-<article class="card opportunity-methodology"><div class="section-kicker">Decision rule</div><h2>Positive probability is not enough</h2><p>A selection is marked <strong>Consider</strong> only when expected value is positive and the model edge meets your configured minimum edge. Suggested stakes use your bankroll, Kelly fraction and maximum daily risk settings.</p></article>
+<article class="card opportunity-methodology"><div class="section-kicker">Decision rule</div><h2>Positive probability is not enough</h2><p>A selection is marked <strong>Consider</strong> by the existing EV engine only when expected value is positive and the model edge meets your configured settings. The active <strong>{{ active_strategy.name }}</strong> strategy now produces a guarded decision. In shadow mode it is advisory; in active mode it becomes the effective recommendation using its own EV, confidence, sample-size, odds, market and staking limits.</p></article>
 {% endblock %}

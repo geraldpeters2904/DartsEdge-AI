@@ -1,3 +1,5 @@
+from app.models.strategy_decision import StrategyDecision
+from app.routes.strategy_analytics import router as strategy_analytics_router
 from app.models.strategy_profile import StrategyProfile
 from app.routes.strategies import router as strategies_router
 from app.models.automation_job_run import AutomationJobRun
@@ -57,6 +59,7 @@ app.mount(
 )
 
 create_database()
+app.include_router(strategy_analytics_router)
 app.include_router(strategies_router)
 app.include_router(automation_router)
 app.include_router(daily_briefing_router)

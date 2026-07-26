@@ -4,27 +4,20 @@
 Mission Control, opportunity ranking, Portfolio Health, AI Coach, dashboard polish and release diagnostics.
 
 ## v1.2.0 — Intelligence Engine (released)
-- Configurable Player Intelligence profiles.
-- Prediction explainability and data-coverage confidence.
-- Immutable prediction audit trail.
-- Legacy-versus-intelligence shadow comparison.
-- Model Performance Lab and drift monitoring.
+Player Intelligence, explainability, immutable audit trail, shadow comparison and Model Performance Lab.
 
-## v1.3.0 — Live Data
-- Automated fixture import with provider adapters.
-- Bookmaker odds import and price-history tracking.
-- True expected-value calculations.
-- Automated result matching and settlement support.
-- Daily operational briefing.
+## v1.3 — Live Intelligence foundation (completed on develop)
+Provider frameworks, safe fixture import, odds snapshots, expected value, Daily Briefing and manual automation.
 
-## v1.4.0 — Automation
-- Scheduled imports and data-quality monitoring.
-- Closing-line-value measurement.
-- Strategy simulation and staking comparisons.
-- Alerting and operational workflows.
+## v1.4.0 — Strategy Engine (released)
+Versioned strategies, validated rules, editor, guarded decision enforcement and settled strategy analytics.
+
+## Next — Authorised integrations and operations
+- Configure an authorised fixture source.
+- Configure an authorised odds source.
+- Automate results matching and settlement.
+- Add closing-line-value tracking and notifications.
+- Exercise automatic schedules after real-feed validation.
 
 ## v2.0.0 — Optimisation Platform
-- Ensemble and machine-learning models.
-- Controlled model retraining and backtesting.
-- Evidence-based model promotion workflow.
-- Multi-user and deployment readiness.
+Ensemble and machine-learning models, controlled retraining, backtesting, evidence-based promotion, multi-user and deployment readiness.

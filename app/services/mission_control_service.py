@@ -6,6 +6,7 @@ from app.services.ai_coach_service import build_ai_coach_data
 from app.services.dashboard_service import build_dashboard_data
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
+from app.services.strategy_service import get_active_strategy, strategy_summary
 
 
 def _status(label: str, value: float, good: float, warning: float) -> Dict[str, Any]:
@@ -138,6 +139,7 @@ def build_mission_control_data(db) -> Dict[str, Any]:
     ranked_opportunities = build_ranked_opportunities(db, limit=5)
     portfolio_health = build_portfolio_health(db)
     coach_data = build_ai_coach_data(db)
+    active_strategy = strategy_summary(get_active_strategy(db))
 
     model_health = [
         _status("Winner accuracy", dashboard["winner_accuracy"], 65, 55),
@@ -157,4 +159,6 @@ def build_mission_control_data(db) -> Dict[str, Any]:
         "alerts": _build_alerts(dashboard),
         "ai_coach": coach_data["primary"],
         "coach_recommendation_count": coach_data["recommendation_count"],
+        "active_strategy": active_strategy,
+        "decision_engine_active": active_strategy["enforcement_mode"] == "active" and active_strategy["decision_rules_enabled"],
     }

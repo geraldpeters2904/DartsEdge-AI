@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div><p class="eyebrow">Sprint 1.4 · Pack 5</p><h1>Strategy Analytics</h1><p class="muted">Evidence from recorded Decision Engine evaluations. ROI and win rate use settled decisions only.</p></div>
+  <div class="actions"><a class="button {% if window == '7' %}primary{% endif %}" href="/strategy-analytics?window=7">7 days</a><a class="button {% if window == '30' %}primary{% endif %}" href="/strategy-analytics?window=30">30 days</a><a class="button {% if window == 'all' %}primary{% endif %}" href="/strategy-analytics">All time</a></div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card"><span>Active strategy</span><strong>{{ report.active_strategy.name }} v{{ report.active_strategy.version }}</strong></div>
+  <div class="kpi-card"><span>Recorded decisions</span><strong>{{ report.total_decisions }}</strong></div>
+  <div class="kpi-card"><span>Settled decisions</span><strong>{{ report.settled_decisions }}</strong></div>
+  <div class="kpi-card"><span>Evidence status</span><strong>{% if report.insufficient_data %}Provisional{% else %}Established{% endif %}</strong></div>
+</div>
+{% if report.insufficient_data %}<div class="alert warning"><strong>Small sample:</strong> settle at least 25 decisions before treating ROI, win rate or drawdown as reliable.</div>{% endif %}
+<section class="panel"><div class="panel-header"><h2>Strategy and version comparison</h2></div>
+<div class="table-wrap"><table><thead><tr><th>Strategy</th><th>Decisions</th><th>Accepted</th><th>Rejected</th><th>Settled</th><th>ROI</th><th>Win rate</th><th>Avg EV</th><th>Drawdown</th></tr></thead><tbody>
+{% for m in report.metrics %}<tr><td><strong>{{ m.strategy_name }}</strong><br><span class="muted">v{{ m.strategy_version }}</span></td><td>{{ m.decisions }}</td><td>{{ m.accepted }}{% if m.paper_only %} + {{ m.paper_only }} paper{% endif %}</td><td>{{ m.rejected }}</td><td>{{ m.settled }}</td><td>{% if m.roi_percent is not none %}{{ m.roi_percent }}%{% else %}—{% endif %}</td><td>{% if m.win_rate_percent is not none %}{{ m.win_rate_percent }}%{% else %}—{% endif %}</td><td>{{ m.average_ev_percent }}%</td><td>£{{ '%.2f'|format(m.maximum_drawdown) }}</td></tr>{% else %}<tr><td colspan="9" class="muted">No strategy decisions have been recorded yet. Calculate an example on Expected Value first.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<div class="dashboard-grid two-column">
+<section class="panel"><div class="panel-header"><h2>Rejection reasons</h2></div>{% for reason, count in report.rejection_reasons %}<div class="list-row"><span>{{ reason }}</span><strong>{{ count }}</strong></div>{% else %}<p class="muted">No strategy blockers recorded.</p>{% endfor %}</section>
+<section class="panel"><div class="panel-header"><h2>Competition breakdown</h2></div>{% for item in report.competitions %}<div class="list-row"><span>{{ item.name }} <small class="muted">({{ item.settled }}/{{ item.decisions }} settled)</small></span><strong>£{{ '%.2f'|format(item.profit_loss) }}</strong></div>{% else %}<p class="muted">No competition data recorded.</p>{% endfor %}</section>
+</div>
+<section class="panel"><div class="panel-header"><h2>Recent decisions and manual settlement</h2></div><div class="table-wrap"><table><thead><tr><th>When</th><th>Strategy</th><th>Market</th><th>EV</th><th>Effective</th><th>Stake</th><th>Outcome</th></tr></thead><tbody>
+{% for row in report.recent %}<tr><td>{{ row.created_at.strftime('%d %b %H:%M') }}</td><td>{{ row.strategy_name }} v{{ row.strategy_version }}</td><td>{{ row.market }}{% if row.competition %}<br><span class="muted">{{ row.competition }}</span>{% endif %}</td><td>{{ '%.2f'|format(row.expected_value_percent) }}%</td><td>{{ row.effective_decision }}</td><td>£{{ '%.2f'|format(row.effective_stake) }}</td><td>{% if row.outcome %}<strong>{{ row.outcome|title }}</strong><br><span class="muted">£{{ '%.2f'|format(row.profit_loss or 0) }}</span>{% else %}<form method="post" action="/strategy-analytics/settle" class="inline-form"><input type="hidden" name="decision_id" value="{{ row.id }}"><select name="outcome"><option value="win">Win</option><option value="loss">Loss</option><option value="void">Void</option></select><button class="button small" type="submit">Settle</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="7" class="muted">No decisions recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

@@ -29,11 +29,13 @@ class DailyBriefingTests(unittest.TestCase):
         self.assertIn('/daily-briefing', paths)
 
     def test_template_contains_briefing_heading(self):
-        text = open('app/templates/daily_briefing.html').read()
+        with open('app/templates/daily_briefing.html', encoding='utf-8') as handle:
+            text = handle.read()
         self.assertIn('Daily Intelligence Briefing', text)
 
     def test_navigation_contains_briefing(self):
-        text = open('app/templates/base.html').read()
+        with open('app/templates/base.html', encoding='utf-8') as handle:
+            text = handle.read()
         self.assertIn('/daily-briefing', text)
 
     def test_service_module_imports(self):

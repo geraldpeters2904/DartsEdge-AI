@@ -7,18 +7,26 @@ from fastapi.responses import RedirectResponse
 from app.db import SessionLocal
 from app.models.player import Player
 from app.services.expected_value_service import assess_value, best_prices, recent_snapshots, store_snapshot
+from app.services.decision_engine_service import decide
+from app.services.portfolio_health_service import build_portfolio_health
 from app.services.settings_service import get_settings
+from app.services.strategy_service import evaluate_strategy, get_active_strategy, strategy_summary
+from app.services.strategy_analytics_service import record_decision
 from app.templates_config import templates
 
 router = APIRouter()
 
 
-def _page_context(db, request: Request, *, assessment=None, error=None, message=None):
+def _page_context(db, request: Request, *, assessment=None, strategy_decision=None, decision_engine=None, error=None, message=None):
     settings = get_settings(db)
+    active_strategy = get_active_strategy(db)
     snapshots = recent_snapshots(db)
     return {
         "request": request,
         "assessment": assessment,
+        "strategy_decision": strategy_decision,
+        "decision_engine": decision_engine,
+        "active_strategy": strategy_summary(active_strategy),
         "error": error,
         "message": message,
         "snapshots": snapshots,
@@ -44,6 +52,10 @@ def calculate_expected_value(
     model_probability: float = Form(...),
     decimal_odds: float = Form(...),
     bookmaker: str = Form(...),
+    confidence_percent: float = Form(100.0),
+    sample_size: int = Form(0),
+    market: str = Form("match_winner"),
+    competition: str = Form(""),
 ):
     db = SessionLocal()
     try:
@@ -57,8 +69,46 @@ def calculate_expected_value(
             max_daily_risk_percent=settings.max_daily_risk,
             minimum_edge_percent=settings.minimum_edge,
         )
+        active_strategy = get_active_strategy(db)
+        portfolio = build_portfolio_health(db)
+        strategy_decision = evaluate_strategy(
+            active_strategy,
+            model_probability=assessment.model_probability,
+            confidence_percent=confidence_percent,
+            expected_value_percent=assessment.expected_value_percent,
+            edge_percent=assessment.edge_percent,
+            decimal_odds=assessment.decimal_odds,
+            bankroll=settings.bankroll,
+            raw_kelly_stake=assessment.recommended_stake,
+            market=market,
+            competition=competition,
+            sample_size=sample_size,
+            portfolio_exposure_percent=portfolio.get("exposure_percent"),
+        )
+        decision_engine = decide(
+            db, official_decision=assessment.decision, official_stake=assessment.recommended_stake,
+            model_probability=assessment.model_probability, confidence_percent=confidence_percent,
+            expected_value_percent=assessment.expected_value_percent, edge_percent=assessment.edge_percent,
+            decimal_odds=assessment.decimal_odds, bankroll=settings.bankroll, market=market,
+            competition=competition, sample_size=sample_size,
+            portfolio_exposure_percent=portfolio.get("exposure_percent"),
+        )
+        record_decision(
+            db,
+            result=decision_engine,
+            strategy_uuid=active_strategy.strategy_uuid,
+            bookmaker=bookmaker,
+            model_probability=assessment.model_probability,
+            confidence_percent=confidence_percent,
+            decimal_odds=assessment.decimal_odds,
+            edge_percent=assessment.edge_percent,
+            expected_value_percent=assessment.expected_value_percent,
+            market=market,
+            competition=competition,
+        )
         return templates.TemplateResponse(
-            "expected_value.html", _page_context(db, request, assessment=assessment)
+            "expected_value.html",
+            _page_context(db, request, assessment=assessment, strategy_decision=strategy_decision, decision_engine=decision_engine),
         )
     except ValueError as exc:
         return templates.TemplateResponse(

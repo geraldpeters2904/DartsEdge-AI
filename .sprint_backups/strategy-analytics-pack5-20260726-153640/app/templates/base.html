@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <title>{% block title %}DartsEdge AI{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css?v=11">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="/mission-control" aria-label="DartsEdge AI home">
+            <div class="sidebar-brand-icon">🎯</div>
+            <div>
+                <div class="sidebar-brand-name">DartsEdge</div>
+                <div class="sidebar-brand-subtitle">AI Analytics</div>
+            </div>
+        </a>
+
+        <div class="sidebar-section-label">Command centre</div>
+        <nav class="sidebar-nav">
+            {% set current_path = request.url.path %}
+            <a href="/mission-control" class="{% if current_path == '/mission-control' %}active{% endif %}"><span>🛰️</span><span>Mission Control</span></a>
+            <a href="/automation" class="{% if current_path == '/automation' %}active{% endif %}"><span>⏱️</span><span>Automation</span></a>
+            <a href="/strategies" class="{% if current_path in ['/strategies', '/strategy-editor'] %}active{% endif %}"><span>🧭</span><span>Strategies</span></a>
+            <a href="/daily-briefing" class="{% if current_path == '/daily-briefing' %}active{% endif %}"><span>☀️</span><span>Daily Briefing</span></a>
+            <a href="/opportunities" class="{% if current_path == '/opportunities' %}active{% endif %}"><span>📋</span><span>Opportunities</span></a>
+            <a href="/portfolio-health" class="{% if current_path == '/portfolio-health' %}active{% endif %}"><span>💼</span><span>Portfolio Health</span></a>
+            <a href="/ai-coach" class="{% if current_path == '/ai-coach' %}active{% endif %}"><span>🤖</span><span>AI Coach</span></a>
+            <a href="/dashboard" class="{% if current_path == '/dashboard' %}active{% endif %}"><span>🏠</span><span>Dashboard</span></a>
+
+            <div class="sidebar-section-label">Analysis</div>
+            <a href="/player-intelligence" class="{% if current_path == '/player-intelligence' %}active{% endif %}"><span>🧠</span><span>Player Intelligence</span></a>
+            <a href="/predict-v2" class="{% if current_path.startswith('/predict') %}active{% endif %}"><span>🎯</span><span>Prediction Centre</span></a>
+            <a href="/value-bet-page" class="{% if current_path.startswith('/value') %}active{% endif %}"><span>💰</span><span>Value Scanner</span></a>
+            <a href="/fixtures" class="{% if current_path.startswith('/fixtures') %}active{% endif %}"><span>📅</span><span>Fixtures</span></a>
+            <a href="/players" class="{% if current_path.startswith('/players') %}active{% endif %}"><span>👥</span><span>Players</span></a>
+            <a href="/rankings" class="{% if current_path == '/rankings' %}active{% endif %}"><span>🏆</span><span>Rankings</span></a>
+            <a href="/statistics" class="{% if current_path == '/statistics' %}active{% endif %}"><span>📊</span><span>Statistics</span></a>
+            <a href="/prediction-history" class="{% if current_path == '/prediction-history' %}active{% endif %}"><span>📈</span><span>Prediction History</span></a>
+            <a href="/audit-trail" class="{% if current_path.startswith('/audit-trail') %}active{% endif %}"><span>🧾</span><span>Audit Trail</span></a>
+            <a href="/shadow-comparison" class="{% if current_path.startswith('/shadow-comparison') %}active{% endif %}"><span>⚖️</span><span>Shadow Comparison</span></a>
+            <a href="/model-performance-lab" class="{% if current_path.startswith('/model-performance-lab') %}active{% endif %}"><span>🧪</span><span>Performance Lab</span></a>
+            <a href="/accuracy" class="{% if current_path == '/accuracy' %}active{% endif %}"><span>🎯</span><span>Accuracy</span></a>
+
+            <div class="sidebar-section-label">System</div>
+            <a href="/data-providers" class="{% if current_path == '/data-providers' %}active{% endif %}"><span>🔌</span><span>Data Providers</span></a>
+            <a href="/odds-providers" class="{% if current_path == '/odds-providers' %}active{% endif %}"><span>💷</span><span>Odds Providers</span></a>
+            <a href="/expected-value" class="{% if current_path == '/expected-value' %}active{% endif %}"><span>📈</span><span>Expected Value</span></a>
+            <a href="/import" class="{% if current_path == '/import' %}active{% endif %}"><span>📥</span><span>Import</span></a>
+            <a href="/data-quality" class="{% if current_path == '/data-quality' %}active{% endif %}"><span>🩺</span><span>Data Quality</span></a>
+            <a href="/settings" class="{% if current_path == '/settings' %}active{% endif %}"><span>⚙️</span><span>Settings</span></a>
+            <a href="/diagnostics" class="{% if current_path == '/diagnostics' %}active{% endif %}"><span>🛠️</span><span>Diagnostics</span></a>
+        </nav>
+        <div class="sidebar-footer">DartsEdge AI · v1.2.0 · Build 001</div>
+    </aside>
+
+    <main class="content">
+        <div class="content-inner">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+</body>
+</html>

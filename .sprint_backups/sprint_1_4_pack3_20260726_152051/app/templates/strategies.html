@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Strategies · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="section-heading-row">
+  <div>
+    <div class="section-kicker">Sprint 1.4 · Pack 2</div>
+    <h1>🧭 Strategy Framework · Strategy Rules</h1>
+    <p class="page-subtitle">Compare validated decision rules for every named strategy. Pack 2 evaluates them in shadow mode before any live recommendation is filtered.</p>
+  </div>
+  <span class="badge badge-warning">Shadow evaluation</span>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card"><span class="kpi-label">Active strategy</span><strong class="kpi-value">{{ active_strategy.name }}</strong><small>Version {{ active_strategy.version }}</small></div>
+  <div class="kpi-card"><span class="kpi-label">Strategy mode</span><strong class="kpi-value">{{ active_strategy.mode|title }}</strong></div>
+  <div class="kpi-card"><span class="kpi-label">Decision rules</span><strong class="kpi-value">{% if active_strategy.decision_rules_enabled %}Validated{% else %}Disabled{% endif %}</strong></div>
+  <div class="kpi-card"><span class="kpi-label">Enforcement</span><strong class="kpi-value">{{ active_strategy.enforcement_mode|title }}</strong><small>No live filtering yet</small></div>
+</div>
+
+<div class="card summary"><strong>Safety status:</strong> Existing EV, Kelly, Mission Control, AI Coach and Daily Briefing decisions remain unchanged. Pack 2 calculates a separate strategy verdict so rules can be inspected before active enforcement.</div>
+
+<div class="card">
+  <div class="section-heading-row"><div><h2>Available strategies</h2><p class="page-subtitle">Only one enabled strategy can be active at a time.</p></div></div>
+  <div class="opportunity-table-wrap">
+    <table>
+      <thead><tr><th>Strategy</th><th>Mode</th><th>Status</th><th>Core rules</th><th>Risk limits</th><th>Action</th></tr></thead>
+      <tbody>
+      {% for strategy in strategies %}
+        <tr>
+          <td><strong>{{ strategy.name }}</strong><br><span class="muted">v{{ strategy.version }} · {{ strategy.uuid[:8] }}…</span><br><small>{{ strategy.description }}</small></td>
+          <td>{{ strategy.mode|title }}</td>
+          <td>{% if strategy.active %}<span class="badge badge-good">Active</span>{% elif strategy.enabled %}<span class="badge badge-secondary">Available</span>{% else %}<span class="badge badge-warning">Disabled</span>{% endif %}<br><small>{{ strategy.enforcement_mode|title }}</small></td>
+          <td>
+            <small>Min EV <strong>{{ '%.1f'|format(strategy.rules.minimum_ev_percent) }}%</strong></small><br>
+            <small>Min edge <strong>{{ '%.1f'|format(strategy.rules.minimum_edge_percent) }}%</strong></small><br>
+            <small>Min probability <strong>{{ '%.1f'|format(strategy.rules.minimum_model_probability) }}%</strong></small><br>
+            <small>Min confidence <strong>{{ '%.1f'|format(strategy.rules.minimum_confidence_percent) }}%</strong></small>
+          </td>
+          <td>
+            <small>Kelly <strong>{{ '%.0f'|format(strategy.rules.kelly_fraction * 100) }}%</strong></small><br>
+            <small>Max stake <strong>{{ '%.1f'|format(strategy.rules.maximum_stake_percent) }}%</strong></small><br>
+            <small>Max exposure <strong>{{ '%.1f'|format(strategy.rules.maximum_portfolio_exposure_percent) }}%</strong></small><br>
+            <small>Max odds <strong>{{ '%.2f'|format(strategy.rules.maximum_decimal_odds) }}</strong></small>
+          </td>
+          <td>
+            {% if strategy.active %}<span class="muted">Selected</span>
+            {% elif strategy.enabled %}<form method="post" action="/strategies/activate"><input type="hidden" name="strategy_id" value="{{ strategy.id }}"><button type="submit">Activate</button></form>
+            {% else %}<span class="muted">Unavailable</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-kicker">Active rule detail</div>
+  <h2>{{ active_strategy.name }} v{{ active_strategy.version }}</h2>
+  <div class="mission-kpi-grid opportunity-kpi-grid">
+    <div class="mission-kpi-card"><span>Minimum EV</span><strong>{{ '%.1f'|format(active_strategy.rules.minimum_ev_percent) }}%</strong></div>
+    <div class="mission-kpi-card"><span>Minimum edge</span><strong>{{ '%.1f'|format(active_strategy.rules.minimum_edge_percent) }}%</strong></div>
+    <div class="mission-kpi-card"><span>Minimum confidence</span><strong>{{ '%.1f'|format(active_strategy.rules.minimum_confidence_percent) }}%</strong></div>
+    <div class="mission-kpi-card"><span>Minimum sample</span><strong>{{ active_strategy.rules.minimum_sample_size }}</strong></div>
+    <div class="mission-kpi-card"><span>Kelly fraction</span><strong>{{ '%.0f'|format(active_strategy.rules.kelly_fraction * 100) }}%</strong></div>
+    <div class="mission-kpi-card"><span>Max stake</span><strong>{{ '%.1f'|format(active_strategy.rules.maximum_stake_percent) }}%</strong><small>of bankroll</small></div>
+  </div>
+  <p><strong>Allowed markets:</strong> {{ active_strategy.rules.allowed_markets|join(', ')|replace('_', ' ')|title }}</p>
+  <p><strong>Allowed competitions:</strong> {% if active_strategy.rules.allowed_competitions %}{{ active_strategy.rules.allowed_competitions|join(', ') }}{% else %}All competitions{% endif %}</p>
+</div>
+{% endblock %}

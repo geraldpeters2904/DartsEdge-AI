@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{% if strategy %}Edit {{ strategy.name }}{% else %}New Strategy{% endif %} · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="section-heading-row">
+  <div>
+    <div class="section-kicker">Sprint 1.4 · Pack 3</div>
+    <h1>🛠️ Strategy Editor</h1>
+    <p class="page-subtitle">Create, version, duplicate, import and export validated decision strategies.</p>
+  </div>
+  <a class="button-link" href="/strategies">Back to strategies</a>
+</div>
+
+<div class="card summary"><strong>Version safety:</strong> Saving an existing strategy creates a new version. The previous version remains in history and is never overwritten.</div>
+
+<form class="card" method="post" action="/strategy-editor/save">
+  <input type="hidden" name="strategy_id" value="{{ strategy.id if strategy else '' }}">
+  <div class="form-grid">
+    <label>Strategy name<input name="name" required maxlength="100" value="{{ strategy.name if strategy else '' }}"></label>
+    <label>Mode<select name="mode"><option value="live" {% if not strategy or strategy.mode == 'live' %}selected{% endif %}>Live</option><option value="paper" {% if strategy and strategy.mode == 'paper' %}selected{% endif %}>Paper trading</option></select></label>
+    <label class="form-grid-span-2">Description<textarea name="description" rows="3">{{ strategy.description if strategy else '' }}</textarea></label>
+    <label>Enforcement<select name="enforcement_mode"><option value="shadow" {% if not strategy or strategy.enforcement_mode == 'shadow' %}selected{% endif %}>Shadow</option><option value="active" {% if strategy and strategy.enforcement_mode == 'active' %}selected{% endif %}>Active</option></select></label>
+    <label class="checkbox-row"><input type="checkbox" name="decision_rules_enabled" {% if not strategy or strategy.decision_rules_enabled %}checked{% endif %}> Decision rules enabled</label>
+  </div>
+
+  {% set r = strategy.rules if strategy else {} %}
+  <h2>Qualification rules</h2>
+  <div class="form-grid">
+    <label>Minimum EV %<input type="number" step="0.1" name="minimum_ev_percent" value="{{ r.minimum_ev_percent|default(0) }}"></label>
+    <label>Minimum edge %<input type="number" step="0.1" name="minimum_edge_percent" value="{{ r.minimum_edge_percent|default(5) }}"></label>
+    <label>Minimum model probability %<input type="number" step="0.1" min="0" max="100" name="minimum_model_probability" value="{{ r.minimum_model_probability|default(55) }}"></label>
+    <label>Minimum confidence %<input type="number" step="0.1" min="0" max="100" name="minimum_confidence_percent" value="{{ r.minimum_confidence_percent|default(60) }}"></label>
+    <label>Minimum sample size<input type="number" min="0" name="minimum_sample_size" value="{{ r.minimum_sample_size|default(0) }}"></label>
+    <label>Maximum decimal odds<input type="number" step="0.01" min="1.01" name="maximum_decimal_odds" value="{{ r.maximum_decimal_odds|default(10) }}"></label>
+  </div>
+
+  <h2>Risk rules</h2>
+  <div class="form-grid">
+    <label>Kelly fraction (0–1)<input type="number" step="0.01" min="0" max="1" name="kelly_fraction" value="{{ r.kelly_fraction|default(0.5) }}"></label>
+    <label>Maximum portfolio exposure %<input type="number" step="0.1" min="0" max="100" name="maximum_portfolio_exposure_percent" value="{{ r.maximum_portfolio_exposure_percent|default(15) }}"></label>
+    <label>Maximum stake % of bankroll<input type="number" step="0.1" min="0" max="100" name="maximum_stake_percent" value="{{ r.maximum_stake_percent|default(3) }}"></label>
+  </div>
+
+  <h2>Filters</h2>
+  <div class="form-grid">
+    <label>Allowed markets (comma-separated)<input name="allowed_markets" value="{{ r.allowed_markets|default(['match_winner','most_180s','handicap'])|join(', ') }}"></label>
+    <label>Allowed competitions (blank means all)<input name="allowed_competitions" value="{{ r.allowed_competitions|default([])|join(', ') }}"></label>
+  </div>
+
+  <button type="submit">{% if strategy %}Save as version {{ strategy.version + 1 }}{% else %}Create strategy{% endif %}</button>
+</form>
+
+{% if strategy %}
+<div class="card">
+  <div class="section-heading-row"><div><h2>Version history</h2><p class="page-subtitle">Newest version first.</p></div><a class="button-link" href="/strategies/{{ strategy.id }}/export">Export JSON</a></div>
+  <div class="opportunity-table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Created</th><th>Rules</th></tr></thead><tbody>
+  {% for item in history %}<tr><td>v{{ item.version }}</td><td>{% if item.active %}<span class="badge badge-good">Active</span>{% elif item.enabled %}<span class="badge badge-secondary">Current</span>{% else %}<span class="muted">Historical</span>{% endif %}</td><td>{{ item.uuid[:8] }}…</td><td>EV {{ item.rules.minimum_ev_percent }}% · edge {{ item.rules.minimum_edge_percent }}% · Kelly {{ (item.rules.kelly_fraction * 100)|round(0) }}%</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}
