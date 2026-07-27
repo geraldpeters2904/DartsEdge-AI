@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 from app.collector.fixture_committer import FixtureCommitter
+from app.collector.odds_committer import OddsCommitter
 from app.collector.folder_preview import CollectorFolderPreview
 from app.collector.result_committer import ResultCommitter
 from app.collector.statistics_committer import StatisticsCommitter
@@ -76,6 +77,7 @@ class CollectorCommitBridge:
         "fixtures",
         "results",
         "statistics",
+        "odds",
     }
 
     def commit(
@@ -90,8 +92,9 @@ class CollectorCommitBridge:
         fixtures = self._records(preview, "fixtures")
         results = self._records(preview, "results")
         statistics = self._records(preview, "statistics")
+        odds = self._records(preview, "odds")
 
-        if not fixtures and not results and not statistics:
+        if not fixtures and not results and not statistics and not odds:
             raise ValueError(
                 "The collector preview contains no supported records to commit."
             )
@@ -108,7 +111,11 @@ class CollectorCommitBridge:
                 db=db,
                 preview=preview,
                 filename=filename,
-                received_rows=len(results) + len(statistics),
+                received_rows=(
+                    len(results)
+                    + len(statistics)
+                    + len(odds)
+                ),
             )
 
         if fixtures:
@@ -134,10 +141,19 @@ class CollectorCommitBridge:
                 batch=batch,
             )
 
+        if odds:
+            OddsCommitter().commit(
+                db=db,
+                provider=preview.provider,
+                odds=odds,
+                batch=batch,
+            )
+
         batch.received_rows = (
             len(fixtures)
             + len(results)
             + len(statistics)
+            + len(odds)
         )
         batch.status = "imported"
 
@@ -150,7 +166,7 @@ class CollectorCommitBridge:
                 "fixtures": len(fixtures),
                 "results": len(results),
                 "statistics": len(statistics),
-                "odds": 0,
+                "odds": len(odds),
             },
         )
 
@@ -176,7 +192,7 @@ class CollectorCommitBridge:
         if unsupported:
             names = ", ".join(sorted(unsupported))
             raise ValueError(
-                "This commit-bridge version supports fixtures, results and statistics only. "
+                "This commit-bridge version supports fixtures, results, statistics and odds only. "
                 f"Unsupported preview entities: {names}."
             )
 

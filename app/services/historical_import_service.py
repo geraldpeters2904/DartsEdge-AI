@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.player import Player
 from app.models.match import Match
 from app.models.match_player_stats import MatchPlayerStats
+from app.models.odds_snapshot import OddsSnapshot
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.models.historical_import import HistoricalImportBatch, HistoricalImportItem, PlayerAlias
 from app.services.canonical_data_service import store_raw, map_entity, record_provenance, SUPPORTED_COMPETITIONS
@@ -126,9 +127,12 @@ def rollback_batch(db,batch_id):
     if not batch: raise ValueError('Import batch not found')
     if batch.status=='rolled_back': return batch
     items=db.query(HistoricalImportItem).filter_by(batch_id=batch.id,created_by_batch=True).order_by(HistoricalImportItem.id.desc()).all()
+    odds_ids=[i.internal_id for i in items if i.entity_type=='odds_snapshot' and i.internal_id]
     performance_ids=[i.internal_id for i in items if i.entity_type=='player_match_performance' and i.internal_id]
     match_ids=[i.internal_id for i in items if i.entity_type=='match' and i.internal_id]
     player_ids=[i.internal_id for i in items if i.entity_type=='player' and i.internal_id]
+    if odds_ids:
+      db.query(OddsSnapshot).filter(OddsSnapshot.id.in_(odds_ids)).delete(synchronize_session=False)
     if performance_ids:
       db.query(PlayerMatchPerformance).filter(PlayerMatchPerformance.id.in_(performance_ids)).delete(synchronize_session=False)
     if match_ids:
