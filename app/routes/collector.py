@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from urllib.parse import quote
 
@@ -14,16 +17,23 @@ from fastapi import (
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from app.collector.commit_bridge import CollectorCommitBridge
+from app.collector.folder_preview import CollectorFolderPreview
 from app.db import get_db
+from app.models.historical_import import HistoricalImportPreview
 from app.services.collector_preview_service import (
     CollectorPreviewService,
 )
-from app.services.historical_import_service import batches
+from app.services.historical_import_service import (
+    batches,
+    rollback_batch,
+)
 from app.templates_config import templates
 
 
 router = APIRouter()
 preview_service = CollectorPreviewService()
+commit_bridge = CollectorCommitBridge()
 
 
 SUPPORTED_FILES = (
@@ -259,4 +269,176 @@ def cancel_collector_preview(
         return _redirect(
             "/admin/collector",
             f"Unable to cancel preview: {exc}",
+        )
+
+
+def _rebuild_commit_preview(
+    *,
+    preview,
+    mappings,
+    session,
+) -> CollectorFolderPreview:
+    storage_payload = json.loads(preview.rows_json)
+    filenames = storage_payload.get("filenames", {})
+
+    discovered_files = {
+        entity_type: Path(
+            filenames.get(
+                entity_type,
+                f"{entity_type}.csv",
+            )
+        )
+        for entity_type in mappings
+    }
+
+    supplied_filenames = {
+        path.name
+        for path in discovered_files.values()
+    }
+
+    missing_files = [
+        item["filename"]
+        for item in SUPPORTED_FILES
+        if item["filename"] not in supplied_filenames
+    ]
+
+    return CollectorFolderPreview(
+        folder=Path("collector-previews")
+        / preview.preview_uuid,
+        provider=preview.provider,
+        discovered_files=discovered_files,
+        mappings=mappings,
+        session=session,
+        missing_files=missing_files,
+    )
+
+
+@router.post(
+    "/admin/collector/preview/{preview_uuid}/commit"
+)
+def commit_collector_preview(
+    preview_uuid: str,
+    db: Session = Depends(get_db),
+):
+    preview = preview_service.get_preview(
+        db=db,
+        preview_uuid=preview_uuid,
+    )
+
+    if preview is None:
+        return _redirect(
+            "/admin/collector",
+            "Collector preview not found.",
+        )
+
+    if preview.status != "pending":
+        return _redirect(
+            f"/admin/collector/preview/{preview_uuid}",
+            (
+                "Only pending previews can be committed. "
+                f"Current status: {preview.status}."
+            ),
+        )
+
+    try:
+        preview, mappings, session = preview_service.rebuild(
+            db=db,
+            preview_uuid=preview_uuid,
+        )
+
+        if not session.ready_to_commit:
+            raise ValueError(
+                "The preview is not ready to commit."
+            )
+
+        invalid_entities = [
+            entity_type
+            for entity_type, mapping in mappings.items()
+            if not mapping.valid
+        ]
+
+        if invalid_entities:
+            raise ValueError(
+                "Invalid files remain in the preview: "
+                + ", ".join(sorted(invalid_entities))
+                + "."
+            )
+
+        commit_preview = _rebuild_commit_preview(
+            preview=preview,
+            mappings=mappings,
+            session=session,
+        )
+
+        report = commit_bridge.commit(
+            db=db,
+            preview=commit_preview,
+            filename=preview.filename,
+        )
+
+        preview.status = "committed"
+        preview.batch_id = report.batch_id
+        preview.committed_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(preview)
+
+        counts = report.entity_counts
+
+        return _redirect(
+            "/admin/collector",
+            (
+                f"Batch {report.batch_uuid[:8]} committed: "
+                f"{counts['fixtures']} fixtures, "
+                f"{counts['results']} results, "
+                f"{counts['statistics']} statistics and "
+                f"{counts['odds']} odds received; "
+                f"{report.rejected_rows} rejected."
+            ),
+        )
+
+    except Exception as exc:
+        db.rollback()
+
+        return _redirect(
+            f"/admin/collector/preview/{preview_uuid}",
+            f"Commit failed: {exc}",
+        )
+
+
+@router.post(
+    "/admin/collector/batches/{batch_id}/rollback"
+)
+def rollback_collector_batch(
+    batch_id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        batch = rollback_batch(
+            db,
+            batch_id,
+        )
+
+        linked_previews = (
+            db.query(HistoricalImportPreview)
+            .filter_by(batch_id=batch.id)
+            .all()
+        )
+
+        for preview in linked_previews:
+            preview.status = "rolled_back"
+
+        db.commit()
+
+        return _redirect(
+            "/admin/collector",
+            f"Batch {batch.batch_uuid[:8]} rolled back.",
+        )
+
+    except Exception as exc:
+        db.rollback()
+
+        return _redirect(
+            "/admin/collector",
+            f"Rollback failed: {exc}",
         )

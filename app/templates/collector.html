@@ -338,6 +338,7 @@ Data Collection Centre · DartsEdge AI
                         <th>Matches</th>
                         <th>Duplicates</th>
                         <th>Rejected</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
 
@@ -384,13 +385,31 @@ Data Collection Centre · DartsEdge AI
                             <td>
                                 {{ batch.rejected_rows }}
                             </td>
+
+                            <td>
+                                {% if batch.status == "imported" %}
+                                    <form
+                                        method="post"
+                                        action="/admin/collector/batches/{{ batch.id }}/rollback"
+                                    >
+                                        <button
+                                            class="button button-danger"
+                                            type="submit"
+                                        >
+                                            Rollback
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
                         </tr>
 
                     {% else %}
 
                         <tr>
                             <td
-                                colspan="8"
+                                colspan="9"
                                 class="collector-empty-state"
                             >
                                 <strong>

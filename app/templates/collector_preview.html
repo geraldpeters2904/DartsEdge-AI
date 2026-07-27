@@ -306,26 +306,52 @@ Collector Preview · DartsEdge AI
                 Back to Collector
             </a>
 
-            <form
-                method="post"
-                action="/admin/collector/preview/{{ preview.preview_uuid }}/cancel"
-            >
-                <button
-                    class="button button-danger"
-                    type="submit"
+            {% if preview.status == "pending" %}
+                <form
+                    method="post"
+                    action="/admin/collector/preview/{{ preview.preview_uuid }}/cancel"
                 >
-                    Cancel preview
-                </button>
-            </form>
+                    <button
+                        class="button button-danger"
+                        type="submit"
+                    >
+                        Cancel preview
+                    </button>
+                </form>
+            {% endif %}
 
-            <button
-                class="button button-primary"
-                type="button"
-                disabled
-                title="Enabled in Deliverable 4D.3"
-            >
-                Commit import
-            </button>
+            {% if (
+                report.ready_to_commit
+                and preview.status == "pending"
+            ) %}
+                <form
+                    method="post"
+                    action="/admin/collector/preview/{{ preview.preview_uuid }}/commit"
+                >
+                    <button
+                        class="button button-primary"
+                        type="submit"
+                    >
+                        Commit import
+                    </button>
+                </form>
+            {% elif preview.status == "committed" %}
+                <span class="collector-file-result collector-file-result-valid">
+                    Committed
+                </span>
+            {% elif preview.status == "rolled_back" %}
+                <span class="collector-batch-status collector-batch-status-rolled_back">
+                    Rolled back
+                </span>
+            {% else %}
+                <button
+                    class="button button-primary"
+                    type="button"
+                    disabled
+                >
+                    Commit unavailable
+                </button>
+            {% endif %}
 
         </div>
 
