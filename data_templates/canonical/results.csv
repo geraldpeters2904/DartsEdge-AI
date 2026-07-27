@@ -1,0 +1,2 @@
+match_external_id,player_a_external_id,player_b_external_id,winner_external_id,player_a_legs,player_b_legs,completed_at,first_leg_winner_external_id,first_180_player_external_id,source_provider,source_external_id,source_retrieved_at,source_competition_code,source_confidence
+modus-example-001,player-lewis-pride,player-scott-taylor,player-lewis-pride,4,2,2026-07-28T10:28:00,player-lewis-pride,player-scott-taylor,manual-research,modus-example-001,2026-07-28T10:30:00,MODUS,manual

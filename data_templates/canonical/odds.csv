@@ -1,0 +1,3 @@
+match_external_id,market,selection_external_id,selection_name,bookmaker,decimal_odds,captured_at,source_provider,source_external_id,source_retrieved_at,source_competition_code,source_confidence
+modus-example-001,match_winner,player-lewis-pride,Lewis Pride,Example Bookmaker,1.80,2026-07-28T09:00:00,manual-odds,modus-example-001:example-bookmaker:match-winner:player-lewis-pride,2026-07-28T09:00:00,MODUS,manual
+modus-example-001,match_winner,player-scott-taylor,Scott Taylor,Example Bookmaker,2.10,2026-07-28T09:00:00,manual-odds,modus-example-001:example-bookmaker:match-winner:player-scott-taylor,2026-07-28T09:00:00,MODUS,manual

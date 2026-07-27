@@ -1,0 +1,3 @@
+match_external_id,player_external_id,three_dart_average,first_nine_average,scores_100_plus,scores_140_plus,scores_180,checkout_attempts,checkouts_completed,checkout_percentage,highest_checkout,legs_won,legs_lost,legs_held,legs_broken,match_duration_seconds,source_provider,source_external_id,source_retrieved_at,source_competition_code,source_confidence
+modus-example-001,player-lewis-pride,94.25,101.50,12,6,2,10,4,40.0,121,4,2,,,1680,manual-research,modus-example-001:player-lewis-pride,2026-07-28T10:30:00,MODUS,manual
+modus-example-001,player-scott-taylor,90.10,96.40,10,5,1,8,2,25.0,80,2,4,,,1680,manual-research,modus-example-001:player-scott-taylor,2026-07-28T10:30:00,MODUS,manual
