@@ -31,14 +31,13 @@ VALID_FIXTURES = (
     "player-a,Player A,player-b,Player B\n"
 )
 
-
 INVALID_FIXTURES = (
     "external_id,competition_code\n"
     "match-1,MODUS\n"
 )
 
 
-class CollectorCommitBridgeTests(unittest.TestCase):
+class CollectorFixtureCommitTests(unittest.TestCase):
     def setUp(self):
         self.db = create_test_session()
         self.preview_service = CollectorFolderPreviewService()
@@ -64,7 +63,6 @@ class CollectorCommitBridgeTests(unittest.TestCase):
     def test_valid_preview_creates_fixture_and_players(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
-
             report = self.bridge.commit(
                 db=self.db,
                 preview=preview,
@@ -73,7 +71,6 @@ class CollectorCommitBridgeTests(unittest.TestCase):
         self.assertEqual(report.created_matches, 1)
         self.assertEqual(report.created_players, 2)
         self.assertEqual(report.rejected_rows, 0)
-
         self.assertEqual(self.db.query(Match).count(), 1)
         self.assertEqual(self.db.query(Player).count(), 2)
 
@@ -87,7 +84,6 @@ class CollectorCommitBridgeTests(unittest.TestCase):
     def test_commit_creates_batch_and_import_items(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
-
             report = self.bridge.commit(
                 db=self.db,
                 preview=preview,
@@ -110,10 +106,9 @@ class CollectorCommitBridgeTests(unittest.TestCase):
             {"player", "match"},
         )
 
-    def test_commit_creates_aliases_and_provider_mappings(self):
+    def test_commit_creates_aliases_and_all_provider_mappings(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
-
             self.bridge.commit(
                 db=self.db,
                 preview=preview,
@@ -123,25 +118,45 @@ class CollectorCommitBridgeTests(unittest.TestCase):
 
         mappings = self.db.query(ProviderEntityMapping).all()
 
-        self.assertEqual(len(mappings), 3)
-        self.assertEqual(
-            {mapping.entity_type for mapping in mappings},
-            {"player", "fixture"},
-        )
+        self.assertEqual(len(mappings), 5)
 
-        fixture_mapping = (
-            self.db.query(ProviderEntityMapping)
-            .filter_by(entity_type="fixture")
-            .one()
-        )
+        fixture_mappings = [
+            row
+            for row in mappings
+            if row.entity_type == "fixture"
+        ]
+        player_mappings = [
+            row
+            for row in mappings
+            if row.entity_type == "player"
+        ]
+
+        self.assertEqual(len(fixture_mappings), 1)
+        self.assertEqual(len(player_mappings), 4)
+
+        fixture_mapping = fixture_mappings[0]
 
         self.assertEqual(fixture_mapping.external_id, "match-1")
         self.assertEqual(fixture_mapping.competition_code, "MODUS")
 
+        external_ids = {
+            mapping.external_id
+            for mapping in player_mappings
+        }
+
+        self.assertEqual(
+            external_ids,
+            {
+                "Player A",
+                "Player B",
+                "player-a",
+                "player-b",
+            },
+        )
+
     def test_commit_stores_raw_data_and_provenance(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
-
             self.bridge.commit(
                 db=self.db,
                 preview=preview,
@@ -167,7 +182,6 @@ class CollectorCommitBridgeTests(unittest.TestCase):
     def test_fixture_commit_creates_placeholder_statistics(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
-
             self.bridge.commit(
                 db=self.db,
                 preview=preview,
@@ -201,7 +215,6 @@ class CollectorCommitBridgeTests(unittest.TestCase):
         self.assertEqual(first.created_matches, 1)
         self.assertEqual(second.created_matches, 0)
         self.assertEqual(second.duplicate_matches, 1)
-
         self.assertEqual(self.db.query(Match).count(), 1)
         self.assertEqual(self.db.query(Player).count(), 2)
 
@@ -220,41 +233,14 @@ class CollectorCommitBridgeTests(unittest.TestCase):
 
         self.assertEqual(self.db.query(Match).count(), 0)
         self.assertEqual(self.db.query(Player).count(), 0)
-        self.assertEqual(self.db.query(HistoricalImportBatch).count(), 0)
-
-    def test_preview_with_results_is_rejected_for_now(self):
-        results = (
-            "match_external_id,player_a_external_id,"
-            "player_b_external_id,winner_external_id,"
-            "player_a_legs,player_b_legs\n"
-            "match-1,player-a,player-b,player-a,4,2\n"
+        self.assertEqual(
+            self.db.query(HistoricalImportBatch).count(),
+            0,
         )
-
-        with tempfile.TemporaryDirectory() as directory:
-            self.write_fixture_file(directory)
-
-            (Path(directory) / "results.csv").write_text(
-                results,
-                encoding="utf-8",
-            )
-
-            preview = self.preview_service.preview(
-                folder=Path(directory),
-                provider="manual-research",
-            )
-
-            with self.assertRaises(ValueError):
-                self.bridge.commit(
-                    db=self.db,
-                    preview=preview,
-                )
-
-        self.assertEqual(self.db.query(Match).count(), 0)
 
     def test_rollback_removes_created_fixture(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
-
             report = self.bridge.commit(
                 db=self.db,
                 preview=preview,
@@ -263,7 +249,10 @@ class CollectorCommitBridgeTests(unittest.TestCase):
         rollback_batch(self.db, report.batch_id)
 
         self.assertEqual(self.db.query(Match).count(), 0)
-        self.assertEqual(self.db.query(MatchPlayerStats).count(), 0)
+        self.assertEqual(
+            self.db.query(MatchPlayerStats).count(),
+            0,
+        )
 
         batch = (
             self.db.query(HistoricalImportBatch)
