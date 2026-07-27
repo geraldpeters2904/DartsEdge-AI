@@ -7,7 +7,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
+from app.collector.fixture_committer import FixtureCommitter
 from app.collector.folder_preview import CollectorFolderPreview
+from app.collector.result_committer import ResultCommitter
+from app.collector.statistics_committer import StatisticsCommitter
 from app.models.canonical_data import ProviderEntityMapping
 from app.models.historical_import import (
     HistoricalImportBatch,
@@ -24,7 +27,6 @@ from app.services.canonical_data_service import (
     record_provenance,
     store_raw,
 )
-from app.services.historical_import_service import import_rows
 
 
 @dataclass(frozen=True)
@@ -73,6 +75,7 @@ class CollectorCommitBridge:
     SUPPORTED_ENTITY_TYPES = {
         "fixtures",
         "results",
+        "statistics",
     }
 
     def commit(
@@ -86,8 +89,9 @@ class CollectorCommitBridge:
 
         fixtures = self._records(preview, "fixtures")
         results = self._records(preview, "results")
+        statistics = self._records(preview, "statistics")
 
-        if not fixtures and not results:
+        if not fixtures and not results and not statistics:
             raise ValueError(
                 "The collector preview contains no supported records to commit."
             )
@@ -104,7 +108,7 @@ class CollectorCommitBridge:
                 db=db,
                 preview=preview,
                 filename=filename,
-                received_rows=len(results),
+                received_rows=len(results) + len(statistics),
             )
 
         if fixtures:
@@ -122,7 +126,19 @@ class CollectorCommitBridge:
                 batch=batch,
             )
 
-        batch.received_rows = len(fixtures) + len(results)
+        if statistics:
+            StatisticsCommitter().commit(
+                db=db,
+                provider=preview.provider,
+                statistics=statistics,
+                batch=batch,
+            )
+
+        batch.received_rows = (
+            len(fixtures)
+            + len(results)
+            + len(statistics)
+        )
         batch.status = "imported"
 
         db.commit()
@@ -133,7 +149,7 @@ class CollectorCommitBridge:
             entity_counts={
                 "fixtures": len(fixtures),
                 "results": len(results),
-                "statistics": 0,
+                "statistics": len(statistics),
                 "odds": 0,
             },
         )
@@ -160,7 +176,7 @@ class CollectorCommitBridge:
         if unsupported:
             names = ", ".join(sorted(unsupported))
             raise ValueError(
-                "This commit-bridge version supports fixtures and results only. "
+                "This commit-bridge version supports fixtures, results and statistics only. "
                 f"Unsupported preview entities: {names}."
             )
 
@@ -172,20 +188,15 @@ class CollectorCommitBridge:
         fixtures: List[CanonicalFixture],
         filename: Optional[str],
     ) -> HistoricalImportBatch:
-        rows = [
-            self._fixture_to_historical_row(fixture)
-            for fixture in fixtures
-        ]
-
-        return import_rows(
-            db,
-            rows,
+        return FixtureCommitter().commit(
+            db=db,
+            provider=preview.provider,
             filename=filename or self._default_filename(
                 preview,
                 suffix="fixtures",
             ),
-            provider=preview.provider,
             competition=self._competition_code(fixtures),
+            fixtures=fixtures,
         )
 
     def _commit_results(
@@ -196,33 +207,11 @@ class CollectorCommitBridge:
         results: Iterable[CanonicalMatchResult],
         batch: HistoricalImportBatch,
     ) -> None:
-        rejected = 0
-
-        for result in results:
-            try:
-                self._commit_one_result(
-                    db=db,
-                    provider=provider,
-                    result=result,
-                    batch=batch,
-                )
-            except Exception as exc:
-                rejected += 1
-
-                db.add(
-                    HistoricalImportItem(
-                        batch_id=batch.id,
-                        entity_type="result",
-                        external_id=result.match_external_id,
-                        action="rejected",
-                        detail=str(exc),
-                        created_by_batch=False,
-                    )
-                )
-
-        batch.rejected_rows = (
-            int(batch.rejected_rows or 0)
-            + rejected
+        ResultCommitter().commit(
+            db=db,
+            provider=provider,
+            results=results,
+            batch=batch,
         )
 
     def _commit_one_result(
