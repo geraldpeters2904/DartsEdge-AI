@@ -1,0 +1,1709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MODUS Super Series Results | Historical Results, League Tables & Match Statistics</title>
+<meta name="description" content="Browse complete MODUS Super Series results from every series and week. View match results, group tables, finals, weekly winners, series champions and detailed darts statistics from the MODUS Super Series." />
+<meta name="keywords" content="MODUS Super Series results, MODUS results, darts results, MODUS Super Series tables, MODUS league tables, MODUS weekly winners, MODUS series champions, darts statistics, darts match results, professional darts results, historical darts results, MODUS finals, Group A results, Group B results, Group C results, darts scores, darts match centre, MODUS Super Series archive" />
+
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="stylesheet" href="assets/css/mss-results.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<style>
+.fixture-card {
+    position: relative;
+    box-sizing: border-box;
+    height: 100%;
+    padding-top: 28px;
+    padding-bottom: 28px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.fixture-card .match-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 140px;
+    padding: 5px;
+    background: #fff;
+    color: #000;
+    transform-origin: left top;
+    transform: rotate(-90deg) translate(-100%, 0);
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.fixture-card .player-row {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    align-items: center;
+    column-gap: 10px;
+    margin-bottom: 8px;
+}
+
+.fixture-card .player-row:last-child {
+    margin-bottom: 0;
+}
+
+.fixture-card .score {
+    width: 42px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.fixture-card .player-row span:last-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: Anton, Impact, sans-serif;
+    font-size: 1.8rem;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.fixture-card:hover .match-label {
+    background: var(--gold);
+    color: #000;
+}
+
+.fixture-card.live-card {
+    border-color: var(--gold);
+}
+
+.fixture-card.live-card .match-label {
+    background: var(--gold);
+    color: #000;
+}
+
+.fixture-card.fixture-card-upcoming .score {
+    background: #b2b2b2;
+    color: #000;
+}
+
+.no-results {
+    grid-column: 1 / -1;
+    background: #111;
+    color: #fff;
+    padding: 30px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.15);
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+    .fixture-card {
+        padding-top: 16px;
+        padding-bottom: 18px;
+    }
+
+    .fixture-card .match-label {
+        width: 143px;
+    }
+
+    .fixture-card .player-row span:last-child {
+        font-size: 1.45rem;
+        line-height: 1.25;
+    }
+}
+
+@media(max-width:700px) {
+    .fixture-card {
+        padding-top: 24px;
+        padding-bottom: 24px;
+    }
+
+    .fixture-card .player-row {
+        margin: 4px 0;
+        line-height: 1.2;
+    }
+
+    .fixture-card .score {
+        margin: 3px 0;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="site-header"></div>
+
+<div class="header-space"></div>
+
+<main>
+
+<section class="page-title">
+    <div class="wrap">
+        <h1>Results & Fixtures</h1>
+    </div>
+</section>
+
+<section class="filters-section">
+    <div class="wrap">
+
+        <div class="filters-grid">
+
+            <div class="dropdown-set">
+
+                <label for="seriesSelect">Series</label>
+
+                <select id="seriesSelect" onchange="changeSeries(this.value)">
+
+                    
+                        <option
+                            value="1"
+                                                    >
+                            Series 1                        </option>
+
+                    
+                        <option
+                            value="2"
+                                                    >
+                            Series 2                        </option>
+
+                    
+                        <option
+                            value="3"
+                                                    >
+                            Series 3                        </option>
+
+                    
+                        <option
+                            value="4"
+                                                    >
+                            Series 4                        </option>
+
+                    
+                        <option
+                            value="5"
+                                                    >
+                            Series 5                        </option>
+
+                    
+                        <option
+                            value="6"
+                                                    >
+                            Series 6                        </option>
+
+                    
+                        <option
+                            value="7"
+                                                    >
+                            Series 7                        </option>
+
+                    
+                        <option
+                            value="8"
+                                                    >
+                            Series 8                        </option>
+
+                    
+                        <option
+                            value="9"
+                                                    >
+                            Series 9                        </option>
+
+                    
+                        <option
+                            value="10"
+                                                    >
+                            Series 10                        </option>
+
+                    
+                        <option
+                            value="11"
+                                                    >
+                            Series 11                        </option>
+
+                    
+                        <option
+                            value="12"
+                                                    >
+                            Series 12                        </option>
+
+                    
+                        <option
+                            value="13"
+                                                    >
+                            Series 13                        </option>
+
+                    
+                        <option
+                            value="14"
+                            selected                        >
+                            Series 14                        </option>
+
+                    
+                        <option
+                            value="15"
+                                                    >
+                            Double Trouble                        </option>
+
+                    
+                </select>
+
+            </div>
+
+            <div class="group-tabs">
+
+    
+        <button
+            class="active"
+            type="button"
+            onclick="changeGroup('Group A')"
+        >
+            Group A        </button>
+
+    
+        <button
+            class=""
+            type="button"
+            onclick="changeGroup('Group B')"
+        >
+            Group B        </button>
+
+    
+        <button
+            class=""
+            type="button"
+            onclick="changeGroup('Group C')"
+        >
+            Group C        </button>
+
+    
+        <button
+            class=""
+            type="button"
+            onclick="changeGroup('Final')"
+        >
+            Final        </button>
+
+    
+    <button
+        type="button"
+        onclick="location.href='week-averages.php?series_id=14&week_id=165'"
+    >
+        Averages
+    </button>
+
+</div>
+
+            <div class="dropdown-set right">
+
+                <label for="weekSelect">Week</label>
+
+                <select id="weekSelect" onchange="changeWeek(this.value)">
+
+                    
+                        <option
+                            value="165"
+                            selected                        >
+                            Week 1                        </option>
+
+                    
+                        <option
+                            value="166"
+                                                    >
+                            Week 2                        </option>
+
+                    
+                        <option
+                            value="167"
+                                                    >
+                            Week 3                        </option>
+
+                    
+                        <option
+                            value="168"
+                                                    >
+                            Week 4                        </option>
+
+                    
+                        <option
+                            value="169"
+                                                    >
+                            Week 5                        </option>
+
+                    
+                        <option
+                            value="170"
+                                                    >
+                            Week 6                        </option>
+
+                    
+                        <option
+                            value="171"
+                                                    >
+                            Week 7                        </option>
+
+                    
+                        <option
+                            value="172"
+                                                    >
+                            Week 8                        </option>
+
+                    
+                        <option
+                            value="173"
+                                                    >
+                            Week 9                        </option>
+
+                    
+                        <option
+                            value="174"
+                                                    >
+                            Week 10                        </option>
+
+                    
+                        <option
+                            value="175"
+                                                    >
+                            Week 11                        </option>
+
+                    
+                        <option
+                            value="176"
+                                                    >
+                            Week 12                        </option>
+
+                    
+                        <option
+                            value="177"
+                                                    >
+                            Week 13                        </option>
+
+                    
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+<section class="fixtures-section">
+
+    <div class="wrap">
+
+        <div class="fixtures-grid" id="fixtures-provider-target">
+
+            
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16947'"
+                >
+
+                    <div class="match-label">
+                        Match 1                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16948'"
+                >
+
+                    <div class="match-label">
+                        Match 2                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16949'"
+                >
+
+                    <div class="match-label">
+                        Match 3                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">0</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16950'"
+                >
+
+                    <div class="match-label">
+                        Match 4                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16951'"
+                >
+
+                    <div class="match-label">
+                        Match 5                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16952'"
+                >
+
+                    <div class="match-label">
+                        Match 6                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16953'"
+                >
+
+                    <div class="match-label">
+                        Match 7                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16954'"
+                >
+
+                    <div class="match-label">
+                        Match 8                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">0</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16955'"
+                >
+
+                    <div class="match-label">
+                        Match 9                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16956'"
+                >
+
+                    <div class="match-label">
+                        Match 10                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16957'"
+                >
+
+                    <div class="match-label">
+                        Match 11                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16958'"
+                >
+
+                    <div class="match-label">
+                        Match 12                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16959'"
+                >
+
+                    <div class="match-label">
+                        Match 13                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16960'"
+                >
+
+                    <div class="match-label">
+                        Match 14                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16961'"
+                >
+
+                    <div class="match-label">
+                        Match 15                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16962'"
+                >
+
+                    <div class="match-label">
+                        Match 16                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16963'"
+                >
+
+                    <div class="match-label">
+                        Match 17                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16964'"
+                >
+
+                    <div class="match-label">
+                        Match 18                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16965'"
+                >
+
+                    <div class="match-label">
+                        Match 19                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16966'"
+                >
+
+                    <div class="match-label">
+                        Match 20                    </div>
+
+                    <div class="player-row">
+                        <span class="score">0</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16967'"
+                >
+
+                    <div class="match-label">
+                        Match 21                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16968'"
+                >
+
+                    <div class="match-label">
+                        Match 22                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16969'"
+                >
+
+                    <div class="match-label">
+                        Match 23                    </div>
+
+                    <div class="player-row">
+                        <span class="score">0</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16970'"
+                >
+
+                    <div class="match-label">
+                        Match 24                    </div>
+
+                    <div class="player-row">
+                        <span class="score">2</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16971'"
+                >
+
+                    <div class="match-label">
+                        Match 25                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16972'"
+                >
+
+                    <div class="match-label">
+                        Match 26                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16973'"
+                >
+
+                    <div class="match-label">
+                        Match 27                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16974'"
+                >
+
+                    <div class="match-label">
+                        Match 28                    </div>
+
+                    <div class="player-row">
+                        <span class="score">0</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16975'"
+                >
+
+                    <div class="match-label">
+                        Match 29                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16976'"
+                >
+
+                    <div class="match-label">
+                        Match 30                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16977'"
+                >
+
+                    <div class="match-label">
+                        Match 31                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16978'"
+                >
+
+                    <div class="match-label">
+                        Match 32                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16979'"
+                >
+
+                    <div class="match-label">
+                        Match 33                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16980'"
+                >
+
+                    <div class="match-label">
+                        Match 34                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16981'"
+                >
+
+                    <div class="match-label">
+                        Match 35                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16982'"
+                >
+
+                    <div class="match-label">
+                        Match 36                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16983'"
+                >
+
+                    <div class="match-label">
+                        Match 37                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">3</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16984'"
+                >
+
+                    <div class="match-label">
+                        Match 38                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16985'"
+                >
+
+                    <div class="match-label">
+                        Match 39                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">0</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16986'"
+                >
+
+                    <div class="match-label">
+                        Match 40                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16987'"
+                >
+
+                    <div class="match-label">
+                        Match 41                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16988'"
+                >
+
+                    <div class="match-label">
+                        Match 42                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16989'"
+                >
+
+                    <div class="match-label">
+                        Match 43                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jack Smith</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Dawson Murschell</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16990'"
+                >
+
+                    <div class="match-label">
+                        Match 44                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Danny Baggish</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Jeff Smith</span>
+                    </div>
+
+                </article>
+
+            
+                
+                <article
+                    class="fixture-card"
+                    onclick="location.href='match-db-stats.php?match_id=16991'"
+                >
+
+                    <div class="match-label">
+                        Match 45                    </div>
+
+                    <div class="player-row">
+                        <span class="score">4</span>
+                        <span>Conan Whitehead</span>
+                    </div>
+
+                    <div class="player-row">
+                        <span class="score">1</span>
+                        <span>Neven Resetar</span>
+                    </div>
+
+                </article>
+
+            
+            
+        </div>
+
+    </div>
+
+</section>
+
+<section class="winner-panel">
+
+    <div class="wrap">
+
+        <p>Series Week Winner</p>
+
+        <h2>
+            Michael Huntley        </h2>
+
+    </div>
+
+</section>
+
+<section class="table-section">
+
+    <div class="table-shape table-shape-top"></div>
+    <div class="table-shape table-shape-bottom"></div>
+
+    <div class="wrap">
+
+        
+            <p class="table-year">Group A</p>
+
+            <h2>Table</h2>
+
+            <div class="current-table">
+
+                
+                    <div class="table-row">
+                        <div class="position">1</div>
+                        <div class="name">Danny Baggish</div>
+                        <div class="stat">15</div>
+                        <div class="stat">11</div>
+                        <div class="stat">4</div>
+                        <div class="stat">22</div>
+						<div class="stat">88.16</div>
+                        <div class="points">22</div>
+                    </div>
+
+                
+                    <div class="table-row">
+                        <div class="position">2</div>
+                        <div class="name">Dawson Murschell</div>
+                        <div class="stat">15</div>
+                        <div class="stat">11</div>
+                        <div class="stat">4</div>
+                        <div class="stat">16</div>
+						<div class="stat">86.70</div>
+                        <div class="points">22</div>
+                    </div>
+
+                
+                    <div class="table-row">
+                        <div class="position">3</div>
+                        <div class="name">Conan Whitehead</div>
+                        <div class="stat">15</div>
+                        <div class="stat">8</div>
+                        <div class="stat">7</div>
+                        <div class="stat">6</div>
+						<div class="stat">82.49</div>
+                        <div class="points">16</div>
+                    </div>
+
+                
+                    <div class="table-row">
+                        <div class="position">4</div>
+                        <div class="name">Jeff Smith</div>
+                        <div class="stat">15</div>
+                        <div class="stat">8</div>
+                        <div class="stat">7</div>
+                        <div class="stat">2</div>
+						<div class="stat">86.91</div>
+                        <div class="points">16</div>
+                    </div>
+
+                
+                    <div class="table-row">
+                        <div class="position">5</div>
+                        <div class="name">Jack Smith</div>
+                        <div class="stat">15</div>
+                        <div class="stat">4</div>
+                        <div class="stat">11</div>
+                        <div class="stat">-21</div>
+						<div class="stat">80.23</div>
+                        <div class="points">8</div>
+                    </div>
+
+                
+                    <div class="table-row">
+                        <div class="position">6</div>
+                        <div class="name">Neven Resetar</div>
+                        <div class="stat">15</div>
+                        <div class="stat">3</div>
+                        <div class="stat">12</div>
+                        <div class="stat">-25</div>
+						<div class="stat">80.59</div>
+                        <div class="points">6</div>
+                    </div>
+
+                
+            </div>
+
+        
+    </div>
+
+</section>
+
+</main>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/site.js"></script>
+
+<script>
+function buildUrl(seriesId, weekId, groupName)
+{
+    const params = new URLSearchParams();
+
+    if (seriesId) {
+        params.set('series_id', seriesId);
+    }
+
+    if (weekId) {
+        params.set('week_id', weekId);
+    }
+
+    if (groupName) {
+        params.set('group', groupName);
+    }
+
+    window.location.href = '?' + params.toString();
+}
+
+function changeSeries(seriesId)
+{
+    buildUrl(seriesId, '', 'Group A');
+}
+
+function changeWeek(weekId)
+{
+    buildUrl(
+        '14',
+        weekId,
+        'Group A'
+    );
+}
+
+function changeGroup(groupName)
+{
+    buildUrl(
+        '14',
+        '165',
+        groupName
+    );
+}
+
+function escapeHtml(value)
+{
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+let resultsReloadPending = false;
+
+function scheduleResultsReload(delayMs = 5000)
+{
+    if (resultsReloadPending) {
+        return;
+    }
+
+    resultsReloadPending = true;
+
+    setTimeout(() => {
+        window.location.reload();
+    }, delayMs);
+}
+
+async function refreshResultsFixtures()
+{
+    try {
+        const response = await fetch('/live-scores-json.php?_=' + Date.now(), {
+            cache: 'no-store'
+        });
+
+        const data = await response.json();
+
+        if (!data.summaries) {
+            return;
+        }
+
+        const existingCards = {};
+        const seenSourceGameNumbers = new Set();
+
+        document.querySelectorAll('[data-source-game-number]').forEach(card => {
+            existingCards[card.getAttribute('data-source-game-number')] = card;
+        });
+
+        data.summaries.forEach(summary => {
+            const event = summary.sport_event || {};
+            const status = summary.sport_event_status || {};
+            const eventId = event.id || '';
+            const sourceGameNumber = eventId.replace('sr:sport_event:', '');
+            const matchStatus = status.match_status || '';
+            const mainStatus = status.status || '';
+
+            if (!sourceGameNumber) {
+                return;
+            }
+
+            seenSourceGameNumbers.add(sourceGameNumber);
+
+            if (!existingCards[sourceGameNumber]) {
+                return;
+            }
+
+            const card = existingCards[sourceGameNumber];
+
+            const isLive = matchStatus === 'live' || matchStatus === 'started';
+            const isUpcoming = matchStatus === 'not_started';
+            const isFinished =
+                matchStatus === 'ended' ||
+                matchStatus === 'closed' ||
+                mainStatus === 'closed';
+
+            /*
+                Always use Sportradar's official status score.
+                This stops matches sticking at 3-3 if the final timeline/leg
+                event is late but sport_event_status has already moved to 4-3.
+            */
+            const homeScore = isUpcoming ? 0 : Number(status.home_score ?? 0);
+            const awayScore = isUpcoming ? 0 : Number(status.away_score ?? 0);
+            const hasWinningScore = homeScore >= 4 || awayScore >= 4;
+
+            const scores = card.querySelectorAll('.score');
+
+            if (scores[0]) {
+                scores[0].innerHTML = escapeHtml(homeScore);
+            }
+
+            if (scores[1]) {
+                scores[1].innerHTML = escapeHtml(awayScore);
+            }
+
+            card.classList.toggle('live-card', isLive && !isFinished && !hasWinningScore);
+            card.classList.toggle('fixture-card-upcoming', isUpcoming);
+
+            const label = card.querySelector('.match-label');
+
+            if (label) {
+                if (isFinished || hasWinningScore) {
+                    label.innerHTML = 'FINAL';
+                } else if (isLive) {
+                    label.innerHTML = 'LIVE';
+                }
+            }
+
+            /*
+                Once the match reaches the winning score or Sportradar marks it
+                ended/closed, automatically reload. The PHP/database version
+                then replaces the live cache card as soon as your importer has
+                saved the completed result.
+            */
+            if (isFinished || hasWinningScore) {
+                scheduleResultsReload(5000);
+            }
+        });
+
+        /*
+            If a cache card was live but disappears from the latest live cache,
+            reload so stale live cards do not stay on the page when the next
+            match starts.
+        */
+        document.querySelectorAll('.cache-fixture-card.live-card[data-source-game-number]').forEach(card => {
+            const sourceGameNumber = card.getAttribute('data-source-game-number');
+
+            if (sourceGameNumber && !seenSourceGameNumbers.has(sourceGameNumber)) {
+                const label = card.querySelector('.match-label');
+
+                if (label) {
+                    label.innerHTML = 'FINAL';
+                }
+
+                scheduleResultsReload(3000);
+            }
+        });
+
+    } catch (err) {
+        console.log('Results fixtures refresh failed');
+    }
+}
+
+const showLiveCacheFixtures = false;
+
+if (showLiveCacheFixtures) {
+    refreshResultsFixtures();
+    setInterval(refreshResultsFixtures, 5000);
+}
+
+</script>
+
+</body>
+</html>
