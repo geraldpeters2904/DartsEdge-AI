@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+from pathlib import Path
+import subprocess
+from urllib.parse import quote
+
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
-from urllib.parse import quote
 
 from app.services.modus_capture_session_service import (
     ModusCaptureSessionService,
 )
+from app.services.modus_folder_service import ModusFolderImportService
 from app.templates_config import templates
 
 
 router = APIRouter()
 capture_service = ModusCaptureSessionService()
+folder_service = ModusFolderImportService()
 
 
 def _redirect(path: str, message: str):
@@ -27,11 +32,14 @@ def capture_manager_page(
     folder: str = "",
 ):
     session = None
+    validation = None
     message = request.query_params.get("message")
 
     if folder:
         try:
             session = capture_service.load_session(folder)
+            if session.complete:
+                validation = folder_service.inspect(folder).to_dict()
         except Exception as exc:
             message = str(exc)
 
@@ -40,6 +48,7 @@ def capture_manager_page(
         "modus_capture_manager.html",
         {
             "session": session,
+            "validation": validation,
             "destination_folder": folder,
             "message": message,
         },
@@ -105,4 +114,63 @@ def refresh_capture_queue(
         return _redirect(
             "/admin/collector/capture/modus",
             f"Unable to refresh capture queue: {exc}",
+        )
+
+
+@router.post("/admin/collector/capture/modus/open-folder")
+def open_capture_folder(
+    destination_folder: str = Form(...),
+):
+    try:
+        folder = Path(destination_folder).expanduser().resolve()
+        if not folder.exists() or not folder.is_dir():
+            raise ValueError("Capture folder does not exist.")
+
+        subprocess.run(
+            ["open", str(folder)],
+            check=True,
+            timeout=10,
+        )
+
+        return RedirectResponse(
+            (
+                "/admin/collector/capture/modus?folder="
+                + quote(str(folder))
+                + "&message="
+                + quote("Capture folder opened in Finder.")
+            ),
+            status_code=303,
+        )
+    except Exception as exc:
+        return _redirect(
+            "/admin/collector/capture/modus",
+            f"Unable to open folder: {exc}",
+        )
+
+
+@router.post("/admin/collector/capture/modus/validate")
+def validate_capture_folder(
+    destination_folder: str = Form(...),
+):
+    try:
+        manifest = folder_service.inspect(destination_folder)
+        message = (
+            "Capture folder is ready for import."
+            if manifest.ready
+            else "Capture folder still has validation issues."
+        )
+
+        return RedirectResponse(
+            (
+                "/admin/collector/capture/modus?folder="
+                + quote(str(manifest.folder))
+                + "&message="
+                + quote(message)
+            ),
+            status_code=303,
+        )
+    except Exception as exc:
+        return _redirect(
+            "/admin/collector/capture/modus",
+            f"Validation failed: {exc}",
         )

@@ -52,6 +52,12 @@ class ModusCaptureSession:
         return self.expected_count - self.captured_count
 
     @property
+    def progress_percent(self) -> int:
+        if self.expected_count == 0:
+            return 0
+        return round(self.captured_count / self.expected_count * 100)
+
+    @property
     def complete(self) -> bool:
         return bool(self.items) and self.missing_count == 0
 
@@ -73,6 +79,7 @@ class ModusCaptureSession:
             "expected_count": self.expected_count,
             "captured_count": self.captured_count,
             "missing_count": self.missing_count,
+            "progress_percent": self.progress_percent,
             "complete": self.complete,
             "next_match_id": (
                 self.next_item.match_id if self.next_item is not None else None
@@ -85,9 +92,8 @@ class ModusCaptureSessionService:
     """
     Build and persist a browser-assisted MODUS capture queue.
 
-    This service performs no HTTP requests. It reads a saved results page,
-    creates a standard capture folder and tracks which match HTML files have
-    been saved manually.
+    No HTTP requests are made. The user opens and saves official match pages
+    manually while DartsEdge tracks progress from the destination folder.
     """
 
     def __init__(self):
@@ -214,7 +220,7 @@ class ModusCaptureSessionService:
             and page.group == "Group A"
         ):
             raise ValueError(
-                "Sprint 3.4A1 supports only Series 14, Week 1, Group A."
+                "Sprint 3.4A supports only Series 14, Week 1, Group A."
             )
 
     @staticmethod

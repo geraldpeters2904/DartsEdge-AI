@@ -7,6 +7,32 @@ MODUS Capture Manager · DartsEdge AI
 {% block content %}
 <link rel="stylesheet" href="/static/css/collector.css?v=1">
 
+<style>
+.capture-progress-track {
+    width: 100%;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.09);
+    overflow: hidden;
+    margin: 18px 0 8px;
+}
+.capture-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d3a62d, #f1d36b);
+    transition: width 0.25s ease;
+}
+.capture-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.9rem;
+}
+.capture-queue-current {
+    outline: 2px solid rgba(211,166,45,0.7);
+    outline-offset: -2px;
+}
+</style>
+
 <div class="page-shell collector-shell">
 
     <div class="page-header collector-header">
@@ -14,9 +40,8 @@ MODUS Capture Manager · DartsEdge AI
             <p class="eyebrow">BROWSER-ASSISTED CAPTURE</p>
             <h1>MODUS Capture Manager</h1>
             <p class="muted collector-introduction">
-                Build and resume the Series 14, Week 1, Group A capture queue.
-                DartsEdge opens official match pages but performs no background
-                website retrieval.
+                Capture Series 14, Week 1, Group A one match at a time,
+                with progress, resume and validation built in.
             </p>
         </div>
 
@@ -49,7 +74,6 @@ MODUS Capture Manager · DartsEdge AI
                 action="/admin/collector/capture/modus/build"
             >
                 <div class="collector-form-grid">
-
                     <label class="collector-field">
                         <span>Saved MODUS results page</span>
                         <input
@@ -58,9 +82,6 @@ MODUS Capture Manager · DartsEdge AI
                             accept=".html,text/html"
                             required
                         >
-                        <small>
-                            Select the genuine Week 1, Group A HTML source.
-                        </small>
                     </label>
 
                     <label class="collector-field">
@@ -72,23 +93,7 @@ MODUS Capture Manager · DartsEdge AI
                             placeholder="~/Documents/DartsEdge/Imports/Series_14/Week_01/Group_A"
                             required
                         >
-                        <small>
-                            The folder will contain results.html, the session
-                            file and saved match pages.
-                        </small>
                     </label>
-
-                </div>
-
-                <div class="collector-safety-box">
-                    <div class="collector-safety-icon">🛡️</div>
-                    <div>
-                        <strong>No automated downloads</strong>
-                        <p>
-                            You open each official match page and save it using
-                            the exact filename shown by the queue.
-                        </p>
-                    </div>
                 </div>
 
                 <div class="collector-actions">
@@ -101,28 +106,28 @@ MODUS Capture Manager · DartsEdge AI
 
         <aside class="panel collector-workflow-panel">
             <p class="eyebrow">WORKFLOW</p>
-            <h2>Capture and resume</h2>
+            <h2>Capture, refresh, validate</h2>
 
             <ol class="collector-workflow-list">
                 <li class="collector-workflow-active">
                     <span>1</span>
                     <div>
-                        <strong>Build queue</strong>
-                        <small>Read all 45 match IDs from results.html.</small>
+                        <strong>Open next match</strong>
+                        <small>Save with the filename shown.</small>
                     </div>
                 </li>
                 <li>
                     <span>2</span>
                     <div>
-                        <strong>Open next match</strong>
-                        <small>Save with the exact match_&lt;id&gt;.html name.</small>
+                        <strong>Refresh progress</strong>
+                        <small>The first missing match becomes next.</small>
                     </div>
                 </li>
                 <li>
                     <span>3</span>
                     <div>
-                        <strong>Refresh progress</strong>
-                        <small>Resume automatically at the first missing file.</small>
+                        <strong>Validate and import</strong>
+                        <small>Use the existing safe Collector workflow.</small>
                     </div>
                 </li>
             </ol>
@@ -143,30 +148,38 @@ MODUS Capture Manager · DartsEdge AI
                 </div>
 
                 <span class="collector-step-badge">
-                    {{ session.captured_count }} / {{ session.expected_count }}
+                    {{ session.progress_percent }}%
                 </span>
             </div>
 
-            <div class="collector-summary-grid">
+            <div class="capture-progress-track">
+                <div
+                    class="capture-progress-fill"
+                    style="width: {{ session.progress_percent }}%;"
+                ></div>
+            </div>
+            <div class="capture-progress-meta">
+                <span>{{ session.captured_count }} captured</span>
+                <span>{{ session.missing_count }} missing</span>
+                <strong>{{ session.captured_count }} / {{ session.expected_count }}</strong>
+            </div>
 
+            <div class="collector-summary-grid" style="margin-top: 18px;">
                 <div class="collector-summary-card">
                     <span class="collector-summary-label">Expected</span>
                     <strong>{{ session.expected_count }}</strong>
                     <span class="collector-summary-detail">Match pages</span>
                 </div>
-
                 <div class="collector-summary-card">
                     <span class="collector-summary-label">Captured</span>
                     <strong>{{ session.captured_count }}</strong>
                     <span class="collector-summary-detail">Files found</span>
                 </div>
-
                 <div class="collector-summary-card">
                     <span class="collector-summary-label">Missing</span>
                     <strong>{{ session.missing_count }}</strong>
                     <span class="collector-summary-detail">Still to save</span>
                 </div>
-
                 <div class="collector-summary-card">
                     <span class="collector-summary-label">Status</span>
                     <strong>
@@ -174,7 +187,6 @@ MODUS Capture Manager · DartsEdge AI
                     </strong>
                     <span class="collector-summary-detail">Resume-safe</span>
                 </div>
-
             </div>
 
             {% if session.next_item %}
@@ -187,15 +199,25 @@ MODUS Capture Manager · DartsEdge AI
                             v {{ session.next_item.player_b_name }}
                         </strong>
                         <p>
-                            Save the opened page as
+                            Save as
                             <code>{{ session.next_item.destination_filename }}</code>
                             inside
                             <code>{{ session.destination_folder }}</code>.
                         </p>
                     </div>
                 </div>
+            {% else %}
+                <div class="collector-safety-box" style="margin-top: 20px;">
+                    <div class="collector-safety-icon">✓</div>
+                    <div>
+                        <strong>Capture complete</strong>
+                        <p>All expected match-page files are present.</p>
+                    </div>
+                </div>
+            {% endif %}
 
-                <div class="collector-actions">
+            <div class="collector-actions">
+                {% if session.next_item %}
                     <a
                         class="button button-primary"
                         href="{{ session.next_item.source_url }}"
@@ -204,42 +226,59 @@ MODUS Capture Manager · DartsEdge AI
                     >
                         Open Next Match
                     </a>
+                {% endif %}
 
-                    <form
-                        method="post"
-                        action="/admin/collector/capture/modus/refresh"
-                        style="display:inline"
-                    >
-                        <input
-                            type="hidden"
-                            name="destination_folder"
-                            value="{{ session.destination_folder }}"
-                        >
-                        <button class="button" type="submit">
-                            Refresh Progress
+                <form method="post" action="/admin/collector/capture/modus/refresh">
+                    <input type="hidden" name="destination_folder" value="{{ session.destination_folder }}">
+                    <button class="button" type="submit">Refresh Progress</button>
+                </form>
+
+                <form method="post" action="/admin/collector/capture/modus/open-folder">
+                    <input type="hidden" name="destination_folder" value="{{ session.destination_folder }}">
+                    <button class="button" type="submit">Open Folder</button>
+                </form>
+
+                {% if session.complete %}
+                    <form method="post" action="/admin/collector/capture/modus/validate">
+                        <input type="hidden" name="destination_folder" value="{{ session.destination_folder }}">
+                        <button class="button button-primary" type="submit">
+                            Validate Folder
                         </button>
                     </form>
-                </div>
-            {% else %}
+                {% endif %}
+            </div>
+
+            {% if validation %}
                 <div class="collector-safety-box" style="margin-top: 20px;">
-                    <div class="collector-safety-icon">✓</div>
+                    <div class="collector-safety-icon">
+                        {% if validation.ready %}✓{% else %}⚠️{% endif %}
+                    </div>
                     <div>
-                        <strong>All 45 match pages are present</strong>
+                        <strong>
+                            {% if validation.ready %}
+                                Folder ready for import
+                            {% else %}
+                                Folder has validation issues
+                            {% endif %}
+                        </strong>
                         <p>
-                            Continue through the Import Wizard to validate,
-                            preview and commit the folder.
+                            {{ validation.validated_count }}
+                            of {{ validation.expected_count }}
+                            match pages validated.
                         </p>
                     </div>
                 </div>
 
-                <div class="collector-actions">
-                    <a
-                        class="button button-primary"
-                        href="/admin/collector/import"
-                    >
-                        Open Import Wizard
-                    </a>
-                </div>
+                {% if validation.ready %}
+                    <div class="collector-actions">
+                        <a
+                            class="button button-primary"
+                            href="/admin/collector/import"
+                        >
+                            Continue to Import Wizard
+                        </a>
+                    </div>
+                {% endif %}
             {% endif %}
 
             <div class="table-wrap" style="margin-top: 20px;">
@@ -249,43 +288,29 @@ MODUS Capture Manager · DartsEdge AI
                             <th>Match</th>
                             <th>ID</th>
                             <th>Players</th>
-                            <th>Score</th>
                             <th>Filename</th>
                             <th>Status</th>
-                            <th>Link</th>
+                            <th>Open</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in session.items %}
-                            <tr>
+                            <tr
+                                {% if session.next_item and item.match_id == session.next_item.match_id %}
+                                    class="capture-queue-current"
+                                {% endif %}
+                            >
                                 <td>{{ item.match_number or "—" }}</td>
                                 <td><code>{{ item.match_id }}</code></td>
                                 <td>
-                                    {{ item.player_a_name }}
-                                    v
-                                    {{ item.player_b_name }}
+                                    {{ item.player_a_name }} v {{ item.player_b_name }}
+                                </td>
+                                <td><code>{{ item.destination_filename }}</code></td>
+                                <td>
+                                    {% if item.captured %}✓ Captured{% else %}Missing{% endif %}
                                 </td>
                                 <td>
-                                    {{ item.player_a_legs }}
-                                    –
-                                    {{ item.player_b_legs }}
-                                </td>
-                                <td>
-                                    <code>{{ item.destination_filename }}</code>
-                                </td>
-                                <td>
-                                    {% if item.captured %}
-                                        ✓ Captured
-                                    {% else %}
-                                        Missing
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a
-                                        href="{{ item.source_url }}"
-                                        target="_blank"
-                                        rel="noopener"
-                                    >
+                                    <a href="{{ item.source_url }}" target="_blank" rel="noopener">
                                         Open
                                     </a>
                                 </td>
