@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}MODUS Source Finder · DartsEdge AI{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=4">
+<div class="page-shell collector-shell">
+  <div class="page-header collector-header">
+    <div>
+      <p class="eyebrow">ACQUISITION GUIDE</p>
+      <h1>MODUS Source Finder</h1>
+      <p class="muted collector-introduction">Find a suitable public source for each part of a MODUS research session, then copy the data into the Research Workspace.</p>
+    </div>
+    <div class="collector-actions">
+      <a class="button" href="/admin/research">Research Workspace</a>
+      <a class="button" href="/admin/collector">Data Collection Centre</a>
+    </div>
+  </div>
+
+  {% if message %}<div class="alert-card">{{ message }}</div>{% endif %}
+
+  <section class="panel">
+    <div class="collector-panel-heading">
+      <div><p class="eyebrow">COVERAGE PLAN</p><h2>What to collect and where</h2></div>
+    </div>
+    <div class="collector-preview-file-grid">
+      {% for value, label in entity_types %}
+      <div class="collector-preview-file-card">
+        <div class="collector-preview-file-heading"><div><strong>{{ label }}</strong><code>{{ value }}.csv</code></div></div>
+        {% set candidates = coverage[value] %}
+        {% if candidates %}
+          <span class="collector-file-result collector-file-result-valid">{{ candidates|length }} source{% if candidates|length != 1 %}s{% endif %}</span>
+          <p class="muted">Preferred: {{ candidates[0].name }}</p>
+          <a class="button" href="?entity_type={{ value }}">Show sources</a>
+        {% else %}
+          <span class="collector-file-result collector-file-result-error">No source</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="collector-panel-heading">
+      <div><p class="eyebrow">SOURCE CATALOGUE</p><h2>{% if selected_entity %}Sources for {{ selected_entity|title }}{% else %}All MODUS sources{% endif %}</h2></div>
+      {% if selected_entity %}<a class="button" href="/admin/research/sources">Clear filter</a>{% endif %}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Source</th><th>Coverage</th><th>Trust</th><th>How to use</th><th>Notes</th><th></th></tr></thead>
+        <tbody>
+        {% for source in sources %}
+          <tr>
+            <td><strong>{{ source.name }}</strong><br><span class="muted">{{ source.source_kind }}</span></td>
+            <td>{% for item in source.coverage %}<span class="collector-batch-status">{{ item }}</span> {% endfor %}</td>
+            <td><span class="collector-file-result {% if source.trust_level == 'high' %}collector-file-result-valid{% else %}collector-step-badge{% endif %}">{{ source.trust_level }}</span></td>
+            <td>{{ source.access_method }}</td>
+            <td class="muted">{{ source.notes }}</td>
+            <td><a class="button button-primary" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">Open source</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">No source currently covers this data type.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <p class="eyebrow">RECOMMENDED WORKFLOW</p>
+    <h2>Collect with cross-checks</h2>
+    <ol class="collector-workflow-list">
+      <li class="collector-workflow-active"><span>1</span><div><strong>Start with the official match centre</strong><small>Use it for player identities, match ordering and primary fixture/result confirmation.</small></div></li>
+      <li class="collector-workflow-active"><span>2</span><div><strong>Use an aggregator for detail</strong><small>Collect statistics or additional fixture detail and cross-check important values.</small></div></li>
+      <li class="collector-workflow-active"><span>3</span><div><strong>Capture odds with a timestamp</strong><small>Every price observation must keep bookmaker and capture time.</small></div></li>
+      <li class="collector-workflow-active"><span>4</span><div><strong>Paste into Research Workspace</strong><small>Map columns, generate canonical data, preview and commit through the existing controlled workflow.</small></div></li>
+    </ol>
+    <div class="collector-safety-box"><div class="collector-safety-icon">⚠️</div><div><strong>Source Finder does not scrape websites</strong><p>It guides you to candidate pages. Respect each site's access terms, copy only data you are permitted to use, and verify consequential values before committing.</p></div></div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Map Research Columns · DartsEdge AI{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=3">
+<div class="page-shell collector-shell">
+  <div class="page-header"><div><p class="eyebrow">COLUMN MAPPING</p><h1>Map pasted columns</h1><p class="muted">Confirm how each pasted heading maps to the canonical {{ entity_type }} format.</p></div></div>
+  {% if message %}<div class="alert-card">{{ message }}</div>{% endif %}
+  <section class="panel">
+    <form method="post" action="/admin/research/save" class="collector-form">
+      <input type="hidden" name="entity_type" value="{{ entity_type }}"><input type="hidden" name="provider" value="{{ provider }}"><input type="hidden" name="competition" value="{{ competition }}"><textarea hidden name="raw_text">{{ raw_text }}</textarea>
+      <div class="table-wrap"><table><thead><tr><th>Pasted column</th><th>Example</th><th>Canonical field</th></tr></thead><tbody>{% for header in headers %}<tr><td><strong>{{ header }}</strong></td><td>{{ examples[loop.index0] }}</td><td><select name="map_{{ loop.index0 }}"><option value="">Ignore</option>{% for field in allowed_fields %}<option value="{{ field }}" {% if mapping[header] == field %}selected{% endif %}>{{ field }}</option>{% endfor %}</select><input type="hidden" name="header_{{ loop.index0 }}" value="{{ header }}"></td></tr>{% endfor %}</tbody></table></div>
+      <input type="hidden" name="header_count" value="{{ headers|length }}">
+      <div class="collector-actions"><a class="button" href="/admin/research">Cancel</a><button class="button button-primary" type="submit">Save research session</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

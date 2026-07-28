@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Research Session · DartsEdge AI{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=3">
+<div class="page-shell collector-shell">
+  <div class="page-header"><div><p class="eyebrow">RESEARCH SESSION</p><h1>{{ payload.entity_type|title }} capture</h1><p class="muted">{{ report.row_count }} rows converted to canonical CSV.</p></div><a class="button" href="/admin/research">All sessions</a></div>
+  {% if message %}<div class="alert-card">{{ message }}</div>{% endif %}
+  <div class="collector-summary-grid"><div class="collector-summary-card"><span class="collector-summary-label">Rows</span><strong>{{ report.row_count }}</strong></div><div class="collector-summary-card"><span class="collector-summary-label">Mapped columns</span><strong>{{ report.mapped_count }}</strong></div><div class="collector-summary-card"><span class="collector-summary-label">Provider</span><strong style="font-size:20px">{{ preview.provider }}</strong></div><div class="collector-summary-card"><span class="collector-summary-label">Status</span><strong style="font-size:20px">{{ preview.status }}</strong></div></div>
+  <section class="panel"><div class="collector-panel-heading"><div><p class="eyebrow">CANONICAL OUTPUT</p><h2>{{ payload.entity_type }}.csv</h2></div></div><textarea rows="20" style="width:100%;font-family:monospace">{{ payload.canonical_csv }}</textarea><div class="collector-actions" style="margin-top:16px"><form method="post" action="/admin/research/{{ preview.preview_uuid }}/collector-preview"><button class="button button-primary" type="submit">Send to Collector Preview</button></form></div></section>
+</div>
+{% endblock %}

@@ -366,3 +366,113 @@ label { display: block; margin-top: 13px; color: #c6d3e2; font-weight: 650; }
 @media (max-width:640px){.audit-filter-grid{grid-template-columns:1fr;}}
 
 .inline-settle-form{display:flex;gap:8px;align-items:center}.inline-settle-form select{min-width:150px}.metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}.metric-card{padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.metric-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.metric-value{font-size:28px;font-weight:800;margin-top:8px}@media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.metrics-grid{grid-template-columns:1fr}.inline-settle-form{align-items:stretch;flex-direction:column}}
+
+/* Sprint 2.2 Pack 1 — Prediction Centre */
+.prediction-centre-card { overflow: hidden; }
+.prediction-centre-card .panel-header { align-items: flex-start; gap: 1rem; }
+.metric-grid.compact { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.button-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.stack-lg { display: grid; gap: 1rem; margin: 1rem 0; }
+@media (max-width: 1100px) { .metric-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .metric-grid.compact { grid-template-columns: 1fr; } }
+
+/* Sprint 2.3 Pack 1 — Prediction Centre presentation refinement */
+.prediction-centre-header { align-items: flex-start; }
+.prediction-centre-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0 26px;
+}
+.prediction-kpi-card {
+  display: flex;
+  min-width: 0;
+  min-height: 132px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 22px;
+  border: 1px solid var(--border-soft);
+  border-radius: 15px;
+  background: linear-gradient(150deg, var(--surface-2), #101927);
+  box-shadow: 0 12px 28px rgba(0,0,0,.16);
+}
+.prediction-kpi-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.prediction-kpi-value {
+  display: block;
+  color: var(--text);
+  font-size: clamp(28px, 2.5vw, 38px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+  line-height: 1.05;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+.prediction-kpi-card small {
+  display: block;
+  margin-top: 10px;
+  color: #8294aa;
+  font-size: 12px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.metric-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.metric-card > span { color: var(--muted); font-size: 12px; font-weight: 700; }
+.metric-card > strong { display: block; font-size: 24px; line-height: 1.15; overflow-wrap: anywhere; }
+.metric-card > small { color: #8294aa; line-height: 1.4; }
+.prediction-scope-notice {
+  margin: -6px 0 18px;
+  padding: 12px 15px;
+  border: 1px solid rgba(217,152,33,.28);
+  border-radius: 11px;
+  color: #d9c598;
+  background: rgba(217,152,33,.07);
+  font-size: 13px;
+}
+.prediction-centre-empty { min-height: 300px; display: grid; place-content: center; }
+.empty-state-icon { margin-bottom: 10px; font-size: 38px; }
+.prediction-centre-empty p { max-width: 620px; margin-right: auto; margin-left: auto; }
+.empty-state-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin-top: 18px; }
+@media (max-width: 1100px) {
+  .prediction-centre-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .prediction-centre-kpis, .metric-grid { grid-template-columns: 1fr; }
+  .prediction-kpi-card { min-height: 112px; }
+  .prediction-kpi-value { white-space: normal; }
+  .empty-state-actions { flex-direction: column; }
+}
+
+/* Sprint 2.3 Pack 3 — Interactive Prediction Centre */
+.prediction-filter-panel { margin-bottom: 18px; }
+.prediction-filter-grid { display:grid; grid-template-columns:repeat(3,minmax(150px,1fr)) auto auto; gap:14px; align-items:end; }
+.prediction-filter-grid label { margin:0; display:grid; gap:7px; color:var(--muted); font-size:12px; font-weight:750; }
+.prediction-filter-grid select { width:100%; min-height:42px; }
+.prediction-filter-check { display:flex !important; flex-direction:row; align-items:center; gap:9px !important; min-height:42px; padding:0 4px; white-space:nowrap; }
+.prediction-filter-check input { width:17px; height:17px; margin:0; }
+.prediction-filter-summary { margin-top:13px; color:#8294aa; font-size:12px; }
+.prediction-filter-summary span { color:var(--text); font-weight:800; }
+.prediction-centre-card[hidden] { display:none !important; }
+.prediction-filter-empty { margin:18px 0; }
+@media(max-width:1050px){.prediction-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.prediction-filter-check{align-self:center;}}
+@media(max-width:620px){.prediction-filter-grid{grid-template-columns:1fr;}.prediction-filter-check{min-height:auto;padding:4px 0;}.prediction-filter-grid .button{width:100%;}}
