@@ -1,3 +1,15 @@
+from app.routes.provider_admin import router as provider_admin_router
+from app.models.historical_import import HistoricalImportBatch, HistoricalImportItem, PlayerAlias
+from app.routes.historical_import import router as historical_import_router
+from app.models.canonical_data import RawIngestionRecord, ProviderEntityMapping, DataProvenance
+from app.routes.canonical_data import router as canonical_data_router
+from app.models.bet_slip_item import BetSlipItem
+from app.routes.bet_slip import router as bet_slip_router
+from app.routes.demo_data import router as demo_data_router
+from app.routes.match_intelligence import router as match_intelligence_router
+from app.routes.prediction_centre import router as prediction_centre_router
+from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
+from app.routes.feed_connectors import router as feed_connectors_router
 from app.models.strategy_decision import StrategyDecision
 from app.routes.strategy_analytics import router as strategy_analytics_router
 from app.models.strategy_profile import StrategyProfile
@@ -24,6 +36,8 @@ from app.routes.opportunities import router as opportunities_router
 from app.routes.new_paper_trade import router as new_paper_trade_router
 from app.models.paper_trade import PaperTrade
 from app.routes.paper_trades import router as paper_trades_router
+from app.routes.collector import router as collector_router
+from app.routes.import_wizard import router as import_wizard_router
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.routes.fixtures import router as fixtures_router
@@ -59,6 +73,13 @@ app.mount(
 )
 
 create_database()
+app.include_router(canonical_data_router)
+app.include_router(historical_import_router)
+app.include_router(bet_slip_router)
+app.include_router(demo_data_router)
+app.include_router(match_intelligence_router)
+app.include_router(prediction_centre_router)
+app.include_router(feed_connectors_router)
 app.include_router(strategy_analytics_router)
 app.include_router(strategies_router)
 app.include_router(automation_router)
@@ -91,6 +112,9 @@ app.include_router(value_board_router)
 app.include_router(data_quality_router)
 app.include_router(new_paper_trade_router)
 app.include_router(settings_router)
+app.include_router(provider_admin_router)
+app.include_router(collector_router)
+app.include_router(import_wizard_router)
 
 
 @app.get("/")
@@ -130,7 +154,6 @@ def match(player_a: str, player_b: str):
             "form_180_b": form_180_b,
             "markets_180": one80_markets(exp_180_a, exp_180_b),
             "value_bet": value_edge(final_prob_a),
-
         }
 
     finally:
