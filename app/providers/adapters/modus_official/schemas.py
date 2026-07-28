@@ -67,4 +67,5 @@ class ModusMatchDetailRecord:
     player_b_stats: ModusPlayerMatchStats
     played_at: Optional[datetime] = None
     series_label: Optional[str] = None
+    week_label: Optional[str] = None
     group: Optional[str] = None
