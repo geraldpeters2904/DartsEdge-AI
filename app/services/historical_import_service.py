@@ -126,7 +126,22 @@ def rollback_batch(db,batch_id):
     batch=db.query(HistoricalImportBatch).filter_by(id=batch_id).first()
     if not batch: raise ValueError('Import batch not found')
     if batch.status=='rolled_back': return batch
-    items=db.query(HistoricalImportItem).filter_by(batch_id=batch.id,created_by_batch=True).order_by(HistoricalImportItem.id.desc()).all()
+    all_items=db.query(HistoricalImportItem).filter_by(batch_id=batch.id).order_by(HistoricalImportItem.id.desc()).all()
+    for item in all_items:
+      if item.entity_type=='fixture' and item.action=='updated' and item.internal_id and item.detail:
+        try:
+          payload=json.loads(item.detail)
+          previous=payload.get('previous') or {}
+          match=db.query(Match).filter_by(id=item.internal_id).first()
+          if match:
+            if previous.get('date'):
+              match.date=datetime.strptime(previous['date'][:10],'%Y-%m-%d').date()
+            for field in ('tournament','stage','match_format','status','player_a','player_b','winner','score','first_180_player','first_leg_winner'):
+              if field in previous:
+                setattr(match,field,previous[field])
+        except (TypeError, ValueError, json.JSONDecodeError):
+          pass
+    items=[item for item in all_items if item.created_by_batch]
     odds_ids=[i.internal_id for i in items if i.entity_type=='odds_snapshot' and i.internal_id]
     performance_ids=[i.internal_id for i in items if i.entity_type=='player_match_performance' and i.internal_id]
     match_ids=[i.internal_id for i in items if i.entity_type=='match' and i.internal_id]

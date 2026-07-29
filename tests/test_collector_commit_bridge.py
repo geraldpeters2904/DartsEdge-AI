@@ -179,7 +179,7 @@ class CollectorFixtureCommitTests(unittest.TestCase):
             {record.field_name for record in provenance},
         )
 
-    def test_fixture_commit_creates_placeholder_statistics(self):
+    def test_fixture_commit_does_not_create_placeholder_statistics(self):
         with tempfile.TemporaryDirectory() as directory:
             preview = self.build_preview(directory)
             self.bridge.commit(
@@ -187,17 +187,10 @@ class CollectorFixtureCommitTests(unittest.TestCase):
                 preview=preview,
             )
 
-        rows = (
-            self.db.query(MatchPlayerStats)
-            .order_by(MatchPlayerStats.player_name)
-            .all()
+        self.assertEqual(
+            self.db.query(MatchPlayerStats).count(),
+            0,
         )
-
-        self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0].one80s, 0)
-        self.assertEqual(rows[0].average, 0.0)
-        self.assertEqual(rows[1].one80s, 0)
-        self.assertEqual(rows[1].average, 0.0)
 
     def test_repeat_commit_is_duplicate_safe(self):
         with tempfile.TemporaryDirectory() as directory:
