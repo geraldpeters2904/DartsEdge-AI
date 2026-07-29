@@ -48,7 +48,7 @@ class ModusCanonicalBuild:
     @property
     def ready(self) -> bool:
         return (
-            self.manifest.ready
+            bool(self.fixtures)
             and len(self.fixtures) == len(self.results)
             and len(self.statistics) == len(self.fixtures) * 2
         )
@@ -72,11 +72,25 @@ class ModusCanonicalBuilder:
         self.results_parser = ModusSavedPageParser()
         self.match_parser = ModusRealMatchPageParser()
 
-    def build(self, folder: str | Path) -> ModusCanonicalBuild:
-        manifest = self.folder_service.inspect(folder)
-        if not manifest.ready:
+    def build(
+        self,
+        folder: str | Path,
+        *,
+        allow_partial: bool = False,
+    ) -> ModusCanonicalBuild:
+        manifest = self.folder_service.inspect(
+            folder,
+            allow_partial=allow_partial,
+        )
+        accepted = (
+            manifest.partial_ready
+            if allow_partial
+            else manifest.ready
+        )
+        if not accepted:
+            mode = "partial acceptance" if allow_partial else "full"
             raise ValueError(
-                "MODUS folder is not ready for canonical build. "
+                f"MODUS folder is not ready for {mode} canonical build. "
                 "Resolve all manifest errors first."
             )
         if manifest.results_file is None:
@@ -92,7 +106,13 @@ class ModusCanonicalBuilder:
         results: List[CanonicalMatchResult] = []
         statistics: List[CanonicalPlayerMatchStatistics] = []
 
-        for match_id in manifest.expected_match_ids:
+        selected_match_ids = (
+            manifest.validated_match_ids
+            if allow_partial
+            else manifest.expected_match_ids
+        )
+
+        for match_id in selected_match_ids:
             listed = listed_by_id[match_id]
             detail_path = manifest.folder / f"match_{match_id}.html"
             detail = self.match_parser.parse(

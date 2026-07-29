@@ -50,6 +50,20 @@ class ModusFolderManifest:
             and not any(i.severity == "error" for i in self.issues)
         )
 
+    @property
+    def partial_ready(self) -> bool:
+        return (
+            self.results_file is not None
+            and bool(self.validated_match_ids)
+            and not self.unexpected_match_ids
+            and not self.invalid_files
+            and not any(
+                i.severity == "error"
+                and i.code != "missing_match_page"
+                for i in self.issues
+            )
+        )
+
     def to_dict(self) -> dict:
         return {
             "folder": str(self.folder),
@@ -67,6 +81,7 @@ class ModusFolderManifest:
             "invalid_files": self.invalid_files,
             "ignored_files": self.ignored_files,
             "ready": self.ready,
+            "partial_ready": self.partial_ready,
             "issues": [i.__dict__ for i in self.issues],
         }
 
@@ -78,7 +93,12 @@ class ModusFolderImportService:
         self.results_parser = ModusSavedPageParser()
         self.match_parser = ModusRealMatchPageParser()
 
-    def inspect(self, folder: str | Path) -> ModusFolderManifest:
+    def inspect(
+        self,
+        folder: str | Path,
+        *,
+        allow_partial: bool = False,
+    ) -> ModusFolderManifest:
         folder = Path(folder).expanduser().resolve()
         if not folder.exists():
             raise ValueError(f"MODUS import folder does not exist: {folder}")
@@ -145,8 +165,10 @@ class ModusFolderImportService:
 
         for match_id in missing_ids:
             issues.append(ModusFolderIssue(
-                "error", "missing_match_page",
-                f"Missing match_{match_id}.html.", match_id=match_id
+                "warning" if allow_partial else "error",
+                "missing_match_page",
+                f"Missing match_{match_id}.html.",
+                match_id=match_id,
             ))
         for match_id in unexpected_ids:
             issues.append(ModusFolderIssue(

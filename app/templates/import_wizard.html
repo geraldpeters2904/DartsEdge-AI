@@ -20,7 +20,7 @@ Import Data · DartsEdge AI
         </div>
 
         <div class="collector-actions">
-            <a class="button" href="/admin/collector">
+            <a class="button" href="/admin/collector/import/modus-fixtures">MODUS Fixtures</a><a class="button" href="/admin/collector">
                 Back to Collector
             </a>
         </div>
@@ -96,6 +96,23 @@ Import Data · DartsEdge AI
                     </label>
                 </div>
 
+                <label class="collector-field" style="margin-top:20px;">
+                    <span>Acceptance mode</span>
+                    <span style="display:flex;gap:10px;align-items:center;">
+                        <input
+                            type="checkbox"
+                            name="acceptance_mode"
+                            value="partial"
+                            {% if allow_partial %}checked{% endif %}
+                        >
+                        Validate and preview only the captured match pages
+                    </span>
+                    <small>
+                        Testing only. Missing match pages are warnings, but every
+                        included match page must pass full validation.
+                    </small>
+                </label>
+
                 <div class="collector-safety-box">
                     <div class="collector-safety-icon">🛡️</div>
                     <div>
@@ -155,7 +172,13 @@ Import Data · DartsEdge AI
                 </div>
 
                 <span class="collector-step-badge">
-                    {% if validation.ready %}Ready{% else %}Action required{% endif %}
+                    {% if validation.ready %}
+                        Ready
+                    {% elif allow_partial and validation.partial_ready %}
+                        Partial acceptance ready
+                    {% else %}
+                        Action required
+                    {% endif %}
                 </span>
             </div>
 
@@ -184,7 +207,13 @@ Import Data · DartsEdge AI
                     <span class="collector-summary-label">Validated</span>
                     <strong>{{ validation.validated_count }}</strong>
                     <span class="collector-summary-detail">
-                        {% if validation.ready %}All checks passed{% else %}Review issues below{% endif %}
+                        {% if validation.ready %}
+                            All checks passed
+                        {% elif allow_partial and validation.partial_ready %}
+                            Captured pages passed
+                        {% else %}
+                            Review issues below
+                        {% endif %}
                     </span>
                 </div>
             </div>
@@ -216,18 +245,27 @@ Import Data · DartsEdge AI
                 </div>
             {% endif %}
 
-            {% if validation.ready %}
+            {% if validation.ready or (allow_partial and validation.partial_ready) %}
                 <form method="post" action="/admin/collector/import/preview">
                     <input type="hidden" name="connector_id" value="{{ selected_connector }}">
                     <input type="hidden" name="source_path" value="{{ source_path }}">
+                    {% if allow_partial %}
+                        <input type="hidden" name="acceptance_mode" value="partial">
+                    {% endif %}
 
                     <div class="collector-safety-box" style="margin-top: 20px;">
                         <div class="collector-safety-icon">✓</div>
                         <div>
-                            <strong>Source is ready</strong>
+                            <strong>
+                                {% if allow_partial and not validation.ready %}
+                                    Partial acceptance source is ready
+                                {% else %}
+                                    Source is ready
+                                {% endif %}
+                            </strong>
                             <p>
-                                Canonical records will now be built in memory and
-                                passed to the existing Collector Preview.
+                                Only fully validated captured pages will be built
+                                into canonical records and passed to Collector Preview.
                             </p>
                         </div>
                     </div>

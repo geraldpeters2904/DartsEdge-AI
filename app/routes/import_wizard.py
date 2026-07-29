@@ -36,6 +36,7 @@ def import_wizard_page(
             "validation": None,
             "selected_connector": "modus-official",
             "source_path": "",
+            "allow_partial": False,
         },
     )
 
@@ -45,6 +46,7 @@ def validate_import_source(
     request: Request,
     connector_id: str = Form(...),
     source_path: str = Form(""),
+    acceptance_mode: str = Form(""),
 ):
     try:
         connector = wizard_service.connector(connector_id)
@@ -55,9 +57,11 @@ def validate_import_source(
                 status_code=303,
             )
 
+        allow_partial = acceptance_mode == "partial"
         manifest = wizard_service.validate_source(
             connector_id,
             source_path,
+            allow_partial=allow_partial,
         )
 
         return templates.TemplateResponse(
@@ -69,6 +73,7 @@ def validate_import_source(
                 "validation": manifest.to_dict(),
                 "selected_connector": connector_id,
                 "source_path": source_path,
+                "allow_partial": allow_partial,
             },
         )
     except Exception as exc:
@@ -82,12 +87,14 @@ def validate_import_source(
 def create_connector_preview(
     connector_id: str = Form(...),
     source_path: str = Form(...),
+    acceptance_mode: str = Form(""),
     db: Session = Depends(get_db),
 ):
     try:
         payload = wizard_service.build_preview_payload(
             connector_id,
             source_path,
+            allow_partial=(acceptance_mode == "partial"),
         )
 
         preview = preview_service.create_preview(

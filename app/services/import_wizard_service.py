@@ -95,27 +95,45 @@ class ImportWizardService:
             raise ValueError(f"Unknown import connector: {connector_id}")
         return connector
 
-    def validate_source(self, connector_id: str, source_path: str):
+    def validate_source(
+        self,
+        connector_id: str,
+        source_path: str,
+        *,
+        allow_partial: bool = False,
+    ):
         connector = self.connector(connector_id)
         if not connector.enabled:
             raise ValueError(f"{connector.name} is not enabled yet.")
 
         if connector.connector_id == "modus-official":
             path = self._normalise_folder(source_path)
-            return self.modus_folder_service.inspect(path)
+            return self.modus_folder_service.inspect(
+                path,
+                allow_partial=allow_partial,
+            )
 
         raise ValueError(
             f"{connector.name} does not support source validation in this wizard."
         )
 
-    def build_preview_payload(self, connector_id: str, source_path: str):
+    def build_preview_payload(
+        self,
+        connector_id: str,
+        source_path: str,
+        *,
+        allow_partial: bool = False,
+    ):
         connector = self.connector(connector_id)
         if not connector.enabled:
             raise ValueError(f"{connector.name} is not enabled yet.")
 
         if connector.connector_id == "modus-official":
             path = self._normalise_folder(source_path)
-            build = self.modus_builder.build(path)
+            build = self.modus_builder.build(
+                path,
+                allow_partial=allow_partial,
+            )
             return {
                 "provider": connector.provider,
                 "competition": connector.competition,
