@@ -26,6 +26,7 @@ def _redirect(path: str, message: str):
 @router.get("/admin/collector/import")
 def import_wizard_page(
     request: Request,
+    source_path: str = "",
 ):
     return templates.TemplateResponse(
         request,
@@ -35,7 +36,7 @@ def import_wizard_page(
             "message": request.query_params.get("message"),
             "validation": None,
             "selected_connector": "modus-official",
-            "source_path": "",
+            "source_path": source_path,
             "allow_partial": False,
         },
     )
