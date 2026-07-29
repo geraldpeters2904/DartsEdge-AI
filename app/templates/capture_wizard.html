@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}
+New Capture · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<style>
+.capture-created-grid {
+    display: grid;
+    gap: 14px;
+}
+.capture-created-card {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr auto;
+    gap: 18px;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.025);
+}
+@media (max-width: 850px) {
+    .capture-created-card {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">CAPTURE SETUP</p>
+            <h1>New Capture Wizard</h1>
+            <p class="muted collector-introduction">
+                Upload one or more saved MODUS results pages. DartsEdge reads
+                each page, creates the correct Series/Week/Group folder and
+                builds its capture session automatically.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/admin/collector/captures">
+                Capture Library
+            </a>
+            <a class="button" href="/admin/collector">
+                Collector
+            </a>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    <div class="collector-layout">
+
+        <section class="panel collector-upload-panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">STEP 1</p>
+                    <h2>Select saved results pages</h2>
+                </div>
+                <span class="collector-step-badge">Offline setup</span>
+            </div>
+
+            <form
+                method="post"
+                enctype="multipart/form-data"
+                action="/admin/collector/captures/new"
+            >
+                <div class="collector-form-grid">
+
+                    <label class="collector-field">
+                        <span>Capture root</span>
+                        <input
+                            type="text"
+                            name="capture_root"
+                            value="{{ default_root }}"
+                            required
+                        >
+                        <small>
+                            Standard folders are created below this location.
+                        </small>
+                    </label>
+
+                    <label class="collector-field">
+                        <span>Saved MODUS results HTML</span>
+                        <input
+                            type="file"
+                            name="results_files"
+                            accept=".html,text/html"
+                            multiple
+                            required
+                        >
+                        <small>
+                            Select one page or several groups/weeks at once.
+                        </small>
+                    </label>
+
+                </div>
+
+                <div class="collector-safety-box">
+                    <div class="collector-safety-icon">🛡️</div>
+                    <div>
+                        <strong>Folder names come from the HTML</strong>
+                        <p>
+                            Series, Week and Group are parsed from each saved
+                            page, preventing manual folder-name mistakes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="collector-actions">
+                    <button class="button button-primary" type="submit">
+                        Create Capture Sessions
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="panel collector-workflow-panel">
+            <p class="eyebrow">STANDARD LAYOUT</p>
+            <h2>Created automatically</h2>
+
+            <pre><code>Imports/
+Series_14/
+  Week_01/
+    Group_A/
+      results.html
+      .modus_capture_session.json</code></pre>
+
+            <p class="muted">
+                Uploading Group B, Group C or Final pages creates their own
+                sibling folders automatically.
+            </p>
+        </aside>
+
+    </div>
+
+    {% if result %}
+        <section class="panel collector-history-panel" style="margin-top:24px;">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">SETUP RESULT</p>
+                    <h2>
+                        {{ result.created_count }} capture session(s) created
+                    </h2>
+                </div>
+
+                <span class="collector-step-badge">
+                    {{ result.error_count }} error(s)
+                </span>
+            </div>
+
+            {% if result.created %}
+                <div class="capture-created-grid">
+                    {% for item in result.created %}
+                        <div class="capture-created-card">
+                            <div>
+                                <strong>
+                                    {{ item.series_label }} ·
+                                    {{ item.week_label }} ·
+                                    {{ item.group }}
+                                </strong>
+                                <div class="muted">
+                                    {{ item.expected_count }} expected matches
+                                </div>
+                            </div>
+
+                            <div>
+                                <span class="muted">Folder</span>
+                                <div>
+                                    <code>{{ item.destination_folder }}</code>
+                                </div>
+                            </div>
+
+                            <div>
+                                <a
+                                    class="button button-primary"
+                                    href="{{ item.resume_url }}"
+                                >
+                                    Open Capture
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if result.errors %}
+                <div class="alert-card" style="margin-top:18px;">
+                    <strong>Pages not created</strong>
+                    <ul>
+                        {% for error in result.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="collector-actions" style="margin-top:18px;">
+                <a
+                    class="button"
+                    href="/admin/collector/captures?root={{ result.root }}"
+                >
+                    Open Capture Library
+                </a>
+            </div>
+        </section>
+    {% endif %}
+
+</div>
+{% endblock %}
