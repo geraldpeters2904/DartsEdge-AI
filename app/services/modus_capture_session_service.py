@@ -214,13 +214,21 @@ class ModusCaptureSessionService:
 
     @staticmethod
     def _validate_scope(page) -> None:
-        if not (
-            page.series_id == 14
-            and page.week_id == 165
-            and page.group == "Group A"
-        ):
+        allowed_groups = {"Group A", "Group B", "Group C", "Final"}
+
+        if page.series_id <= 0:
+            raise ValueError("MODUS Series ID must be a positive integer.")
+        if page.week_id <= 0:
+            raise ValueError("MODUS Week ID must be a positive integer.")
+        if page.group not in allowed_groups:
             raise ValueError(
-                "Sprint 3.4A supports only Series 14, Week 1, Group A."
+                "Unsupported MODUS group: "
+                f"{page.group!r}. Expected Group A, Group B, "
+                "Group C or Final."
+            )
+        if not page.matches:
+            raise ValueError(
+                "The saved MODUS page contains no fixture cards."
             )
 
     @staticmethod
