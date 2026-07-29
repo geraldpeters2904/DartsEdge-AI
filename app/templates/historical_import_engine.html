@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Historical Import Engine · DartsEdge AI{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+<div class="page-shell collector-shell">
+  <div class="page-header collector-header">
+    <div>
+      <p class="eyebrow">DARTSEDGE V4.2.0</p>
+      <h1>Historical Import Engine</h1>
+      <p class="muted collector-introduction">
+        Resume-safe historical orchestration with explicit validation,
+        Collector Preview and commit approval.
+      </p>
+    </div>
+    <div class="collector-actions">
+      <a class="button" href="/admin/historical-imports/queue?root={{ root }}">Import Queue</a>
+      <a class="button" href="/admin/warehouse">Warehouse Explorer</a>
+    </div>
+  </div>
+
+  {% if error %}
+    <div class="alert-card">{{ error }}</div>
+  {% elif state %}
+    <section class="collector-summary-grid">
+      <div class="collector-summary-card"><span>Status</span><strong>{{ state.status }}</strong></div>
+      <div class="collector-summary-card"><span>Groups</span><strong>{{ state.total_count }}</strong></div>
+      <div class="collector-summary-card"><span>Completed</span><strong>{{ state.completed_count }}</strong></div>
+      <div class="collector-summary-card"><span>Progress</span><strong>{{ state.progress_percent }}%</strong></div>
+    </section>
+
+    <section class="panel collector-history-panel" style="margin-top:24px;">
+      <div class="collector-panel-heading">
+        <div>
+          <p class="eyebrow">NEXT ACTION</p>
+          <h2>
+            {% if state.next_item %}
+              {{ state.next_item.folder.series_label }} ·
+              {{ state.next_item.folder.week_label }} ·
+              {{ state.next_item.folder.group }}
+            {% else %}
+              Run complete
+            {% endif %}
+          </h2>
+        </div>
+      </div>
+
+      {% if state.next_item %}
+        <p class="muted">{{ state.next_item.folder.folder }}</p>
+        <form method="post" action="/admin/historical-imports/engine/next">
+          <input type="hidden" name="root" value="{{ root }}">
+          <button class="button button-primary" type="submit">Validate Next Group</button>
+        </form>
+      {% endif %}
+    </section>
+
+    <section class="panel collector-history-panel" style="margin-top:24px;">
+      <div class="table-wrap">
+        <table class="collector-history-table">
+          <thead>
+            <tr><th>#</th><th>Series</th><th>Week</th><th>Group</th><th>Captured</th><th>Warehouse</th><th>State</th><th>Attempts</th></tr>
+          </thead>
+          <tbody>
+            {% for item in state.items %}
+              <tr>
+                <td>{{ item.position }}</td>
+                <td>{{ item.folder.series_label }}</td>
+                <td>{{ item.folder.week_label }}</td>
+                <td>{{ item.folder.group }}</td>
+                <td>{{ item.folder.validated_count }}/{{ item.folder.expected_count }}</td>
+                <td>{{ item.folder.imported_count }}/{{ item.folder.expected_count }}</td>
+                <td>{{ item.state }}</td>
+                <td>{{ item.attempts }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
