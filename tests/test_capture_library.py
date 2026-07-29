@@ -117,7 +117,7 @@ class CaptureLibraryRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Capture Library", response.text)
-        self.assertIn("Scan Library", response.text)
+        self.assertIn("Scan Existing Sessions", response.text)
 
     def test_library_page_shows_resume_link(self):
         html = RESULTS_FIXTURE.read_text(encoding="utf-8")
