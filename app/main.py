@@ -37,7 +37,11 @@ from app.routes.new_paper_trade import router as new_paper_trade_router
 from app.models.paper_trade import PaperTrade
 from app.routes.paper_trades import router as paper_trades_router
 from app.routes.collector import router as collector_router
+from app.routes.warehouse_dashboard import router as warehouse_dashboard_router
+from app.routes.warehouse_explorer import router as warehouse_explorer_router
+from app.routes.historical_import_manager import router as historical_import_manager_router
 from app.routes.import_wizard import router as import_wizard_router
+from app.routes.modus_fixture_import import router as modus_fixture_import_router
 from app.routes.modus_capture_manager import router as modus_capture_manager_router
 from app.routes.capture_library import router as capture_library_router
 from app.routes.capture_discovery import router as capture_discovery_router
@@ -118,7 +122,11 @@ app.include_router(new_paper_trade_router)
 app.include_router(settings_router)
 app.include_router(provider_admin_router)
 app.include_router(collector_router)
+app.include_router(warehouse_dashboard_router)
+app.include_router(warehouse_explorer_router)
+app.include_router(historical_import_manager_router)
 app.include_router(import_wizard_router)
+app.include_router(modus_fixture_import_router)
 app.include_router(modus_capture_manager_router)
 app.include_router(capture_library_router)
 app.include_router(capture_discovery_router)

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Warehouse Explorer · DartsEdge AI{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<div class="page-shell collector-shell">
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">DARTSEDGE V4.0.5</p>
+            <h1>Warehouse Explorer</h1>
+            <p class="muted collector-introduction">
+                Inspect committed import batches before scaling historical
+                collection and upcoming-fixture ingestion.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/admin/historical-imports">Historical Imports</a><a class="button" href="/admin/warehouse-dashboard">
+                Warehouse Dashboard
+            </a>
+            <a class="button" href="/admin/collector">
+                Collector
+            </a>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    <section class="panel collector-history-panel">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">IMPORT HISTORY</p>
+                <h2>Committed and rolled-back batches</h2>
+            </div>
+            <span class="collector-step-badge">{{ batches|length }} shown</span>
+        </div>
+
+        <div class="table-wrap">
+            <table class="collector-history-table">
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>Created</th>
+                        <th>Provider</th>
+                        <th>Competition</th>
+                        <th>Status</th>
+                        <th>Received</th>
+                        <th>Matches</th>
+                        <th>Duplicates</th>
+                        <th>Rejected</th>
+                        <th>Inspect</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                        <tr>
+                            <td><code>{{ batch.batch_uuid[:8] }}</code></td>
+                            <td>{{ batch.created_at }}</td>
+                            <td>{{ batch.provider }}</td>
+                            <td>{{ batch.competition_code }}</td>
+                            <td>{{ batch.status }}</td>
+                            <td>{{ batch.received_rows }}</td>
+                            <td>{{ batch.created_matches }}</td>
+                            <td>{{ batch.duplicate_matches }}</td>
+                            <td>{{ batch.rejected_rows }}</td>
+                            <td>
+                                <a
+                                    class="button"
+                                    href="/admin/warehouse/batches/{{ batch.id }}"
+                                >
+                                    Open
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="collector-empty-state">
+                                No import batches exist yet.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}
