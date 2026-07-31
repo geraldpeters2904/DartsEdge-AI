@@ -7,6 +7,9 @@ from urllib.parse import quote
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
 
+from app.services.current_capture_session_service import (
+    CurrentCaptureSessionService,
+)
 from app.services.modus_capture_session_service import (
     ModusCaptureSessionService,
 )
@@ -17,6 +20,7 @@ from app.templates_config import templates
 router = APIRouter()
 capture_service = ModusCaptureSessionService()
 folder_service = ModusFolderImportService()
+current_session_service = CurrentCaptureSessionService()
 
 
 def _redirect(path: str, message: str):
@@ -40,6 +44,14 @@ def capture_manager_page(
             session = capture_service.load_session(folder)
             if session.complete:
                 validation = folder_service.inspect(folder).to_dict()
+        except Exception as exc:
+            message = str(exc)
+    else:
+        try:
+            latest = current_session_service.latest_incomplete()
+            if latest is not None:
+                folder = str(latest.folder)
+                session = capture_service.load_session(folder)
         except Exception as exc:
             message = str(exc)
 
