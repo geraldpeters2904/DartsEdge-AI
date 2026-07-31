@@ -38,6 +38,7 @@ from app.models.paper_trade import PaperTrade
 from app.routes.paper_trades import router as paper_trades_router
 from app.routes.collector import router as collector_router
 from app.routes.warehouse_dashboard import router as warehouse_dashboard_router
+from app.routes.operations import router as operations_router
 from app.routes.warehouse_explorer import router as warehouse_explorer_router
 from app.routes.historical_import_manager import router as historical_import_manager_router
 from app.routes.historical_import_queue import router as historical_import_queue_router
@@ -126,6 +127,7 @@ app.include_router(settings_router)
 app.include_router(provider_admin_router)
 app.include_router(collector_router)
 app.include_router(warehouse_dashboard_router)
+app.include_router(operations_router)
 app.include_router(warehouse_explorer_router)
 app.include_router(historical_import_manager_router)
 app.include_router(historical_import_queue_router)

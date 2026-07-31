@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}
+Operations Dashboard · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<style>
+.operations-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    margin-top: 24px;
+}
+
+.operations-wide {
+    grid-column: 1 / -1;
+}
+
+.operations-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.operations-metric {
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+}
+
+.operations-metric span,
+.operations-metric small {
+    display: block;
+}
+
+.operations-metric strong {
+    display: block;
+    margin: 6px 0;
+    font-size: 1.45rem;
+}
+
+@media (max-width: 900px) {
+    .operations-grid,
+    .operations-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .operations-wide {
+        grid-column: auto;
+    }
+}
+</style>
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">OPERATIONS PLATFORM</p>
+            <h1>Operations Dashboard</h1>
+            <p class="muted collector-introduction">
+                Capture progress, warehouse totals and system health
+                in one operational workspace.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/admin/collector/capture/modus">
+                Capture Manager
+            </a>
+            <a class="button" href="/admin/collector/capture/modus/assistant">
+                Capture Assistant
+            </a>
+            <a class="button" href="/admin/warehouse-dashboard">
+                Warehouse Dashboard
+            </a>
+        </div>
+    </div>
+
+    <form method="get" action="/operations">
+        <section class="panel">
+            <label class="collector-field">
+                <span>Capture-library root</span>
+                <input
+                    type="text"
+                    name="capture_root"
+                    value="{{ capture_root }}"
+                    required
+                >
+            </label>
+
+            <div class="collector-actions">
+                <button class="button" type="submit">
+                    Refresh Operations
+                </button>
+            </div>
+        </section>
+    </form>
+
+    <div class="operations-grid">
+
+        <section class="panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">CAPTURE</p>
+                    <h2>Active capture</h2>
+                </div>
+            </div>
+
+            {% if dashboard.active_capture %}
+                <h3>
+                    {{ dashboard.active_capture.series_label }} ·
+                    {{ dashboard.active_capture.week_label }} ·
+                    {{ dashboard.active_capture.group }}
+                </h3>
+
+                <p>
+                    <strong>
+                        {{ dashboard.active_capture.captured_count }}
+                        / {{ dashboard.active_capture.expected_count }}
+                    </strong>
+                    captured
+                </p>
+
+                <p>
+                    Next match:
+                    <strong>{{ dashboard.next_match_id or "—" }}</strong>
+                </p>
+
+                <div class="collector-actions">
+                    <a
+                        class="button button-primary"
+                        href="{{ dashboard.active_capture.resume_url }}"
+                    >
+                        Resume Capture
+                    </a>
+
+                    <a
+                        class="button"
+                        href="/admin/collector/capture/modus/assistant"
+                    >
+                        Open Assistant
+                    </a>
+                </div>
+            {% else %}
+                <p class="muted">
+                    No unfinished capture session was found.
+                </p>
+
+                <a
+                    class="button button-primary"
+                    href="/admin/collector/capture/modus?new=1"
+                >
+                    Start Capture
+                </a>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">CAPTURE LIBRARY</p>
+                    <h2>Acquisition totals</h2>
+                </div>
+            </div>
+
+            <div class="operations-metrics">
+                <div class="operations-metric">
+                    <span>Sessions</span>
+                    <strong>
+                        {{ dashboard.warehouse.capture_summary.sessions }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Captured</span>
+                    <strong>
+                        {{ dashboard.warehouse.capture_summary.captured_matches }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Missing</span>
+                    <strong>
+                        {{ dashboard.warehouse.capture_summary.missing_matches }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Complete</span>
+                    <strong>
+                        {{ dashboard.warehouse.capture_summary.complete_sessions }}
+                    </strong>
+                </div>
+            </div>
+
+            <div class="collector-actions" style="margin-top: 18px;">
+                <a class="button" href="/admin/historical-imports">
+                    Historical Imports
+                </a>
+                <a class="button" href="/admin/collector/import">
+                    Import Wizard
+                </a>
+            </div>
+        </section>
+
+        <section class="panel operations-wide">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">WAREHOUSE</p>
+                    <h2>Warehouse totals</h2>
+                </div>
+            </div>
+
+            <div class="operations-metrics">
+                {% for metric in dashboard.warehouse.metrics %}
+                    <div class="operations-metric">
+                        <span>{{ metric.label }}</span>
+                        <strong>{{ metric.value }}</strong>
+                        <small class="muted">{{ metric.detail }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="collector-actions" style="margin-top: 18px;">
+                <a class="button" href="/admin/warehouse-dashboard">
+                    Warehouse Dashboard
+                </a>
+                <a class="button" href="/admin/warehouse">
+                    Warehouse Explorer
+                </a>
+                <a class="button" href="/data-quality">
+                    Data Quality
+                </a>
+            </div>
+        </section>
+
+        <section class="panel operations-wide">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">HEALTH</p>
+                    <h2>System checks</h2>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="collector-history-table">
+                    <thead>
+                        <tr>
+                            <th>Check</th>
+                            <th>Status</th>
+                            <th>Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in dashboard.warehouse.health %}
+                            <tr>
+                                <td>{{ item.label }}</td>
+                                <td>{{ item.status }}</td>
+                                <td>{{ item.detail }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3">
+                                    No health checks available.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</div>
+{% endblock %}
