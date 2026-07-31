@@ -310,6 +310,112 @@ Operations Dashboard · DartsEdge AI
         <section class="panel operations-wide">
             <div class="collector-panel-heading">
                 <div>
+                    <p class="eyebrow">IMPORT PIPELINE</p>
+                    <h2>Historical queue and engine</h2>
+                </div>
+            </div>
+
+            {% if dashboard.import_pipeline.queue %}
+                <div class="operations-metrics">
+                    <div class="operations-metric">
+                        <span>Queue status</span>
+                        <strong>Ready</strong>
+                        <small class="muted">
+                            {{ dashboard.import_pipeline.queue.completed_count }}
+                            of
+                            {{ dashboard.import_pipeline.queue.total_count }}
+                            complete
+                        </small>
+                    </div>
+
+                    <div class="operations-metric">
+                        <span>Progress</span>
+                        <strong>
+                            {{ dashboard.import_pipeline.queue.progress_percent }}%
+                        </strong>
+                    </div>
+
+                    <div class="operations-metric">
+                        <span>Remaining</span>
+                        <strong>
+                            {{ dashboard.import_pipeline.queue.remaining_count }}
+                        </strong>
+                    </div>
+
+                    <div class="operations-metric">
+                        <span>Engine</span>
+                        <strong>
+                            {% if dashboard.import_pipeline.engine %}
+                                {{ dashboard.import_pipeline.engine.status }}
+                            {% else %}
+                                Not started
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+
+                {% if dashboard.import_pipeline.next_queue_item %}
+                    <div class="collector-safety-box" style="margin-top: 18px;">
+                        <div class="collector-safety-icon">→</div>
+                        <div>
+                            <strong>Next import</strong>
+                            <p>
+                                {{ dashboard.import_pipeline.next_queue_item.folder.series_label }}
+                                ·
+                                {{ dashboard.import_pipeline.next_queue_item.folder.week_label }}
+                                ·
+                                {{ dashboard.import_pipeline.next_queue_item.folder.group }}
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="collector-actions" style="margin-top: 18px;">
+                    <a
+                        class="button button-primary"
+                        href="/admin/historical-imports/queue?root={{ dashboard.import_pipeline.root | urlencode }}"
+                    >
+                        Open Queue
+                    </a>
+
+                    {% if dashboard.import_pipeline.next_queue_item %}
+                        <a
+                            class="button"
+                            href="{{ dashboard.import_pipeline.next_queue_item.open_import_url }}"
+                        >
+                            Open Next Import
+                        </a>
+                    {% endif %}
+
+                    {% if dashboard.import_pipeline.engine %}
+                        <a
+                            class="button"
+                            href="/admin/historical-imports/engine?root={{ dashboard.import_pipeline.root | urlencode }}"
+                        >
+                            Open Engine
+                        </a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="muted">
+                    No historical import queue exists for this root.
+                </p>
+
+                <div class="collector-actions">
+                    <a
+                        class="button button-primary"
+                        href="/admin/historical-imports?root={{ dashboard.import_pipeline.root | urlencode }}"
+                    >
+                        Build Import Queue
+                    </a>
+                </div>
+            {% endif %}
+        </section>
+
+
+        <section class="panel operations-wide">
+            <div class="collector-panel-heading">
+                <div>
                     <p class="eyebrow">WAREHOUSE</p>
                     <h2>Warehouse totals</h2>
                 </div>

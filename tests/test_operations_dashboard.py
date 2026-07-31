@@ -42,6 +42,8 @@ class OperationsDashboardRouteTests(unittest.TestCase):
                 params={"capture_root": root},
             )
 
+        self.assertEqual(response.status_code, 200)
+
         self.assertIn("/admin/collector/capture/modus", response.text)
         self.assertIn("/admin/historical-imports", response.text)
         self.assertIn("/admin/warehouse-dashboard", response.text)
@@ -54,10 +56,23 @@ class OperationsDashboardRouteTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
+
         self.assertIn("Capture Assistant", response.text)
         self.assertIn("Automation status", response.text)
         self.assertIn("Open Full Assistant", response.text)
 
+    def test_operations_dashboard_shows_import_pipeline(self):
+        with tempfile.TemporaryDirectory() as root:
+            response = self.client.get(
+                "/operations",
+                params={"capture_root": root},
+            )
+
+        self.assertEqual(response.status_code, 200)
+
+        # Use stable functional headings rather than presentation text.
+        self.assertIn("Historical queue and engine", response.text)
+        self.assertIn("Build Import Queue", response.text)
 
 
 if __name__ == "__main__":

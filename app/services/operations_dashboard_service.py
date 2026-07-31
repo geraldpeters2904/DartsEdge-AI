@@ -13,6 +13,10 @@ from app.services.capture_library_service import (
 from app.services.current_capture_session_service import (
     CurrentCaptureSessionService,
 )
+from app.services.import_pipeline_service import (
+    ImportPipeline,
+    ImportPipelineService,
+)
 from app.services.modus_capture_assistant_runtime import (
     capture_assistant_service,
 )
@@ -30,6 +34,7 @@ class OperationsDashboard:
     active_capture: Optional[CaptureLibraryEntry]
     assistant: CaptureAssistantStatus
     warehouse: WarehouseDashboard
+    import_pipeline: ImportPipeline
 
     @property
     def capture_running(self) -> bool:
@@ -48,6 +53,7 @@ class OperationsDashboardService:
     def __init__(self) -> None:
         self.current_capture_service = CurrentCaptureSessionService()
         self.warehouse_service = WarehouseDashboardService()
+        self.import_pipeline_service = ImportPipelineService()
 
     def build(
         self,
@@ -64,8 +70,14 @@ class OperationsDashboardService:
             capture_root=capture_root,
         )
 
+        pipeline = self.import_pipeline_service.build(
+            db,
+            capture_root,
+        )
+
         return OperationsDashboard(
             active_capture=active_capture,
             assistant=capture_assistant_service.status(),
             warehouse=warehouse,
+            import_pipeline=pipeline,
         )
