@@ -48,6 +48,8 @@ from app.routes.import_wizard import router as import_wizard_router
 from app.routes.modus_fixture_import import router as modus_fixture_import_router
 from app.routes.modus_capture_manager import router as modus_capture_manager_router
 from app.routes.capture_library import router as capture_library_router
+from app.routes.historical_capture_batch import router as historical_capture_batch_router
+from app.routes.historical_operations import router as historical_operations_router
 from app.routes.capture_discovery import router as capture_discovery_router
 from app.routes.capture_wizard import router as capture_wizard_router
 from fastapi import FastAPI
@@ -137,6 +139,8 @@ app.include_router(import_wizard_router)
 app.include_router(modus_fixture_import_router)
 app.include_router(modus_capture_manager_router)
 app.include_router(capture_library_router)
+app.include_router(historical_capture_batch_router)
+app.include_router(historical_operations_router)
 app.include_router(capture_discovery_router)
 app.include_router(capture_wizard_router)
 

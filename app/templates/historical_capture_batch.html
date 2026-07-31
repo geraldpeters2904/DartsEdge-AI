@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}
+Historical Capture Batch · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<style>
+.batch-progress-track {
+    height: 18px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.09);
+    margin: 18px 0 8px;
+}
+
+.batch-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d3a62d, #f1d36b);
+}
+
+.batch-current {
+    outline: 2px solid rgba(211,166,45,0.75);
+    outline-offset: -2px;
+}
+</style>
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">HISTORICAL CAPTURE</p>
+            <h1>Historical Capture Batch</h1>
+            <p class="muted collector-introduction">
+                Build and resume capture work across multiple Series,
+                Weeks and Groups.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/operations">
+                Operations Dashboard
+            </a>
+            <a class="button" href="/admin/collector/capture/modus">
+                Capture Manager
+            </a>
+            <a class="button" href="/admin/collector/captures">
+                Capture Library
+            </a>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert-card">{{ error }}</div>
+    {% endif %}
+
+    <section class="panel collector-upload-panel">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">BUILD OR REPLACE BATCH</p>
+                <h2>Upload saved results pages</h2>
+            </div>
+
+            <span class="collector-step-badge">
+                Multiple files supported
+            </span>
+        </div>
+
+        <form
+            method="post"
+            enctype="multipart/form-data"
+            action="/admin/historical-capture-batch/build"
+        >
+            <div class="collector-form-grid">
+                <label class="collector-field">
+                    <span>Capture batch root</span>
+                    <input
+                        type="text"
+                        name="root"
+                        value="{{ root or '~/Documents/DartsEdge/Imports' }}"
+                        required
+                    >
+                </label>
+
+                <label class="collector-field">
+                    <span>Saved MODUS results pages</span>
+                    <input
+                        type="file"
+                        name="results_files"
+                        accept=".html,.htm,text/html"
+                        multiple
+                        required
+                    >
+                </label>
+            </div>
+
+            <div class="collector-actions">
+                <button
+                    class="button button-primary"
+                    type="submit"
+                >
+                    Build Capture Batch
+                </button>
+            </div>
+        </form>
+    </section>
+
+    {% if batch %}
+        <section
+            class="panel collector-history-panel"
+            style="margin-top: 24px;"
+        >
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">BATCH SUMMARY</p>
+                    <h2>{{ batch.root }}</h2>
+                </div>
+
+                <span class="collector-step-badge">
+                    {{ batch.progress_percent }}%
+                </span>
+            </div>
+
+            <div class="batch-progress-track">
+                <div
+                    class="batch-progress-fill"
+                    style="width: {{ batch.progress_percent }}%;"
+                ></div>
+            </div>
+
+            <div class="capture-progress-meta">
+                <span>
+                    {{ batch.completed_groups }}
+                    of {{ batch.total_groups }} groups complete
+                </span>
+
+                <span>
+                    {{ batch.captured_matches }}
+                    of {{ batch.total_matches }} matches captured
+                </span>
+
+                <strong>
+                    {{ batch.missing_matches }} missing
+                </strong>
+            </div>
+
+            <div
+                class="collector-summary-grid"
+                style="margin-top: 18px;"
+            >
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">
+                        Groups
+                    </span>
+                    <strong>{{ batch.total_groups }}</strong>
+                    <span class="collector-summary-detail">
+                        Across all Series and Weeks
+                    </span>
+                </div>
+
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">
+                        Complete
+                    </span>
+                    <strong>{{ batch.completed_groups }}</strong>
+                    <span class="collector-summary-detail">
+                        Finished capture groups
+                    </span>
+                </div>
+
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">
+                        Remaining
+                    </span>
+                    <strong>{{ batch.remaining_groups }}</strong>
+                    <span class="collector-summary-detail">
+                        Groups still requiring pages
+                    </span>
+                </div>
+
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">
+                        Matches
+                    </span>
+                    <strong>
+                        {{ batch.captured_matches }}
+                        / {{ batch.total_matches }}
+                    </strong>
+                    <span class="collector-summary-detail">
+                        Overall batch capture
+                    </span>
+                </div>
+            </div>
+
+            {% if batch.next_item %}
+                <div
+                    class="collector-safety-box"
+                    style="margin-top: 20px;"
+                >
+                    <div class="collector-safety-icon">→</div>
+
+                    <div>
+                        <strong>
+                            Next group:
+                            {{ batch.next_item.series_label }} ·
+                            {{ batch.next_item.week_label }} ·
+                            {{ batch.next_item.group }}
+                        </strong>
+
+                        <p>
+                            {{ batch.next_item.captured_count }}
+                            of
+                            {{ batch.next_item.expected_count }}
+                            matches captured.
+                            Next match ID:
+                            {{ batch.next_item.next_match_id or "—" }}.
+                        </p>
+                    </div>
+                </div>
+            {% else %}
+                <div
+                    class="collector-safety-box"
+                    style="margin-top: 20px;"
+                >
+                    <div class="collector-safety-icon">✓</div>
+
+                    <div>
+                        <strong>Batch capture complete</strong>
+                        <p>
+                            Every capture group in this batch is complete.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="collector-actions">
+                {% if batch.next_item %}
+                    <a
+                        class="button button-primary"
+                        href="{{ batch.next_item.session_url }}"
+                    >
+                        Open Next Group
+                    </a>
+                {% endif %}
+
+                <form
+                    method="post"
+                    action="/admin/historical-capture-batch/refresh"
+                >
+                    <input
+                        type="hidden"
+                        name="root"
+                        value="{{ batch.root }}"
+                    >
+
+                    <button class="button" type="submit">
+                        Refresh Batch
+                    </button>
+                </form>
+
+                <form
+                    method="post"
+                    action="/admin/historical-capture-batch/clear"
+                >
+                    <input
+                        type="hidden"
+                        name="root"
+                        value="{{ batch.root }}"
+                    >
+
+                    <button class="button button-danger" type="submit">
+                        Clear Batch Manifest
+                    </button>
+                </form>
+            </div>
+
+            <div class="table-wrap" style="margin-top: 20px;">
+                <table class="collector-history-table">
+                    <thead>
+                        <tr>
+                            <th>Position</th>
+                            <th>Series</th>
+                            <th>Week</th>
+                            <th>Group</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                            <th>Next Match</th>
+                            <th>Open</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in batch.items %}
+                            <tr
+                                {% if batch.next_item and
+                                      item.position == batch.next_item.position %}
+                                    class="batch-current"
+                                {% endif %}
+                            >
+                                <td>{{ item.position }}</td>
+                                <td>{{ item.series_label }}</td>
+                                <td>
+                                    {{ item.week_label }}
+                                    <small class="muted">
+                                        MODUS ID {{ item.week_id }}
+                                    </small>
+                                </td>
+                                <td>{{ item.group }}</td>
+                                <td>
+                                    {{ item.captured_count }}
+                                    / {{ item.expected_count }}
+                                    · {{ item.progress_percent }}%
+                                </td>
+                                <td>{{ item.status }}</td>
+                                <td>{{ item.next_match_id or "—" }}</td>
+                                <td>
+                                    <a href="{{ item.session_url }}">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8">
+                                    No capture groups exist in this batch.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+
+</div>
+{% endblock %}

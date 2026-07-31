@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}
+Historical Operations · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<style>
+.operations-progress-track {
+    height: 18px;
+    overflow: hidden;
+    margin: 18px 0 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.09);
+}
+
+.operations-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d3a62d, #f1d36b);
+}
+
+.operations-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    margin-top: 24px;
+}
+
+.operations-wide {
+    grid-column: 1 / -1;
+}
+
+.operations-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.operations-metric {
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+}
+
+.operations-metric span,
+.operations-metric small {
+    display: block;
+}
+
+.operations-metric strong {
+    display: block;
+    margin: 6px 0;
+    font-size: 1.4rem;
+}
+
+@media (max-width: 900px) {
+    .operations-grid,
+    .operations-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .operations-wide {
+        grid-column: auto;
+    }
+}
+</style>
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">HISTORICAL PIPELINE</p>
+            <h1>Historical Operations Centre</h1>
+            <p class="muted collector-introduction">
+                Monitor capture batches, assistant activity, import
+                preparation and warehouse health from one workspace.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a
+                class="button"
+                href="/admin/historical-capture-batch?root={{ root | urlencode }}"
+            >
+                Capture Batch
+            </a>
+
+            <a
+                class="button"
+                href="/admin/collector/capture/modus"
+            >
+                Capture Manager
+            </a>
+
+            <a
+                class="button"
+                href="/operations?capture_root={{ root | urlencode }}"
+            >
+                Operations Dashboard
+            </a>
+        </div>
+    </div>
+
+    <form
+        method="get"
+        action="/admin/historical-operations"
+    >
+        <section class="panel">
+            <label class="collector-field">
+                <span>Historical pipeline root</span>
+
+                <input
+                    type="text"
+                    name="root"
+                    value="{{ root }}"
+                    required
+                >
+            </label>
+
+            <div class="collector-actions">
+                <button class="button" type="submit">
+                    Refresh Operations
+                </button>
+            </div>
+        </section>
+    </form>
+
+    <section
+        class="panel collector-safety-box"
+        style="margin-top: 24px;"
+    >
+        <div class="collector-safety-icon">→</div>
+
+        <div>
+            <strong>Recommended next action</strong>
+            <p>{{ operations.next_action }}</p>
+        </div>
+    </section>
+
+    <div class="operations-grid">
+
+        <section class="panel operations-wide">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">CAPTURE BATCH</p>
+                    <h2>Overall historical capture</h2>
+                </div>
+            </div>
+
+            {% if operations.batch %}
+                <div class="operations-progress-track">
+                    <div
+                        class="operations-progress-fill"
+                        style="width: {{ operations.batch.progress_percent }}%;"
+                    ></div>
+                </div>
+
+                <div class="capture-progress-meta">
+                    <span>
+                        {{ operations.batch.completed_groups }}
+                        / {{ operations.batch.total_groups }}
+                        groups complete
+                    </span>
+
+                    <span>
+                        {{ operations.batch.captured_matches }}
+                        / {{ operations.batch.total_matches }}
+                        matches captured
+                    </span>
+
+                    <strong>
+                        {{ operations.batch.progress_percent }}%
+                    </strong>
+                </div>
+
+                <div class="operations-metrics">
+                    <div class="operations-metric">
+                        <span>Total groups</span>
+                        <strong>
+                            {{ operations.batch.total_groups }}
+                        </strong>
+                    </div>
+
+                    <div class="operations-metric">
+                        <span>Complete groups</span>
+                        <strong>
+                            {{ operations.batch.completed_groups }}
+                        </strong>
+                    </div>
+
+                    <div class="operations-metric">
+                        <span>Remaining groups</span>
+                        <strong>
+                            {{ operations.batch.remaining_groups }}
+                        </strong>
+                    </div>
+
+                    <div class="operations-metric">
+                        <span>Missing matches</span>
+                        <strong>
+                            {{ operations.batch.missing_matches }}
+                        </strong>
+                    </div>
+                </div>
+
+                {% if operations.current_group %}
+                    <div
+                        class="collector-safety-box"
+                        style="margin-top: 20px;"
+                    >
+                        <div class="collector-safety-icon">▶</div>
+
+                        <div>
+                            <strong>
+                                {{ operations.current_group.series_label }}
+                                · {{ operations.current_group.week_label }}
+                                · {{ operations.current_group.group }}
+                            </strong>
+
+                            <p>
+                                {{ operations.current_group.captured_count }}
+                                of
+                                {{ operations.current_group.expected_count }}
+                                matches captured.
+                                Next match:
+                                {{ operations.current_group.next_match_id or "—" }}.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="collector-actions">
+                        <a
+                            class="button button-primary"
+                            href="{{ operations.current_group.session_url }}"
+                        >
+                            Open Current Group
+                        </a>
+
+                        <a
+                            class="button"
+                            href="/admin/historical-capture-batch?root={{ root | urlencode }}"
+                        >
+                            Open Batch Manager
+                        </a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <p class="muted">
+                    No historical capture batch exists for this root.
+                </p>
+
+                <a
+                    class="button button-primary"
+                    href="/admin/historical-capture-batch?root={{ root | urlencode }}"
+                >
+                    Build Capture Batch
+                </a>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">CAPTURE ASSISTANT</p>
+                    <h2>Assistant status</h2>
+                </div>
+            </div>
+
+            <div class="operations-metrics">
+                <div class="operations-metric">
+                    <span>Status</span>
+                    <strong>
+                        {% if operations.assistant.running %}
+                            Running
+                        {% else %}
+                            Stopped
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Expected match</span>
+                    <strong>
+                        {{ operations.assistant.expected_match_id or "—" }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Accepted</span>
+                    <strong>
+                        {{ operations.assistant.accepted_count }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Rejected</span>
+                    <strong>
+                        {{ operations.assistant.rejected_count }}
+                    </strong>
+                </div>
+            </div>
+
+            <p class="muted" style="margin-top: 16px;">
+                {{ operations.assistant.last_message }}
+            </p>
+
+            <a
+                class="button"
+                href="/admin/collector/capture/modus/assistant"
+            >
+                Open Capture Assistant
+            </a>
+        </section>
+
+        <section class="panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">IMPORT PIPELINE</p>
+                    <h2>Historical import status</h2>
+                </div>
+            </div>
+
+            <div class="operations-metrics">
+                <div class="operations-metric">
+                    <span>Queue</span>
+                    <strong>
+                        {% if operations.import_pipeline.queue %}
+                            Ready
+                        {% else %}
+                            Missing
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Engine</span>
+                    <strong>
+                        {% if operations.import_pipeline.engine %}
+                            {{ operations.import_pipeline.engine.status }}
+                        {% else %}
+                            Not started
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Remaining</span>
+                    <strong>
+                        {% if operations.import_pipeline.queue %}
+                            {{ operations.import_pipeline.queue.remaining_count }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Progress</span>
+                    <strong>
+                        {% if operations.import_pipeline.queue %}
+                            {{ operations.import_pipeline.queue.progress_percent }}%
+                        {% else %}
+                            —
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+
+            <div class="collector-actions">
+                <a
+                    class="button"
+                    href="/admin/historical-imports?root={{ root | urlencode }}"
+                >
+                    Historical Imports
+                </a>
+
+                {% if operations.import_pipeline.next_queue_item %}
+                    <a
+                        class="button button-primary"
+                        href="{{ operations.import_pipeline.next_queue_item.open_import_url }}"
+                    >
+                        Open Next Import
+                    </a>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="panel operations-wide">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">WAREHOUSE</p>
+                    <h2>Warehouse readiness</h2>
+                </div>
+            </div>
+
+            <div class="operations-metrics">
+                {% for metric in operations.warehouse.metrics %}
+                    <div class="operations-metric">
+                        <span>{{ metric.label }}</span>
+                        <strong>{{ metric.value }}</strong>
+                        <small class="muted">
+                            {{ metric.detail }}
+                        </small>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="collector-actions">
+                <a
+                    class="button"
+                    href="/admin/warehouse-dashboard"
+                >
+                    Warehouse Dashboard
+                </a>
+
+                <a
+                    class="button"
+                    href="/admin/warehouse"
+                >
+                    Warehouse Explorer
+                </a>
+
+                <a
+                    class="button"
+                    href="/data-quality"
+                >
+                    Data Quality
+                </a>
+            </div>
+        </section>
+
+    </div>
+</div>
+{% endblock %}
