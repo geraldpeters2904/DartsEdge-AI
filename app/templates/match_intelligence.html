@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Match Intelligence · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Interactive match intelligence</div>
+    <h1>{{ fixture.player_a }} <span class="muted">v</span> {{ fixture.player_b }}</h1>
+    <p class="muted">{{ fixture.date }} · {{ fixture.tournament or 'Tournament not set' }} · {{ fixture.stage or 'Stage not set' }} · {{ fixture.match_format or 'Format not set' }}</p>
+  </div>
+  <span class="status-pill {{ 'good' if assessment and assessment.has_value else 'warning' }}">
+    {{ 'Positive EV' if assessment and assessment.has_value else 'Analysis only' }}
+  </span>
+</div>
+
+<div class="metric-grid">
+  <div class="metric-card"><span>Model selection</span><strong>{{ selected_player or 'Unavailable' }}</strong><small>{{ (selected_probability|string + '%') if selected_probability is not none else 'Insufficient data' }}</small></div>
+  <div class="metric-card"><span>Best odds</span><strong>{{ '%.2f'|format(price.decimal_odds) if price else '—' }}</strong><small>{{ price.bookmaker if price else 'No matched price' }}</small></div>
+  <div class="metric-card"><span>Expected value</span><strong>{{ ('%+.2f%%'|format(assessment.expected_value_percent)) if assessment else '—' }}</strong><small>{{ ('Edge %+.2f%%'|format(assessment.edge_percent)) if assessment else 'Odds required' }}</small></div>
+  <div class="metric-card"><span>Suggested stake</span><strong>£{{ '%.2f'|format(assessment.recommended_stake) if assessment else '0.00' }}</strong><small>{{ assessment.decision if assessment else 'No official decision' }}</small></div>
+</div>
+
+{% if prediction %}
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel-header"><div><div class="eyebrow">Player comparison</div><h2>Core performance</h2></div></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Metric</th><th>{{ fixture.player_a }}</th><th>{{ fixture.player_b }}</th></tr></thead>
+      <tbody>
+        <tr><td>Elo</td><td>{{ profile_a.elo }}</td><td>{{ profile_b.elo }}</td></tr>
+        <tr><td>3-dart average</td><td>{{ profile_a.average }}</td><td>{{ profile_b.average }}</td></tr>
+        <tr><td>Checkout %</td><td>{{ profile_a.checkout }}</td><td>{{ profile_b.checkout }}</td></tr>
+        <tr><td>Win %</td><td>{{ profile_a.win_pct }}%</td><td>{{ profile_b.win_pct }}%</td></tr>
+        <tr><td>Expected 180s</td><td>{{ profile_a.form.expected }}</td><td>{{ profile_b.form.expected }}</td></tr>
+        <tr><td>Leg difference</td><td>{{ profile_a.legs_won - profile_a.legs_lost }}</td><td>{{ profile_b.legs_won - profile_b.legs_lost }}</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header"><div><div class="eyebrow">Head-to-head</div><h2>Historical matchup</h2></div></div>
+    <div class="metric-grid compact">
+      <div class="metric-card"><span>Meetings</span><strong>{{ head_to_head.matches or 0 }}</strong></div>
+      <div class="metric-card"><span>{{ fixture.player_a }} wins</span><strong>{{ head_to_head.wins_a or 0 }}</strong></div>
+      <div class="metric-card"><span>{{ fixture.player_b }} wins</span><strong>{{ head_to_head.wins_b or 0 }}</strong></div>
+      <div class="metric-card"><span>H2H confidence</span><strong>{{ head_to_head.confidence or 50 }}%</strong></div>
+    </div>
+    {% if head_to_head.streak_player %}<p class="muted">Current streak: {{ head_to_head.streak_player }} · {{ head_to_head.streak }}</p>{% else %}<p class="muted">No settled head-to-head sample is available.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-header"><div><div class="eyebrow">Explainability</div><h2>Why this prediction?</h2></div></div>
+  {% if explainability.summary %}<p>{{ explainability.summary }}</p>{% elif prediction.explanation %}<p>{{ prediction.explanation }}</p>{% else %}<p class="muted">A structured explanation is not available for this fixture.</p>{% endif %}
+  {% if explainability.positive_factors %}
+  <h3>Supporting factors</h3>
+  <ul>{% for item in explainability.positive_factors %}<li>{{ item.label or item.name }}{% if item.message %}: {{ item.message }}{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if explainability.negative_factors %}
+  <h3>Risk factors</h3>
+  <ul>{% for item in explainability.negative_factors %}<li>{{ item.label or item.name }}{% if item.message %}: {{ item.message }}{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header"><div><div class="eyebrow">Strategy context</div><h2>{{ active_strategy.name }} v{{ active_strategy.version }}</h2></div><span class="status-pill {{ 'good' if decision_engine_active else 'warning' }}">{{ 'Active' if decision_engine_active else 'Shadow' }}</span></div>
+  <p>{{ recommendation.summary if recommendation.summary else 'The official prediction remains unchanged. Strategy enforcement is shown separately on the Expected Value page.' }}</p>
+  <div class="button-row"><a class="button" href="/expected-value">Open Expected Value</a><a class="button secondary" href="/strategies">Review strategy</a></div>
+</section>
+{% else %}
+<section class="panel empty-state"><h2>Prediction unavailable</h2><p>Both players need valid profile data before the full intelligence workspace can be calculated.</p><a class="button" href="/players">Review players</a></section>
+{% endif %}
+
+<div class="button-row"><a class="button secondary" href="/prediction-centre">← Prediction Centre</a><a class="button secondary" href="/predict-v2?player_a={{ fixture.player_a|urlencode }}&player_b={{ fixture.player_b|urlencode }}">Open Match Predictor</a></div>
+{% endblock %}

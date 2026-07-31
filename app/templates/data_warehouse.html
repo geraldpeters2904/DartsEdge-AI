@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block content %}
+<div class="page-header"><div><h1>Canonical Darts Data Layer</h1><p class="muted">Provider-independent storage for MODUS, Sportradar and future competitions.</p></div></div>
+<div class="kpi-grid prediction-centre-kpis">
+<div class="kpi-card"><span class="kpi-label">Raw source records</span><strong class="kpi-value">{{ summary.raw_records }}</strong><span class="kpi-meta">Original payloads preserved</span></div>
+<div class="kpi-card"><span class="kpi-label">Provider mappings</span><strong class="kpi-value">{{ summary.mappings }}</strong><span class="kpi-meta">External IDs linked internally</span></div>
+<div class="kpi-card"><span class="kpi-label">Provenance records</span><strong class="kpi-value">{{ summary.provenance_records }}</strong><span class="kpi-meta">Field sources remain auditable</span></div>
+</div>
+<div class="panel"><h2>Competition-ready design</h2><p>{{ summary.supported_competitions|join(', ') }}</p><p class="muted">Adapters normalise fixtures, results, match statistics and odds into one internal schema. Analytics remain independent of provider choice.</p></div>
+{% endblock %}

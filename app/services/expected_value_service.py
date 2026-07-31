@@ -27,6 +27,21 @@ class ValueAssessment:
     risk_level: str
 
 
+
+# Backward-compatible public contract used by Daily Briefing and older services.
+def _value_assessment_is_value(self) -> bool:
+    return bool(self.has_value)
+
+
+ValueAssessment.is_value = property(_value_assessment_is_value)
+
+
+# Backward-compatible alias: the canonical field is recommended_stake.
+def _value_assessment_suggested_stake(self) -> float:
+    return float(self.recommended_stake)
+
+ValueAssessment.suggested_stake = property(_value_assessment_suggested_stake)
+
 def normalise_probability(value: float) -> float:
     probability = float(value)
     if 0 <= probability <= 1:

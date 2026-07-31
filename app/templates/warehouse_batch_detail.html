@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Batch {{ detail.batch.batch_uuid[:8] }} · Warehouse Explorer{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<style>
+.explorer-summary-grid {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:16px;
+}
+.explorer-object {
+    padding:14px;
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:12px;
+    background:rgba(255,255,255,0.025);
+}
+@media(max-width:900px) {
+    .explorer-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+</style>
+
+<div class="page-shell collector-shell">
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">WAREHOUSE BATCH</p>
+            <h1>Batch {{ detail.batch.batch_uuid[:8] }}</h1>
+            <p class="muted collector-introduction">
+                {{ detail.batch.provider }} · {{ detail.batch.competition_code }}
+                · {{ detail.batch.filename }}
+            </p>
+        </div>
+        <div class="collector-actions">
+            <a class="button" href="/admin/warehouse">All batches</a>
+            <a class="button" href="/admin/collector">Collector</a>
+        </div>
+    </div>
+
+    <section class="explorer-summary-grid">
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">Status</span>
+            <strong>{{ detail.batch.status }}</strong>
+            <span class="collector-summary-detail">{{ detail.batch.created_at }}</span>
+        </div>
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">Created</span>
+            <strong>{{ detail.created_count }}</strong>
+            <span class="collector-summary-detail">Batch audit actions</span>
+        </div>
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">Duplicates</span>
+            <strong>{{ detail.duplicate_count }}</strong>
+            <span class="collector-summary-detail">Records already known</span>
+        </div>
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">Rejected</span>
+            <strong>{{ detail.rejected_count }}</strong>
+            <span class="collector-summary-detail">Rows not committed</span>
+        </div>
+    </section>
+
+    <section class="panel collector-history-panel" style="margin-top:24px;">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">AUDIT ITEMS</p>
+                <h2>Fixtures, results, statistics and players</h2>
+            </div>
+            <span class="collector-step-badge">{{ detail.items|length }} items</span>
+        </div>
+
+        <div class="table-wrap">
+            <table class="collector-history-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Action</th>
+                        <th>External ID</th>
+                        <th>Internal ID</th>
+                        <th>Warehouse record</th>
+                        <th>Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in detail.items %}
+                        <tr>
+                            <td>{{ record.item.entity_type }}</td>
+                            <td>{{ record.item.action }}</td>
+                            <td><code>{{ record.item.external_id or "—" }}</code></td>
+                            <td>{{ record.item.internal_id or "—" }}</td>
+                            <td>
+                                {% if record.match %}
+                                    {{ record.match.player_a }} v {{ record.match.player_b }}
+                                    · {{ record.match.score or record.match.status }}
+                                {% elif record.player %}
+                                    {{ record.player.name }}
+                                {% elif record.statistic %}
+                                    {{ record.statistic.player_name }}
+                                    · Avg {{ record.statistic.average }}
+                                    · 180s {{ record.statistic.one80s }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ record.item.detail or "—" }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6">No audit items were recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel collector-history-panel" style="margin-top:24px;">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">PROVIDER LINKS</p>
+                <h2>Stable external-ID mappings</h2>
+            </div>
+            <span class="collector-step-badge">{{ detail.mappings|length }} mappings</span>
+        </div>
+
+        <div class="table-wrap">
+            <table class="collector-history-table">
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Type</th>
+                        <th>External ID</th>
+                        <th>Internal ID</th>
+                        <th>Competition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mapping in detail.mappings %}
+                        <tr>
+                            <td>{{ mapping.provider }}</td>
+                            <td>{{ mapping.entity_type }}</td>
+                            <td><code>{{ mapping.external_id }}</code></td>
+                            <td>{{ mapping.internal_id }}</td>
+                            <td>{{ mapping.competition_code or "—" }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5">No linked mappings found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel collector-history-panel" style="margin-top:24px;">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">PROVENANCE</p>
+                <h2>Field-level source trace</h2>
+            </div>
+            <span class="collector-step-badge">{{ detail.provenance|length }} fields</span>
+        </div>
+
+        <div class="table-wrap">
+            <table class="collector-history-table">
+                <thead>
+                    <tr>
+                        <th>Entity</th>
+                        <th>Internal ID</th>
+                        <th>Field</th>
+                        <th>Provider</th>
+                        <th>External ID</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in detail.provenance %}
+                        <tr>
+                            <td>{{ item.entity_type }}</td>
+                            <td>{{ item.internal_id }}</td>
+                            <td>{{ item.field_name }}</td>
+                            <td>{{ item.provider }}</td>
+                            <td><code>{{ item.external_id or "—" }}</code></td>
+                            <td>{{ item.confidence }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6">No provenance rows found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel collector-history-panel" style="margin-top:24px;">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">RAW RETENTION</p>
+                <h2>Stored provider payloads</h2>
+            </div>
+            <span class="collector-step-badge">{{ detail.raw_records|length }} versions</span>
+        </div>
+
+        <div class="table-wrap">
+            <table class="collector-history-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>External ID</th>
+                        <th>Retrieved</th>
+                        <th>Processed</th>
+                        <th>Checksum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in detail.raw_records %}
+                        <tr>
+                            <td>{{ item.entity_type }}</td>
+                            <td><code>{{ item.external_id }}</code></td>
+                            <td>{{ item.retrieved_at }}</td>
+                            <td>{{ item.processed }}</td>
+                            <td><code>{{ item.checksum[:12] }}</code></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5">No raw provider records found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if detail.batch.status == "imported" %}
+        <section class="panel collector-history-panel" style="margin-top:24px;">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">RECOVERY</p>
+                    <h2>Rollback this acceptance batch</h2>
+                </div>
+            </div>
+            <p class="muted">
+                Rollback uses the existing tracked batch operation. Use it only
+                after inspecting the imported records above.
+            </p>
+            <form
+                method="post"
+                action="/admin/collector/batches/{{ detail.batch.id }}/rollback"
+            >
+                <button class="button button-danger" type="submit">
+                    Rollback batch
+                </button>
+            </form>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

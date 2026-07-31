@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}
+MODUS Fixture Import · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">FIXTURE LIFECYCLE</p>
+            <h1>Import MODUS Fixtures</h1>
+            <p class="muted collector-introduction">
+                Create a fixture-only Collector Preview from a saved MODUS
+                results or fixtures page. Upcoming matches are imported as
+                scheduled and receive no fabricated scores or statistics.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/admin/collector/import">Import Data</a>
+            <a class="button" href="/admin/collector">Collector</a>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    <div class="collector-layout">
+
+        <section class="panel collector-upload-panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">STEP 1</p>
+                    <h2>Select saved MODUS page</h2>
+                </div>
+                <span class="collector-step-badge">Fixture-only preview</span>
+            </div>
+
+            <form
+                method="post"
+                enctype="multipart/form-data"
+                action="/admin/collector/import/modus-fixtures/preview"
+            >
+                <div class="collector-form-grid">
+                    <label class="collector-field">
+                        <span>Saved MODUS HTML</span>
+                        <input
+                            type="file"
+                            name="results_file"
+                            accept=".html,text/html"
+                            required
+                        >
+                        <small>
+                            Use a page containing upcoming or completed fixture
+                            cards. The same MODUS match ID is preserved.
+                        </small>
+                    </label>
+                </div>
+
+                <div class="collector-safety-box">
+                    <div class="collector-safety-icon">🛡️</div>
+                    <div>
+                        <strong>Safe lifecycle handling</strong>
+                        <p>
+                            Scheduled fixtures have no fake scores, results or
+                            statistics. Collector Preview remains the approval
+                            step before any database commit.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="collector-actions">
+                    <button class="button button-primary" type="submit">
+                        Create Fixture Preview
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="panel collector-workflow-panel">
+            <p class="eyebrow">LIFECYCLE</p>
+            <h2>One match, one stable ID</h2>
+
+            <ol class="collector-workflow-list">
+                <li class="collector-workflow-active">
+                    <span>1</span>
+                    <div>
+                        <strong>Scheduled</strong>
+                        <small>Fixture exists without a final score.</small>
+                    </div>
+                </li>
+                <li>
+                    <span>2</span>
+                    <div>
+                        <strong>Completed</strong>
+                        <small>The same match ID receives result and statistics.</small>
+                    </div>
+                </li>
+                <li>
+                    <span>3</span>
+                    <div>
+                        <strong>No duplicate match</strong>
+                        <small>Lifecycle updates use the stable external ID.</small>
+                    </div>
+                </li>
+            </ol>
+        </aside>
+
+    </div>
+
+</div>
+{% endblock %}

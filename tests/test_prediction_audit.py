@@ -9,6 +9,8 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base
 from app.models.prediction_audit import PredictionAudit
 from app.services.prediction_audit_service import audit_snapshot, audits_csv, create_prediction_audit, list_audits
+from app.models.player import Player
+from app.models.match import Match
 
 
 class PredictionAuditTests(unittest.TestCase):
@@ -56,11 +58,27 @@ class PredictionAuditTests(unittest.TestCase):
         self.assertIn("shadow", row.model_version)
 
     def test_filters_by_player_and_profile(self):
-        create_prediction_audit(self.db, self.result())
-        create_prediction_audit(self.db, self.result("Charlie", "Delta"))
+        first = create_prediction_audit(self.db, self.result())
+        second = create_prediction_audit(
+            self.db,
+            self.result("Charlie", "Delta"),
+        )
         self.assertEqual(len(list_audits(self.db, player="Alpha")), 1)
         self.assertEqual(len(list_audits(self.db, profile="Default")), 2)
-        self.assertEqual(len(list_audits(self.db, date_from=date.today())), 2)
+
+        created_dates = [
+            first.created_at.date(),
+            second.created_at.date(),
+        ]
+        self.assertEqual(
+            len(
+                list_audits(
+                    self.db,
+                    date_from=min(created_dates),
+                )
+            ),
+            2,
+        )
 
     def test_csv_export_has_stable_columns(self):
         row = create_prediction_audit(self.db, self.result())

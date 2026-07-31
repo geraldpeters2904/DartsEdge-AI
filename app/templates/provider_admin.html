@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Provider SDK · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Provider SDK</h1><p class="muted">Source-independent collection for MODUS, Sportradar and future competitions.</p></div>
+  <span class="status-badge">{{ architecture }}</span>
+</div>
+
+{% if request.query_params.get('message') %}
+<div class="panel"><strong>{{ request.query_params.get('status')|upper }}</strong> — {{ request.query_params.get('message') }}</div>
+{% endif %}
+
+<div class="card-grid">
+{% for provider in providers %}
+  <section class="panel">
+    <div class="panel-heading"><h2>{{ provider.name }}</h2><span class="status-badge">{{ provider.health.status }}</span></div>
+    <p>{{ provider.description }}</p>
+    <p class="muted">Competitions: {{ provider.supported_competitions|join(', ') }}</p>
+    <p>{{ provider.health.detail }}</p>
+    <form method="post" action="/admin/providers/{{ provider.id }}/run">
+      <select name="operation">
+        {% for capability, enabled in provider.capabilities.items() %}
+          {% if enabled and capability != 'odds' %}<option value="{{ capability }}">{{ capability|title }}</option>{% endif %}
+        {% endfor %}
+      </select>
+      <button type="submit">Run collector check</button>
+    </form>
+  </section>
+{% endfor %}
+</div>
+
+<section class="panel">
+  <h2>Recent collector runs</h2>
+  {% if runs %}
+  <table><thead><tr><th>Provider</th><th>Operation</th><th>Status</th><th>Records</th><th>Duration</th><th>Error</th></tr></thead>
+  <tbody>{% for run in runs %}<tr><td>{{ run.provider_id }}</td><td>{{ run.operation }}</td><td>{{ run.status }}</td><td>{{ run.records_accepted }}/{{ run.records_received }}</td><td>{{ run.duration_seconds or 0 }}s</td><td>{{ run.error_detail or '—' }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">No collector runs have been recorded yet.</p>{% endif %}
+</section>
+{% endblock %}

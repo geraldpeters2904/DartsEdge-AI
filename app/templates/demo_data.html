@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Demo Data · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Development tools</div>
+    <h1>Demo Data</h1>
+    <p class="muted">Load a clearly labelled synthetic dataset to exercise Prediction Centre and Match Intelligence.</p>
+  </div>
+  <span class="status-pill warning">Development only</span>
+</div>
+
+{% if message %}<div class="prediction-scope-notice">{{ message }}</div>{% endif %}
+
+<div class="prediction-centre-kpis">
+  <article class="prediction-kpi-card"><span class="prediction-kpi-label">Demo players</span><strong class="prediction-kpi-value">{{ summary.players }}</strong><small>Names begin with “Demo”</small></article>
+  <article class="prediction-kpi-card"><span class="prediction-kpi-label">Demo fixtures</span><strong class="prediction-kpi-value">{{ summary.fixtures }}</strong><small>Today through the next six days</small></article>
+  <article class="prediction-kpi-card"><span class="prediction-kpi-label">Demo prices</span><strong class="prediction-kpi-value">{{ summary.odds }}</strong><small>Two fictional bookmakers</small></article>
+</div>
+
+<section class="panel">
+  <div class="panel-header"><div><div class="eyebrow">Safe workflow</div><h2>Populate the workspace</h2></div></div>
+  <p>Loading is duplicate-safe. Reset removes only fixtures whose tournament starts with <strong>DEMO</strong>, prices from provider <strong>demo-data</strong>, and players whose names begin with <strong>Demo</strong>.</p>
+  <div class="button-row">
+    <form method="post" action="/admin/demo-data/load"><button class="button" type="submit">Load demo data</button></form>
+    <a class="button secondary" href="/prediction-centre">Open Prediction Centre</a>
+    <form method="post" action="/admin/demo-data/reset" onsubmit="return confirm('Remove all DartsEdge demo data?');"><button class="button danger" type="submit">Reset demo data</button></form>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>What this enables</h2>
+  <div class="metric-grid compact">
+    <div class="metric-card"><span>Prediction Centre</span><strong>14 fixtures</strong><small>Enough to test today and upcoming views</small></div>
+    <div class="metric-card"><span>Match Intelligence</span><strong>Player profiles</strong><small>Elo, averages, checkout and 180 rates</small></div>
+    <div class="metric-card"><span>Odds and EV</span><strong>56 prices</strong><small>Two selections from two demo bookmakers</small></div>
+  </div>
+</section>
+{% endblock %}

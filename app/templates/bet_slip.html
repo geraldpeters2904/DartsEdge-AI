@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Bet Slip · DartsEdge AI{% endblock %}
+{% block content %}
+<div class="page-header"><div><div class="eyebrow">Paper trading workflow</div><h1>Bet Slip</h1><p class="muted">Review selections before saving them as paper trades.</p></div><a class="button secondary" href="/prediction-centre">Back to Prediction Centre</a></div>
+{% if message %}<div class="alert success">{{ message }}</div>{% endif %}
+<div class="prediction-centre-kpis">
+  <article class="prediction-kpi-card"><span class="prediction-kpi-label">Selections</span><strong class="prediction-kpi-value">{{ summary.count }}</strong><small>Draft items</small></article>
+  <article class="prediction-kpi-card"><span class="prediction-kpi-label">Planned stake</span><strong class="prediction-kpi-value">£{{ '{:,.2f}'.format(summary.total_stake) }}</strong><small>Not yet exposed</small></article>
+  <article class="prediction-kpi-card"><span class="prediction-kpi-label">Average odds</span><strong class="prediction-kpi-value">{{ '%.2f'|format(summary.average_odds) }}</strong><small>Decimal odds</small></article>
+</div>
+{% if items %}
+<div class="table-wrap"><table><thead><tr><th>Fixture</th><th>Market</th><th>Selection</th><th>Odds</th><th>EV</th><th>Stake</th><th>Strategy</th><th>Actions</th></tr></thead><tbody>
+{% for item, fixture in items %}<tr><td><strong>{{ fixture.player_a }} v {{ fixture.player_b }}</strong><br><span class="muted">{{ fixture.date }} · {{ fixture.tournament or 'Tournament not set' }}</span></td><td>{{ item.market }}</td><td>{{ item.selection }}</td><td>{{ '%.2f'|format(item.odds) }}</td><td>{{ '%+.2f%%'|format(item.expected_value or 0) }}</td><td>£{{ '{:,.2f}'.format(item.stake) }}</td><td>{{ item.strategy_name or 'Not recorded' }}</td><td><div class="button-row"><form method="post" action="/bet-slip/{{ item.id }}/paper"><button class="button" type="submit">Save paper trade</button></form><form method="post" action="/bet-slip/{{ item.id }}/remove"><button class="button secondary" type="submit">Remove</button></form></div></td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<section class="panel empty-state"><div class="empty-state-icon">🧾</div><h2>Your bet slip is empty</h2><p>Add a priced selection from Prediction Centre. Nothing is committed until you save it as a paper trade.</p><a class="button" href="/prediction-centre">Browse fixtures</a></section>{% endif %}
+{% endblock %}

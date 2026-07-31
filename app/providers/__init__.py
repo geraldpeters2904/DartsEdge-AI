@@ -1,17 +1,3 @@
-from app.providers.base import (
-    DataProvider,
-    FixtureRecord,
-    ProviderCapabilities,
-    ProviderHealth,
-)
-from app.providers.manual import ManualDatabaseProvider
-from app.providers.registry import ProviderRegistry
+from app.providers.registry import provider_registry
 
-__all__ = [
-    "DataProvider",
-    "FixtureRecord",
-    "ProviderCapabilities",
-    "ProviderHealth",
-    "ManualDatabaseProvider",
-    "ProviderRegistry",
-]
+__all__ = ["provider_registry"]

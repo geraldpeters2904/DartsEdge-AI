@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block content %}
+<div class="page-shell"><div class="page-header"><div><p class="eyebrow">IMPORT PREVIEW</p><h1>{{ preview.filename }}</h1><p class="muted">Review validation and reconcile player identities before committing.</p></div></div>
+{% if message %}<div class="alert-card">{{ message }}</div>{% endif %}
+<div class="summary-grid">
+<div class="summary-card"><span>Rows received</span><strong>{{ report.received }}</strong></div>
+<div class="summary-card"><span>Valid rows</span><strong>{{ report.valid }}</strong></div>
+<div class="summary-card"><span>Rejected</span><strong>{{ report.rejected }}</strong></div>
+<div class="summary-card"><span>Players detected</span><strong>{{ report.players }}</strong></div>
+</div>
+<div class="panel"><h2>Player reconciliation</h2><p class="muted">Exact and previously saved aliases are preselected. Review suggested close matches carefully; choose “Create new player” when the person is genuinely new.</p>
+<form method="post" action="/admin/imports/preview/{{ preview.preview_uuid }}/commit">
+<input type="hidden" name="player_count" value="{{ reconciliation|length }}">
+<div class="table-wrap"><table><thead><tr><th>Source name</th><th>Detected status</th><th>Canonical player</th><th>Suggested matches</th></tr></thead><tbody>
+{% for item in reconciliation %}<tr>
+<td><strong>{{ item.source_name }}</strong><input type="hidden" name="player_name_{{ loop.index0 }}" value="{{ item.source_name }}"></td>
+<td><span class="badge">{{ item.status }}</span></td>
+<td><select name="player_choice_{{ loop.index0 }}">
+<option value="new" {% if not item.mapped %}selected{% endif %}>Create new player</option>
+{% for p in players %}<option value="{{ p.id }}" {% if item.mapped and item.mapped.id == p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+</select></td>
+<td>{% for c in item.candidates[:3] %}<span class="badge">{{ c.name }} {{ (c.score*100)|round(0)|int }}%</span> {% else %}<span class="muted">No close matches</span>{% endfor %}</td>
+</tr>{% endfor %}</tbody></table></div>
+<div style="display:flex;gap:12px;margin-top:18px"><button class="button button-primary" type="submit">Confirm and import</button></form>
+<form method="post" action="/admin/imports/preview/{{ preview.preview_uuid }}/cancel"><button class="button button-danger" type="submit">Cancel preview</button></form></div>
+</div>
+{% if report.errors %}<div class="panel"><h2>Validation errors</h2><ul>{% for e in report.errors %}<li>Row {{ e.row }}: {{ e.error }}</li>{% endfor %}</ul></div>{% endif %}
+</div>{% endblock %}

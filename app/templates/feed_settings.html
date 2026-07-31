@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><div><h1>Feed Connector Settings</h1><p>Configure an authorised JSON or CSV fixture feed. Credentials are never returned by the diagnostics API.</p></div></div>
+{% if message %}<div class="alert alert-info">{{ message }}</div>{% endif %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+<form method="post" action="/feed-settings/save" class="form-grid">
+<label>Name<input name="name" value="{{ config.name }}" required></label>
+<label>Connector type<select name="connector_type">{% for t in types %}<option value="{{ t }}" {% if config.connector_type==t %}selected{% endif %}>{{ t|upper }}</option>{% endfor %}</select></label>
+<label class="span-2">Feed URL<input name="feed_url" value="{{ config.feed_url or '' }}" placeholder="https://authorised-provider.example/fixtures"></label>
+<label class="span-2">Bearer token<input type="password" name="auth_token" value="{% if config.auth_token %}********{% endif %}" autocomplete="new-password"></label>
+<label class="span-2">Enabled competitions (comma separated)<input name="competitions" value=""></label>
+<label>Timeout seconds<input type="number" name="timeout_seconds" min="1" max="60" value="{{ config.timeout_seconds }}"></label>
+<label>Retry count<input type="number" name="retry_count" min="0" max="5" value="{{ config.retry_count }}"></label>
+<label>Refresh interval minutes<input type="number" name="refresh_interval_minutes" min="5" max="1440" value="{{ config.refresh_interval_minutes }}"></label>
+<label><input type="checkbox" name="enabled" {% if config.enabled %}checked{% endif %}> Enable connector</label>
+<div class="span-2"><button class="btn btn-primary">Save settings</button></div>
+</form></div>
+<div class="action-row">
+<form method="post" action="/feed-settings/test"><button class="btn">Test connection</button></form>
+<a class="btn" href="/feed-settings?preview=1&days={{ days }}">Preview</a>
+<form method="post" action="/feed-settings/sync"><input type="hidden" name="days" value="{{ days }}"><button class="btn btn-primary">Synchronise now</button></form>
+</div>
+{% if preview %}<div class="card"><h2>Preview</h2><p>{{ preview.count }} received; {{ preview.new_count }} new.</p><div class="table-wrap"><table><thead><tr><th>Date</th><th>Competition</th><th>Fixture</th><th>Status</th></tr></thead><tbody>{% for row in preview.rows %}<tr><td>{{ row.fixture.event_date }}</td><td>{{ row.fixture.tournament }}</td><td>{{ row.fixture.player_a }} vs {{ row.fixture.player_b }}</td><td>{% if row.duplicate %}Existing{% else %}New{% endif %}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+<div class="card"><h2>Sync history</h2><div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>Status</th><th>Received</th><th>New</th><th>Existing</th><th>Error</th></tr></thead><tbody>{% for run in history %}<tr><td>{{ run.started_at }}</td><td>{{ run.action }}</td><td>{{ run.status }}</td><td>{{ run.records_received }}</td><td>{{ run.records_new }}</td><td>{{ run.records_existing }}</td><td>{{ run.error_message or '—' }}</td></tr>{% else %}<tr><td colspan="7">No connector activity yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

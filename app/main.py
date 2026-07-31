@@ -42,6 +42,7 @@ from app.routes.warehouse_explorer import router as warehouse_explorer_router
 from app.routes.historical_import_manager import router as historical_import_manager_router
 from app.routes.historical_import_queue import router as historical_import_queue_router
 from app.routes.historical_import_engine import router as historical_import_engine_router
+from app.routes.modus_capture_assistant import router as modus_capture_assistant_router
 from app.routes.import_wizard import router as import_wizard_router
 from app.routes.modus_fixture_import import router as modus_fixture_import_router
 from app.routes.modus_capture_manager import router as modus_capture_manager_router
@@ -129,6 +130,7 @@ app.include_router(warehouse_explorer_router)
 app.include_router(historical_import_manager_router)
 app.include_router(historical_import_queue_router)
 app.include_router(historical_import_engine_router)
+app.include_router(modus_capture_assistant_router)
 app.include_router(import_wizard_router)
 app.include_router(modus_fixture_import_router)
 app.include_router(modus_capture_manager_router)
