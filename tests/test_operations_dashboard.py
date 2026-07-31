@@ -46,6 +46,19 @@ class OperationsDashboardRouteTests(unittest.TestCase):
         self.assertIn("/admin/historical-imports", response.text)
         self.assertIn("/admin/warehouse-dashboard", response.text)
 
+    def test_operations_dashboard_shows_assistant_status(self):
+        with tempfile.TemporaryDirectory() as root:
+            response = self.client.get(
+                "/operations",
+                params={"capture_root": root},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Capture Assistant", response.text)
+        self.assertIn("Automation status", response.text)
+        self.assertIn("Open Full Assistant", response.text)
+
+
 
 if __name__ == "__main__":
     unittest.main()

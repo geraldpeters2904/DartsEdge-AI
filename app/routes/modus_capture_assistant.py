@@ -4,14 +4,14 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse
 from urllib.parse import quote
 
-from app.services.modus_capture_assistant_service import (
-    ModusCaptureAssistantService,
+from app.services.modus_capture_assistant_runtime import (
+    capture_assistant_service,
 )
 from app.templates_config import templates
 
 
 router = APIRouter()
-assistant_service = ModusCaptureAssistantService()
+assistant_service = capture_assistant_service
 
 
 def _redirect(message: str = ""):

@@ -162,6 +162,106 @@ Operations Dashboard · DartsEdge AI
         <section class="panel">
             <div class="collector-panel-heading">
                 <div>
+                    <p class="eyebrow">CAPTURE ASSISTANT</p>
+                    <h2>Automation status</h2>
+                </div>
+
+                <strong>
+                    {% if dashboard.assistant.running %}
+                        Running
+                    {% else %}
+                        Stopped
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="operations-metrics">
+                <div class="operations-metric">
+                    <span>Expected match</span>
+                    <strong>
+                        {{ dashboard.assistant.expected_match_id or "—" }}
+                    </strong>
+                    <small class="muted">
+                        {{ dashboard.assistant.expected_filename or
+                           "No active item" }}
+                    </small>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Accepted</span>
+                    <strong>
+                        {{ dashboard.assistant.accepted_count }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Rejected</span>
+                    <strong>
+                        {{ dashboard.assistant.rejected_count }}
+                    </strong>
+                </div>
+
+                <div class="operations-metric">
+                    <span>Watch folder</span>
+                    <strong style="font-size: 0.95rem;">
+                        {{ dashboard.assistant.watch_folder or "—" }}
+                    </strong>
+                </div>
+            </div>
+
+            <p class="muted" style="margin-top: 16px;">
+                {{ dashboard.assistant.last_message }}
+            </p>
+
+            <div class="collector-actions">
+                {% if dashboard.assistant.running %}
+                    <form
+                        method="post"
+                        action="/operations/capture-assistant/stop"
+                    >
+                        <input
+                            type="hidden"
+                            name="capture_root"
+                            value="{{ capture_root }}"
+                        >
+                        <button class="button button-danger" type="submit">
+                            Stop Assistant
+                        </button>
+                    </form>
+                {% elif dashboard.active_capture %}
+                    <form
+                        method="post"
+                        action="/operations/capture-assistant/start"
+                    >
+                        <input
+                            type="hidden"
+                            name="capture_root"
+                            value="{{ capture_root }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="watch_folder"
+                            value="~/Downloads"
+                        >
+                        <button class="button button-primary" type="submit">
+                            Start Assistant
+                        </button>
+                    </form>
+                {% endif %}
+
+                <a
+                    class="button"
+                    href="/admin/collector/capture/modus/assistant"
+                >
+                    Open Full Assistant
+                </a>
+            </div>
+        </section>
+
+
+        <section class="panel">
+            <div class="collector-panel-heading">
+                <div>
                     <p class="eyebrow">CAPTURE LIBRARY</p>
                     <h2>Acquisition totals</h2>
                 </div>

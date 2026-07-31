@@ -13,6 +13,12 @@ from app.services.capture_library_service import (
 from app.services.current_capture_session_service import (
     CurrentCaptureSessionService,
 )
+from app.services.modus_capture_assistant_runtime import (
+    capture_assistant_service,
+)
+from app.services.modus_capture_assistant_service import (
+    CaptureAssistantStatus,
+)
 from app.services.warehouse_dashboard_service import (
     WarehouseDashboard,
     WarehouseDashboardService,
@@ -22,6 +28,7 @@ from app.services.warehouse_dashboard_service import (
 @dataclass(frozen=True)
 class OperationsDashboard:
     active_capture: Optional[CaptureLibraryEntry]
+    assistant: CaptureAssistantStatus
     warehouse: WarehouseDashboard
 
     @property
@@ -36,7 +43,7 @@ class OperationsDashboard:
 
 
 class OperationsDashboardService:
-    """Read-only operational summary built from existing DartsEdge services."""
+    """Read-only operational summary built from existing services."""
 
     def __init__(self) -> None:
         self.current_capture_service = CurrentCaptureSessionService()
@@ -59,5 +66,6 @@ class OperationsDashboardService:
 
         return OperationsDashboard(
             active_capture=active_capture,
+            assistant=capture_assistant_service.status(),
             warehouse=warehouse,
         )
