@@ -280,15 +280,25 @@ class ModusCaptureAssistantService:
             "match/" + str(match_id),
             "match_" + str(match_id),
         )
-        if not any(pattern.casefold() in lowered for pattern in id_patterns):
-            return False
+        id_matches = any(
+            pattern.casefold() in lowered
+            for pattern in id_patterns
+        )
 
         names = [
             name.strip().casefold()
             for name in (player_a, player_b)
             if name and name.strip()
         ]
-        return all(name in lowered for name in names)
+        names_match = (
+            len(names) == 2
+            and all(name in lowered for name in names)
+        )
+
+        # Prefer an explicit match ID, but Safari-saved MODUS pages may omit
+        # it from the page source. In that case, require both expected player
+        # names as the safe fallback.
+        return id_matches or names_match
 
     @staticmethod
     def _file_is_stable(path: Path) -> bool:

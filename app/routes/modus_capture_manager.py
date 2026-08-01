@@ -186,3 +186,54 @@ def validate_capture_folder(
             "/admin/collector/capture/modus",
             f"Validation failed: {exc}",
         )
+
+
+@router.get("/admin/collector/capture/modus/status")
+def capture_manager_status(folder: str):
+    try:
+        session = capture_service.load_session(folder)
+
+        return {
+            "ok": True,
+            "destination_folder": str(session.destination_folder),
+            "expected_count": session.expected_count,
+            "captured_count": session.captured_count,
+            "missing_count": session.missing_count,
+            "progress_percent": session.progress_percent,
+            "complete": session.complete,
+            "next_match_id": (
+                session.next_item.match_id
+                if session.next_item is not None
+                else None
+            ),
+            "next_match_number": (
+                session.next_item.match_number
+                if session.next_item is not None
+                else None
+            ),
+            "next_player_a": (
+                session.next_item.player_a_name
+                if session.next_item is not None
+                else None
+            ),
+            "next_player_b": (
+                session.next_item.player_b_name
+                if session.next_item is not None
+                else None
+            ),
+            "next_filename": (
+                session.next_item.destination_filename
+                if session.next_item is not None
+                else None
+            ),
+            "next_source_url": (
+                session.next_item.source_url
+                if session.next_item is not None
+                else None
+            ),
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }

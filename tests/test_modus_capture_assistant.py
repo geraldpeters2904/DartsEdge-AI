@@ -61,6 +61,33 @@ class ModusCaptureAssistantTests(unittest.TestCase):
                 self.assertEqual(self.service.status().accepted_count, 1)
                 self.service.stop()
 
+    def test_accepts_saved_page_with_both_player_names_without_match_id(self):
+        with tempfile.TemporaryDirectory() as destination:
+            with tempfile.TemporaryDirectory() as watch:
+                self.create_session(destination)
+                self.service.start(destination, watch)
+
+                saved = Path(
+                    watch,
+                    "Conan Whitehead vs Jack Smith.html",
+                )
+                saved.write_text(
+                    "<html>Conan Whitehead vs Jack Smith</html>",
+                    encoding="utf-8",
+                )
+
+                self.service.process_once()
+
+                self.assertTrue(
+                    Path(destination, "match_16952.html").is_file()
+                )
+                self.assertEqual(
+                    self.service.status().accepted_count,
+                    1,
+                )
+                self.service.stop()
+
+
     def test_rejects_wrong_match_page(self):
         with tempfile.TemporaryDirectory() as destination:
             with tempfile.TemporaryDirectory() as watch:

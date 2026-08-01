@@ -2,6 +2,87 @@
 
 {% block title %}
 Historical Operations · DartsEdge AI
+<script>
+(function () {
+    "use strict";
+
+    const statusUrl =
+        "/admin/historical-operations/status"
+        + "?root={{ root | urlencode }}";
+
+    let currentState = {
+        runnerStatus: "{{ workflow.runner.status }}",
+        assistantRunning: {{ "true" if workflow.assistant.running else "false" }},
+        workerRunning: {{ "true" if worker.running else "false" }},
+        currentMatchId: {{ workflow.current_match_id | tojson }},
+        currentDestinationFolder:
+            {{ workflow.current_destination_folder | tojson }},
+        processedMatches: {{ workflow.runner.processed_matches }},
+        remainingMatches: {{ workflow.runner.remaining_matches }},
+        totalMatches: {{ workflow.runner.total_matches }},
+        runnerError: {{ workflow.runner.last_error | tojson }},
+        workerError: {{ worker.last_error | tojson }}
+    };
+
+    function meaningfulState(payload) {
+        return {
+            runnerStatus: payload.runner_status,
+            assistantRunning: payload.assistant_running,
+            workerRunning: payload.worker_running,
+            currentMatchId: payload.current_match_id,
+            currentDestinationFolder:
+                payload.current_destination_folder,
+            processedMatches: payload.processed_matches,
+            remainingMatches: payload.remaining_matches,
+            totalMatches: payload.total_matches,
+            runnerError: payload.runner_error,
+            workerError: payload.worker_error
+        };
+    }
+
+    function stateChanged(nextState) {
+        return JSON.stringify(nextState)
+            !== JSON.stringify(currentState);
+    }
+
+    async function pollHistoricalOperations() {
+        try {
+            const response = await fetch(statusUrl, {
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+
+            if (!payload.ok) {
+                return;
+            }
+
+            const nextState = meaningfulState(payload);
+
+            if (stateChanged(nextState)) {
+                currentState = nextState;
+                window.location.reload();
+            }
+
+        } catch (error) {
+            // Ignore temporary network errors and retry.
+        }
+    }
+
+    window.setInterval(
+        pollHistoricalOperations,
+        3000
+    );
+})();
+</script>
+
 {% endblock %}
 
 {% block content %}
@@ -137,6 +218,193 @@ Historical Operations · DartsEdge AI
         <div>
             <strong>Recommended next action</strong>
             <p>{{ operations.next_action }}</p>
+        </div>
+    </section>
+
+    {% if message %}
+        <div class="alert-card" style="margin-top: 18px;">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <section class="panel" style="margin-top: 24px;">
+        <div class="collector-panel-heading">
+            <div>
+                <p class="eyebrow">WORKFLOW CONTROL</p>
+                <h2>Historical runner</h2>
+            </div>
+
+            <span class="collector-step-badge">
+                {{ workflow.status | upper }}
+            </span>
+        </div>
+
+        <div class="operations-metrics">
+            <div class="operations-metric">
+                <span>Runner</span>
+                <strong>{{ workflow.runner.status }}</strong>
+                <small class="muted">
+                    Persistent execution state
+                </small>
+            </div>
+
+            <div class="operations-metric">
+                <span>Current match</span>
+                <strong>
+                    {{ workflow.current_match_id or "—" }}
+                </strong>
+                <small class="muted">
+                    Next missing match
+                </small>
+            </div>
+
+            <div class="operations-metric">
+                <span>Background worker</span>
+                <strong>
+                    {% if worker.running %}
+                        Running
+                    {% else %}
+                        Stopped
+                    {% endif %}
+                </strong>
+                <small class="muted">
+                    {{ worker.iterations }} synchronisations
+                </small>
+            </div>
+
+            <div class="operations-metric">
+                <span>Processed</span>
+                <strong>
+                    {{ workflow.runner.processed_matches }}
+                </strong>
+                <small class="muted">
+                    Captured in batch
+                </small>
+            </div>
+
+            <div class="operations-metric">
+                <span>Remaining</span>
+                <strong>
+                    {{ workflow.runner.remaining_matches }}
+                </strong>
+                <small class="muted">
+                    Still to capture
+                </small>
+            </div>
+        </div>
+
+        {% if workflow.current_destination_folder %}
+            <p class="muted" style="margin-top: 16px;">
+                Current folder:
+                <code>
+                    {{ workflow.current_destination_folder }}
+                </code>
+            </p>
+        {% endif %}
+
+        <p class="muted">
+            {{ workflow.runner.last_message }}
+        </p>
+
+        {% if workflow.runner.last_error %}
+            <div class="alert-card">
+                {{ workflow.runner.last_error }}
+            </div>
+        {% endif %}
+
+        <div class="collector-actions">
+            {% if workflow.runner.can_start and operations.batch %}
+                <form
+                    method="post"
+                    action="/admin/historical-operations/workflow/start"
+                >
+                    <input
+                        type="hidden"
+                        name="root"
+                        value="{{ root }}"
+                    >
+
+                    <label class="collector-field">
+                        <span>Watch folder</span>
+                        <input
+                            type="text"
+                            name="watch_folder"
+                            value="~/Downloads"
+                            required
+                        >
+                    </label>
+
+                    <button
+                        class="button button-primary"
+                        type="submit"
+                    >
+                        Start Workflow
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if workflow.runner.can_pause %}
+                <form
+                    method="post"
+                    action="/admin/historical-operations/workflow/pause"
+                >
+                    <input
+                        type="hidden"
+                        name="root"
+                        value="{{ root }}"
+                    >
+
+                    <button class="button" type="submit">
+                        Pause Workflow
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if workflow.runner.can_resume %}
+                <form
+                    method="post"
+                    action="/admin/historical-operations/workflow/resume"
+                >
+                    <input
+                        type="hidden"
+                        name="root"
+                        value="{{ root }}"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="watch_folder"
+                        value="~/Downloads"
+                    >
+
+                    <button
+                        class="button button-primary"
+                        type="submit"
+                    >
+                        Resume Workflow
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if workflow.runner.can_stop %}
+                <form
+                    method="post"
+                    action="/admin/historical-operations/workflow/stop"
+                >
+                    <input
+                        type="hidden"
+                        name="root"
+                        value="{{ root }}"
+                    >
+
+                    <button
+                        class="button button-danger"
+                        type="submit"
+                    >
+                        Stop Workflow
+                    </button>
+                </form>
+            {% endif %}
         </div>
     </section>
 

@@ -221,11 +221,27 @@ MODUS Capture Manager · DartsEdge AI
                     <a
                         class="button button-primary"
                         href="{{ session.next_item.source_url }}"
-                        target="_blank"
+                        target="dartsedgeCaptureMatch"
                         rel="noopener"
                     >
                         Open Next Match
                     </a>
+
+                    <button
+                        class="button"
+                        id="auto-open-toggle"
+                        type="button"
+                        data-next-url="{{ session.next_item.source_url }}"
+                    >
+                        Enable Auto-open
+                    </button>
+
+                    <span
+                        class="collector-step-badge"
+                        id="auto-open-state"
+                    >
+                        Auto-open off
+                    </span>
                 {% endif %}
 
                 <form method="post" action="/admin/collector/capture/modus/refresh">
@@ -323,4 +339,126 @@ MODUS Capture Manager · DartsEdge AI
     {% endif %}
 
 </div>
+
+{% if session %}
+<script>
+(function () {
+    "use strict";
+
+    const storageKey = "dartsedgeAutoOpenNextMatch";
+    const captureWindowName = "dartsedgeCaptureMatch";
+    const toggle = document.getElementById("auto-open-toggle");
+    const state = document.getElementById("auto-open-state");
+
+    let captured = {{ session.captured_count }};
+
+    function autoOpenEnabled() {
+        return sessionStorage.getItem(storageKey) === "true";
+    }
+
+    function updateControls(message) {
+        if (!toggle || !state) {
+            return;
+        }
+
+        const enabled = autoOpenEnabled();
+        toggle.textContent = enabled
+            ? "Disable Auto-open"
+            : "Enable Auto-open";
+
+        state.textContent = message || (
+            enabled ? "Auto-open on" : "Auto-open off"
+        );
+    }
+
+    if (toggle) {
+        toggle.addEventListener("click", function () {
+            if (autoOpenEnabled()) {
+                sessionStorage.removeItem(storageKey);
+                updateControls("Auto-open off");
+                return;
+            }
+
+            const nextUrl = toggle.dataset.nextUrl;
+            const matchWindow = window.open(
+                nextUrl,
+                captureWindowName
+            );
+
+            if (!matchWindow) {
+                updateControls("Popup blocked");
+                return;
+            }
+
+            sessionStorage.setItem(storageKey, "true");
+            matchWindow.focus();
+            updateControls("Auto-open on");
+        });
+    }
+
+    updateControls();
+
+    async function poll() {
+        try {
+            const response = await fetch(
+                "/admin/collector/capture/modus/status"
+                + "?folder={{ session.destination_folder | urlencode }}",
+                {
+                    cache: "no-store"
+                }
+            );
+
+            if (!response.ok) {
+                return;
+            }
+
+            const status = await response.json();
+
+            if (!status.ok) {
+                return;
+            }
+
+            if (status.captured_count === captured) {
+                return;
+            }
+
+            captured = status.captured_count;
+
+            if (
+                autoOpenEnabled()
+                && !status.complete
+                && status.next_source_url
+            ) {
+                const matchWindow = window.open(
+                    status.next_source_url,
+                    captureWindowName
+                );
+
+                if (matchWindow) {
+                    matchWindow.focus();
+                    updateControls("Opened next match");
+                } else {
+                    sessionStorage.removeItem(storageKey);
+                    updateControls("Popup blocked");
+                }
+            }
+
+            if (status.complete) {
+                sessionStorage.removeItem(storageKey);
+            }
+
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 600);
+
+        } catch (error) {
+            // Ignore temporary network errors and try again.
+        }
+    }
+
+    window.setInterval(poll, 3000);
+})();
+</script>
+{% endif %}
+
 {% endblock %}
