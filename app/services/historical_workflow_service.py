@@ -130,6 +130,18 @@ class HistoricalWorkflowService:
         self._stop_assistant_if_running()
         return self.status(root)
 
+    def capture_iteration(
+        self,
+        root: str | Path,
+    ) -> HistoricalWorkflowStatus:
+        """
+        Execute one workflow iteration.
+
+        This currently delegates to synchronise(). Capture-provider,
+        writer and retry behaviour will be added incrementally.
+        """
+        return self.synchronise(root)
+
     def synchronise(
         self,
         root: str | Path,

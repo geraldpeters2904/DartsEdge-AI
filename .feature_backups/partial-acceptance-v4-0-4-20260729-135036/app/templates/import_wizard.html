@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}
+Import Data · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">GENERIC IMPORT WIZARD</p>
+            <h1>Import Data</h1>
+            <p class="muted collector-introduction">
+                Choose a connector, validate its source and send canonical
+                records into the existing Collector Preview.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/admin/collector/import/modus-fixtures">MODUS Fixtures</a><a class="button" href="/admin/collector">
+                Back to Collector
+            </a>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    <div class="collector-layout">
+
+        <section class="panel collector-upload-panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">STEP 1</p>
+                    <h2>Choose a connector</h2>
+                </div>
+                <span class="collector-step-badge">Source selection</span>
+            </div>
+
+            <form method="post" action="/admin/collector/import/validate">
+                <div class="collector-file-grid">
+                    {% for connector in connectors %}
+                        <label class="collector-file-card">
+                            <span class="collector-file-icon">
+                                {% if connector.connector_id == "modus-official" %}
+                                    🎯
+                                {% elif connector.connector_id == "canonical-csv" %}
+                                    📄
+                                {% elif connector.connector_id == "excel-workbook" %}
+                                    📗
+                                {% elif connector.connector_id == "json-feed" %}
+                                    { }
+                                {% else %}
+                                    🔌
+                                {% endif %}
+                            </span>
+
+                            <span class="collector-file-content">
+                                <strong>{{ connector.name }}</strong>
+                                <code>{{ connector.status_label }}</code>
+                                <small>{{ connector.description }}</small>
+
+                                <input
+                                    type="radio"
+                                    name="connector_id"
+                                    value="{{ connector.connector_id }}"
+                                    {% if selected_connector == connector.connector_id %}
+                                        checked
+                                    {% endif %}
+                                    {% if not connector.enabled %}
+                                        disabled
+                                    {% endif %}
+                                >
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="collector-form-grid" style="margin-top: 20px;">
+                    <label class="collector-field">
+                        <span>Saved source folder</span>
+                        <input
+                            type="text"
+                            name="source_path"
+                            value="{{ source_path }}"
+                            placeholder="~/Downloads/MODUS_Week13_GroupA"
+                        >
+                        <small>
+                            For MODUS Official, enter the folder containing
+                            results.html and match_&lt;id&gt;.html files.
+                        </small>
+                    </label>
+                </div>
+
+                <div class="collector-safety-box">
+                    <div class="collector-safety-icon">🛡️</div>
+                    <div>
+                        <strong>Validation does not write warehouse data</strong>
+                        <p>
+                            The wizard checks completeness, players, scores and
+                            canonical compatibility before creating a preview.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="collector-actions">
+                    <button class="button button-primary" type="submit">
+                        Validate source
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="panel collector-workflow-panel">
+            <p class="eyebrow">CONNECTOR CONTRACT</p>
+            <h2>One workflow, many sources</h2>
+
+            <ol class="collector-workflow-list">
+                <li class="collector-workflow-active">
+                    <span>1</span>
+                    <div>
+                        <strong>Validate source</strong>
+                        <small>Connector-specific discovery and quality checks.</small>
+                    </div>
+                </li>
+                <li>
+                    <span>2</span>
+                    <div>
+                        <strong>Build canonical data</strong>
+                        <small>Fixtures, results and statistics use shared schemas.</small>
+                    </div>
+                </li>
+                <li>
+                    <span>3</span>
+                    <div>
+                        <strong>Collector Preview</strong>
+                        <small>Commit, cancel and rollback remain unchanged.</small>
+                    </div>
+                </li>
+            </ol>
+        </aside>
+
+    </div>
+
+    {% if validation %}
+        <section class="panel collector-history-panel" style="margin-top: 24px;">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">STEP 2</p>
+                    <h2>Validation report</h2>
+                </div>
+
+                <span class="collector-step-badge">
+                    {% if validation.ready %}Ready{% else %}Action required{% endif %}
+                </span>
+            </div>
+
+            <div class="collector-summary-grid">
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Series</span>
+                    <strong>{{ validation.series_label or "—" }}</strong>
+                    <span class="collector-summary-detail">
+                        {{ validation.week_label or "No week" }}
+                    </span>
+                </div>
+
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Group</span>
+                    <strong>{{ validation.group or "—" }}</strong>
+                    <span class="collector-summary-detail">Saved results context</span>
+                </div>
+
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Expected</span>
+                    <strong>{{ validation.expected_count }}</strong>
+                    <span class="collector-summary-detail">Match pages</span>
+                </div>
+
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Validated</span>
+                    <strong>{{ validation.validated_count }}</strong>
+                    <span class="collector-summary-detail">
+                        {% if validation.ready %}All checks passed{% else %}Review issues below{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            {% if validation.issues %}
+                <div class="table-wrap" style="margin-top: 20px;">
+                    <table class="collector-history-table">
+                        <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Code</th>
+                                <th>File</th>
+                                <th>Match</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for issue in validation.issues %}
+                                <tr>
+                                    <td>{{ issue.severity }}</td>
+                                    <td><code>{{ issue.code }}</code></td>
+                                    <td>{{ issue.filename or "—" }}</td>
+                                    <td>{{ issue.match_id or "—" }}</td>
+                                    <td>{{ issue.message }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            {% if validation.ready %}
+                <form method="post" action="/admin/collector/import/preview">
+                    <input type="hidden" name="connector_id" value="{{ selected_connector }}">
+                    <input type="hidden" name="source_path" value="{{ source_path }}">
+
+                    <div class="collector-safety-box" style="margin-top: 20px;">
+                        <div class="collector-safety-icon">✓</div>
+                        <div>
+                            <strong>Source is ready</strong>
+                            <p>
+                                Canonical records will now be built in memory and
+                                passed to the existing Collector Preview.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="collector-actions">
+                        <button class="button button-primary" type="submit">
+                            Create Collector Preview
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+    {% endif %}
+
+</div>
+{% endblock %}

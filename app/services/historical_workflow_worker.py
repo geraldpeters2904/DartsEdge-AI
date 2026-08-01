@@ -172,7 +172,7 @@ class HistoricalWorkflowWorker:
     ) -> None:
         while not stop_event.wait(self.interval_seconds):
             try:
-                workflow = self.workflow_service.synchronise(
+                workflow = self.workflow_service.capture_iteration(
                     root
                 )
 

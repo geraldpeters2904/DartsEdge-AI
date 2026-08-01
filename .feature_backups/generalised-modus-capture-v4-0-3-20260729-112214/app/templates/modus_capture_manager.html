@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}
+MODUS Capture Manager · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/collector.css?v=1">
+
+<style>
+.capture-progress-track {
+    width: 100%;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.09);
+    overflow: hidden;
+    margin: 18px 0 8px;
+}
+.capture-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d3a62d, #f1d36b);
+    transition: width 0.25s ease;
+}
+.capture-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.9rem;
+}
+.capture-queue-current {
+    outline: 2px solid rgba(211,166,45,0.7);
+    outline-offset: -2px;
+}
+</style>
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">BROWSER-ASSISTED CAPTURE</p>
+            <h1>MODUS Capture Manager</h1>
+            <p class="muted collector-introduction">
+                Capture Series 14, Week 1, Group A one match at a time,
+                with progress, resume and validation built in.
+            </p>
+        </div>
+
+        <div class="collector-actions">
+            <a class="button" href="/admin/collector/import">Import Data</a><a class="button" href="/admin/collector/captures">Capture Library</a>
+            <a class="button" href="/admin/collector">Collector</a>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    <div class="collector-layout">
+
+        <section class="panel collector-upload-panel">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">STEP 1</p>
+                    <h2>Build a capture queue</h2>
+                </div>
+                <span class="collector-step-badge">
+                    Series 14 · Week 1 · Group A
+                </span>
+            </div>
+
+            <form
+                method="post"
+                enctype="multipart/form-data"
+                action="/admin/collector/capture/modus/build"
+            >
+                <div class="collector-form-grid">
+                    <label class="collector-field">
+                        <span>Saved MODUS results page</span>
+                        <input
+                            type="file"
+                            name="results_file"
+                            accept=".html,text/html"
+                            required
+                        >
+                    </label>
+
+                    <label class="collector-field">
+                        <span>Destination folder</span>
+                        <input
+                            type="text"
+                            name="destination_folder"
+                            value="{{ destination_folder }}"
+                            placeholder="~/Documents/DartsEdge/Imports/Series_14/Week_01/Group_A"
+                            required
+                        >
+                    </label>
+                </div>
+
+                <div class="collector-actions">
+                    <button class="button button-primary" type="submit">
+                        Build Queue
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="panel collector-workflow-panel">
+            <p class="eyebrow">WORKFLOW</p>
+            <h2>Capture, refresh, validate</h2>
+
+            <ol class="collector-workflow-list">
+                <li class="collector-workflow-active">
+                    <span>1</span>
+                    <div>
+                        <strong>Open next match</strong>
+                        <small>Save with the filename shown.</small>
+                    </div>
+                </li>
+                <li>
+                    <span>2</span>
+                    <div>
+                        <strong>Refresh progress</strong>
+                        <small>The first missing match becomes next.</small>
+                    </div>
+                </li>
+                <li>
+                    <span>3</span>
+                    <div>
+                        <strong>Validate and import</strong>
+                        <small>Use the existing safe Collector workflow.</small>
+                    </div>
+                </li>
+            </ol>
+        </aside>
+
+    </div>
+
+    {% if session %}
+        <section class="panel collector-history-panel" style="margin-top: 24px;">
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">ACTIVE SESSION</p>
+                    <h2>
+                        {{ session.series_label }} ·
+                        {{ session.week_label }} ·
+                        {{ session.group }}
+                    </h2>
+                </div>
+
+                <span class="collector-step-badge">
+                    {{ session.progress_percent }}%
+                </span>
+            </div>
+
+            <div class="capture-progress-track">
+                <div
+                    class="capture-progress-fill"
+                    style="width: {{ session.progress_percent }}%;"
+                ></div>
+            </div>
+            <div class="capture-progress-meta">
+                <span>{{ session.captured_count }} captured</span>
+                <span>{{ session.missing_count }} missing</span>
+                <strong>{{ session.captured_count }} / {{ session.expected_count }}</strong>
+            </div>
+
+            <div class="collector-summary-grid" style="margin-top: 18px;">
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Expected</span>
+                    <strong>{{ session.expected_count }}</strong>
+                    <span class="collector-summary-detail">Match pages</span>
+                </div>
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Captured</span>
+                    <strong>{{ session.captured_count }}</strong>
+                    <span class="collector-summary-detail">Files found</span>
+                </div>
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Missing</span>
+                    <strong>{{ session.missing_count }}</strong>
+                    <span class="collector-summary-detail">Still to save</span>
+                </div>
+                <div class="collector-summary-card">
+                    <span class="collector-summary-label">Status</span>
+                    <strong>
+                        {% if session.complete %}Complete{% else %}In progress{% endif %}
+                    </strong>
+                    <span class="collector-summary-detail">Resume-safe</span>
+                </div>
+            </div>
+
+            {% if session.next_item %}
+                <div class="collector-safety-box" style="margin-top: 20px;">
+                    <div class="collector-safety-icon">➡️</div>
+                    <div>
+                        <strong>
+                            Next: Match {{ session.next_item.match_number or "—" }}
+                            · {{ session.next_item.player_a_name }}
+                            v {{ session.next_item.player_b_name }}
+                        </strong>
+                        <p>
+                            Save as
+                            <code>{{ session.next_item.destination_filename }}</code>
+                            inside
+                            <code>{{ session.destination_folder }}</code>.
+                        </p>
+                    </div>
+                </div>
+            {% else %}
+                <div class="collector-safety-box" style="margin-top: 20px;">
+                    <div class="collector-safety-icon">✓</div>
+                    <div>
+                        <strong>Capture complete</strong>
+                        <p>All expected match-page files are present.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="collector-actions">
+                {% if session.next_item %}
+                    <a
+                        class="button button-primary"
+                        href="{{ session.next_item.source_url }}"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        Open Next Match
+                    </a>
+                {% endif %}
+
+                <form method="post" action="/admin/collector/capture/modus/refresh">
+                    <input type="hidden" name="destination_folder" value="{{ session.destination_folder }}">
+                    <button class="button" type="submit">Refresh Progress</button>
+                </form>
+
+                <form method="post" action="/admin/collector/capture/modus/open-folder">
+                    <input type="hidden" name="destination_folder" value="{{ session.destination_folder }}">
+                    <button class="button" type="submit">Open Folder</button>
+                </form>
+
+                {% if session.complete %}
+                    <form method="post" action="/admin/collector/capture/modus/validate">
+                        <input type="hidden" name="destination_folder" value="{{ session.destination_folder }}">
+                        <button class="button button-primary" type="submit">
+                            Validate Folder
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+
+            {% if validation %}
+                <div class="collector-safety-box" style="margin-top: 20px;">
+                    <div class="collector-safety-icon">
+                        {% if validation.ready %}✓{% else %}⚠️{% endif %}
+                    </div>
+                    <div>
+                        <strong>
+                            {% if validation.ready %}
+                                Folder ready for import
+                            {% else %}
+                                Folder has validation issues
+                            {% endif %}
+                        </strong>
+                        <p>
+                            {{ validation.validated_count }}
+                            of {{ validation.expected_count }}
+                            match pages validated.
+                        </p>
+                    </div>
+                </div>
+
+                {% if validation.ready %}
+                    <div class="collector-actions">
+                        <a
+                            class="button button-primary"
+                            href="/admin/collector/import"
+                        >
+                            Continue to Import Wizard
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <div class="table-wrap" style="margin-top: 20px;">
+                <table class="collector-history-table">
+                    <thead>
+                        <tr>
+                            <th>Match</th>
+                            <th>ID</th>
+                            <th>Players</th>
+                            <th>Filename</th>
+                            <th>Status</th>
+                            <th>Open</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in session.items %}
+                            <tr
+                                {% if session.next_item and item.match_id == session.next_item.match_id %}
+                                    class="capture-queue-current"
+                                {% endif %}
+                            >
+                                <td>{{ item.match_number or "—" }}</td>
+                                <td><code>{{ item.match_id }}</code></td>
+                                <td>
+                                    {{ item.player_a_name }} v {{ item.player_b_name }}
+                                </td>
+                                <td><code>{{ item.destination_filename }}</code></td>
+                                <td>
+                                    {% if item.captured %}✓ Captured{% else %}Missing{% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ item.source_url }}" target="_blank" rel="noopener">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}
+Data Collection Centre · DartsEdge AI
+{% endblock %}
+
+{% block content %}
+
+<link
+    rel="stylesheet"
+    href="/static/css/collector.css?v=1"
+>
+
+<div class="page-shell collector-shell">
+
+    <div class="page-header collector-header">
+        <div>
+            <p class="eyebrow">DATA ACQUISITION</p>
+
+            <h1>Data Collection Centre</h1>
+
+            <p class="muted collector-introduction">
+                Upload fixtures, results, player statistics and bookmaker
+                odds through one controlled data workflow.
+            </p>
+        </div>
+
+        <div class="collector-actions"><a class="button" href="/admin/collector/import/modus-fixtures">MODUS Fixtures</a><a class="button" href="/admin/warehouse-dashboard">Warehouse Dashboard</a><a class="button button-primary" href="/admin/collector/import">Import Data</a><a class="button" href="/admin/collector/capture/modus">MODUS Capture</a><a class="button" href="/admin/collector/captures">Capture Library</a><a class="button" href="/admin/research">Collect MODUS data</a><div class="collector-header-status"><span class="collector-status-dot"></span>Collector backend ready</div></div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <div class="collector-summary-grid">
+
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">
+                Supported feeds
+            </span>
+
+            <strong>4</strong>
+
+            <span class="collector-summary-detail">
+                Canonical CSV formats
+            </span>
+        </div>
+
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">
+                Recent batches
+            </span>
+
+            <strong>
+                {{ dashboard.recent_batches }}
+            </strong>
+
+            <span class="collector-summary-detail">
+                Latest 15 shown
+            </span>
+        </div>
+
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">
+                Imported
+            </span>
+
+            <strong>
+                {{ dashboard.imported_batches }}
+            </strong>
+
+            <span class="collector-summary-detail">
+                Active recent batches
+            </span>
+        </div>
+
+        <div class="collector-summary-card">
+            <span class="collector-summary-label">
+                Records received
+            </span>
+
+            <strong>
+                {{ dashboard.received_records }}
+            </strong>
+
+            <span class="collector-summary-detail">
+                Across recent batches
+            </span>
+        </div>
+
+    </div>
+
+    <div class="collector-layout">
+
+        <section class="panel collector-upload-panel">
+
+            <div class="collector-panel-heading">
+                <div>
+                    <p class="eyebrow">NEW COLLECTION</p>
+                    <h2>Prepare an import</h2>
+                </div>
+
+                <span class="collector-step-badge">
+                    Step 1 of 3
+                </span>
+            </div>
+
+            <form
+                class="collector-form"
+                method="post"
+                enctype="multipart/form-data"
+                action="/admin/collector/preview"
+            >
+
+                <div class="collector-form-grid">
+
+                    <label class="collector-field">
+                        <span>Provider</span>
+
+                        <input
+                            type="text"
+                            name="provider"
+                            value="manual-research"
+                            required
+                        >
+
+                        <small>
+                            Identifies the source of the uploaded data.
+                        </small>
+                    </label>
+
+                    <label class="collector-field">
+                        <span>Competition</span>
+
+                        <select name="competition">
+                            {% for code, label in competitions %}
+                                <option value="{{ code }}">
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <small>
+                            Used as the default competition context.
+                        </small>
+                    </label>
+
+                </div>
+
+                <div class="collector-file-grid">
+
+                    {% for file in supported_files %}
+
+                        <label class="collector-file-card">
+
+                            <span class="collector-file-icon">
+                                {{ file.icon }}
+                            </span>
+
+                            <span class="collector-file-content">
+
+                                <strong>
+                                    {{ file.label }}
+                                </strong>
+
+                                <code>
+                                    {{ file.filename }}
+                                </code>
+
+                                <small>
+                                    {{ file.description }}
+                                </small>
+
+                                <input
+                                    type="file"
+                                    name="{{ file.entity_type }}_file"
+                                    accept=".csv,text/csv"
+                                >
+
+                            </span>
+
+                        </label>
+
+                    {% endfor %}
+
+                </div>
+
+                <div class="collector-safety-box">
+
+                    <div class="collector-safety-icon">
+                        🛡️
+                    </div>
+
+                    <div>
+                        <strong>
+                            No database writes during preview
+                        </strong>
+
+                        <p>
+                            Files will be parsed, mapped and validated
+                            before an import can be committed.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="collector-actions">
+
+                    <button
+                        class="button button-primary"
+                        type="submit"
+                    >
+                        Preview import
+                    </button>
+
+                    <span class="collector-coming-next">
+                        Select at least one canonical CSV file.
+                    </span>
+
+                </div>
+
+            </form>
+
+        </section>
+
+        <aside class="panel collector-workflow-panel">
+
+            <p class="eyebrow">WORKFLOW</p>
+            <h2>Safe collection process</h2>
+
+            <ol class="collector-workflow-list">
+
+                <li class="collector-workflow-active">
+                    <span>1</span>
+
+                    <div>
+                        <strong>Select data</strong>
+                        <small>
+                            Choose any combination of the four
+                            canonical CSV files.
+                        </small>
+                    </div>
+                </li>
+
+                <li>
+                    <span>2</span>
+
+                    <div>
+                        <strong>Preview quality</strong>
+                        <small>
+                            Review accepted rows, errors, warnings and
+                            duplicate records.
+                        </small>
+                    </div>
+                </li>
+
+                <li>
+                    <span>3</span>
+
+                    <div>
+                        <strong>Commit safely</strong>
+                        <small>
+                            Import the validated session as one tracked,
+                            reversible batch.
+                        </small>
+                    </div>
+                </li>
+
+            </ol>
+
+            <div class="collector-capability-list">
+
+                <div>
+                    <span>✓</span>
+                    Canonical schema validation
+                </div>
+
+                <div>
+                    <span>✓</span>
+                    Duplicate protection
+                </div>
+
+                <div>
+                    <span>✓</span>
+                    Raw data retention
+                </div>
+
+                <div>
+                    <span>✓</span>
+                    Field provenance
+                </div>
+
+                <div>
+                    <span>✓</span>
+                    Batch rollback
+                </div>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+    <section class="panel collector-history-panel">
+
+        <div class="collector-panel-heading">
+
+            <div>
+                <p class="eyebrow">WAREHOUSE ACTIVITY</p>
+                <h2>Recent import batches</h2>
+            </div>
+
+            <a
+                class="button"
+                href="/admin/imports"
+            >
+                Open full history
+            </a>
+
+        </div>
+
+        <div class="table-wrap">
+
+            <table class="collector-history-table">
+
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>File</th>
+                        <th>Provider</th>
+                        <th>Status</th>
+                        <th>Received</th>
+                        <th>Matches</th>
+                        <th>Duplicates</th>
+                        <th>Rejected</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for batch in batches %}
+
+                        <tr>
+                            <td>
+                                <code>
+                                    {{ batch.batch_uuid[:8] }}
+                                </code>
+                            </td>
+
+                            <td>
+                                {{ batch.filename }}
+                            </td>
+
+                            <td>
+                                {{ batch.provider }}
+                            </td>
+
+                            <td>
+                                <span
+                                    class="collector-batch-status
+                                    collector-batch-status-{{ batch.status }}"
+                                >
+                                    {{ batch.status }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ batch.received_rows }}
+                            </td>
+
+                            <td>
+                                {{ batch.created_matches }}
+                            </td>
+
+                            <td>
+                                {{ batch.duplicate_matches }}
+                            </td>
+
+                            <td>
+                                {{ batch.rejected_rows }}
+                            </td>
+
+                            <td>
+                                {% if batch.status == "imported" %}
+                                    <form
+                                        method="post"
+                                        action="/admin/collector/batches/{{ batch.id }}/rollback"
+                                    >
+                                        <button
+                                            class="button button-danger"
+                                            type="submit"
+                                        >
+                                            Rollback
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+                            <td
+                                colspan="9"
+                                class="collector-empty-state"
+                            >
+                                <strong>
+                                    No import batches yet
+                                </strong>
+
+                                <span>
+                                    Your completed collection sessions
+                                    will appear here.
+                                </span>
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

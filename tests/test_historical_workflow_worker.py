@@ -31,6 +31,9 @@ class FakeWorkflowService:
 
         return FakeWorkflowStatus(self.status)
 
+    def capture_iteration(self, root):
+        return self.synchronise(root)
+
 
 class HistoricalWorkflowWorkerTests(unittest.TestCase):
     def setUp(self):

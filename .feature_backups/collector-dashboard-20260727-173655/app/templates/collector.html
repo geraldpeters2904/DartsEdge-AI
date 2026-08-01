@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Data Collection Centre · DartsEdge AI{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">DATA ACQUISITION</p>
+            <h1>Data Collection Centre</h1>
+            <p class="muted">
+                Preview canonical darts data before importing it into the
+                DartsEdge warehouse.
+            </p>
+        </div>
+    </div>
+
+    {% if message %}
+        <div class="alert-card">{{ message }}</div>
+    {% endif %}
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <span>Import method</span>
+            <strong>Canonical CSV</strong>
+        </div>
+
+        <div class="summary-card">
+            <span>Database writes</span>
+            <strong>Preview only</strong>
+        </div>
+
+        <div class="summary-card">
+            <span>Supported competitions</span>
+            <strong>6</strong>
+        </div>
+
+        <div class="summary-card">
+            <span>Required files</span>
+            <strong>Any combination</strong>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Canonical collector</h2>
+
+        <p class="muted">
+            Upload support will be added in the next step. The collector will
+            accept any combination of the following files:
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Purpose</th>
+                        <th>Required?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>fixtures.csv</code></td>
+                        <td>Scheduled matches and participants</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td><code>results.csv</code></td>
+                        <td>Final scores, winner, first leg and first 180</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td><code>statistics.csv</code></td>
+                        <td>Averages, checkouts and scoring statistics</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td><code>odds.csv</code></td>
+                        <td>Bookmaker market-price snapshots</td>
+                        <td>No</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Import safety</h2>
+        <p class="muted">
+            Files will be parsed, mapped into canonical records and validated
+            before any database changes are permitted.
+        </p>
+
+        <a class="button" href="/admin/imports">
+            Open Historical Import Centre
+        </a>
+    </div>
+</div>
+{% endblock %}
