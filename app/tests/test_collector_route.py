@@ -14,7 +14,6 @@ class CollectorRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Data Collection Centre", response.text)
-        self.assertIn("Canonical collector", response.text)
 
     def test_collector_page_lists_supported_files(self):
         response = client.get("/admin/collector")
@@ -24,11 +23,14 @@ class CollectorRouteTests(unittest.TestCase):
         self.assertIn("statistics.csv", response.text)
         self.assertIn("odds.csv", response.text)
 
-    def test_navigation_contains_collector_link(self):
+    def test_collector_page_contains_collection_actions(self):
         response = client.get("/admin/collector")
 
-        self.assertIn('href="/admin/collector"', response.text)
-        self.assertIn("Data Collection", response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('href="/admin/collector/import"', response.text)
+        self.assertIn('href="/admin/collector/capture/modus"', response.text)
+        self.assertIn("Import Data", response.text)
+        self.assertIn("MODUS Capture", response.text)
 
 
 if __name__ == "__main__":
