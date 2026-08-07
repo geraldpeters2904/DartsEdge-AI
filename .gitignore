@@ -2,3 +2,66 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+
+# ============================================================
+# DartsEdge local/generated artifacts
+# Added by Repository Cleanup Sprint R1
+# ============================================================
+
+# Python
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+
+# macOS / editors
+.vscode/
+.idea/
+
+# Runtime databases and SQLite sidecars
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+# Generated archives
+*.zip
+
+# Local backup trees
+.feature_backups/
+.release_backups/
+.sprint_backups/
+.rollback/
+
+# Local backup marker files
+.last_*_backup
+.last_*_backup.txt
+*_last_backup
+latest-*.txt
+latest_*.txt
+
+# File-level safety copies created during development
+*.before_*
+*.before-*
+*.bak
+*.backup
+
+# Local capture diagnostics / temporary browser output
+/tmp/
+tmp/
+*.log
+
+# Local generated imports / captures, if created inside backend
+captures/
+downloads/
+
+# One-off development installers / repair scripts
+apply_*.sh
+repair_*.sh
+switch_*.sh
+dartsedge_cleanup.sh

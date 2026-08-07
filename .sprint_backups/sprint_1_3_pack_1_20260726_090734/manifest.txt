@@ -1,5 +1,0 @@
-app/providers
-app/services/data_provider_service.py
-app/routes/data_providers.py
-app/templates/data_providers.html
-tests/test_data_provider_framework.py
