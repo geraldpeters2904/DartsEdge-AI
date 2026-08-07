@@ -35,6 +35,7 @@ class CaptureResult:
     page_title: Optional[str] = None
     captured_at: Optional[str] = None
     error: Optional[str] = None
+    bytes_written: Optional[int] = None
 
     @property
     def successful(self) -> bool:

@@ -62,10 +62,91 @@ class ModusRealMatchParserTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing statistics: 180s"):
             self.parser.parse(broken, match_id=18195)
 
-    def test_checkout_percentage_is_validated(self):
-        broken = self.html.replace('50<small>%</small>', '40<small>%</small>', 1)
-        with self.assertRaisesRegex(ValueError, "does not match"):
-            self.parser.parse(broken, match_id=18195)
+
+    def test_accepts_whole_number_checkout_rounding(self):
+        rounded = self.html.replace(
+            '<div class="stat-left highlight">4/8</div>',
+            '<div class="stat-left highlight">1/19</div>',
+            1,
+        ).replace(
+            '50<small>%</small>',
+            '5<small>%</small>',
+            1,
+        )
+
+        stats = self.parser.parse(
+            rounded,
+            match_id=18195,
+        ).player_a_stats
+
+        self.assertEqual(stats.checkouts_completed, 1)
+        self.assertEqual(stats.checkout_attempts, 19)
+        self.assertEqual(stats.checkout_percentage, 5.0)
+
+
+    def test_accepts_whole_number_checkout_truncation(self):
+        truncated = self.html.replace(
+            '<div class="stat-right ">2/3</div>',
+            '<div class="stat-right ">4/6</div>',
+            1,
+        ).replace(
+            '66.67<small>%</small>',
+            '66<small>%</small>',
+            1,
+        )
+
+        stats = self.parser.parse(
+            truncated,
+            match_id=18195,
+        ).player_b_stats
+
+        self.assertEqual(stats.checkouts_completed, 4)
+        self.assertEqual(stats.checkout_attempts, 6)
+        self.assertEqual(stats.checkout_percentage, 66.0)
+
+    def test_accepts_decimal_checkout_rounding(self):
+        stats = self.parser.parse(
+            self.html,
+            match_id=18195,
+        ).player_b_stats
+
+        self.assertEqual(stats.checkouts_completed, 2)
+        self.assertEqual(stats.checkout_attempts, 3)
+        self.assertEqual(stats.checkout_percentage, 66.67)
+
+    def test_recovers_percentage_outside_display_rounding(self):
+        broken = self.html.replace(
+            '50<small>%</small>',
+            '49<small>%</small>',
+            1,
+        )
+
+        parsed = self.parser.parse(
+            broken,
+            match_id=18195,
+        )
+
+        self.assertEqual(
+            parsed.player_a_stats.checkout_percentage,
+            50.0,
+        )
+
+    def test_checkout_percentage_uses_fraction_when_page_disagrees(self):
+        broken = self.html.replace(
+            '50<small>%</small>',
+            '40<small>%</small>',
+            1,
+        )
+
+        parsed = self.parser.parse(
+            broken,
+            match_id=18195,
+        )
+
+        self.assertEqual(
+            parsed.player_a_stats.checkout_percentage,
+            50.0,
+        )
 
 
 if __name__ == "__main__":

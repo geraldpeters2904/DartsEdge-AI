@@ -80,5 +80,34 @@ class OperationsDashboardServiceTests(unittest.TestCase):
         )
 
 
+    def test_dashboard_includes_empty_capture_history(self):
+        with tempfile.TemporaryDirectory() as root:
+            dashboard = self.service.build(
+                self.db,
+                capture_root=root,
+            )
+
+        self.assertEqual(
+            dashboard.capture_history.total_iterations,
+            0,
+        )
+        self.assertEqual(
+            dashboard.capture_history.successful_iterations,
+            0,
+        )
+        self.assertEqual(
+            dashboard.capture_history.waiting_iterations,
+            0,
+        )
+        self.assertEqual(
+            dashboard.capture_history.failed_iterations,
+            0,
+        )
+        self.assertEqual(
+            dashboard.capture_history.recent_records,
+            [],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

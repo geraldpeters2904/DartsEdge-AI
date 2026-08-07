@@ -35,11 +35,11 @@ class CaptureWriter:
             destination.name + ".part"
         )
 
+        html = result.html or ""
+        encoded_html = html.encode("utf-8")
+
         try:
-            temporary.write_text(
-                result.html or "",
-                encoding="utf-8",
-            )
+            temporary.write_bytes(encoded_html)
             temporary.replace(destination)
         except Exception:
             if temporary.exists():
@@ -56,6 +56,7 @@ class CaptureWriter:
                 f"{request.destination_filename}."
             ),
             error=None,
+            bytes_written=len(encoded_html),
         )
 
     @staticmethod

@@ -44,7 +44,9 @@ class ModusRealMatchPageParser:
                 "its HTML. Pass match_id explicitly from the source URL "
                 "or saved file name."
             )
+
         match_id = int(match_id)
+
         if match_id <= 0:
             raise ValueError("match_id must be greater than zero.")
 
@@ -52,20 +54,19 @@ class ModusRealMatchPageParser:
             raise ValueError(
                 "Saved MODUS match page does not contain exactly two players."
             )
+
         if len(parser.scores) != 2:
             raise ValueError(
                 "Saved MODUS match page does not contain a complete score."
             )
+
         if not parser.series_label:
             raise ValueError(
                 "Saved MODUS match page does not contain a Series label."
             )
-        if not parser.group:
-            raise ValueError(
-                "Saved MODUS match page does not contain a Group label."
-            )
 
         missing = self.REQUIRED_STATS - set(parser.stat_rows)
+
         if missing:
             raise ValueError(
                 "Saved MODUS match page is missing statistics: "
@@ -73,8 +74,6 @@ class ModusRealMatchPageParser:
             )
 
         player_a, player_b = parser.players
-        stats_a = _build_stats(player_a, 0, parser.stat_rows)
-        stats_b = _build_stats(player_b, 1, parser.stat_rows)
 
         return ModusMatchDetailRecord(
             match_id=match_id,
@@ -82,8 +81,16 @@ class ModusRealMatchPageParser:
             player_b_name=player_b,
             player_a_legs=parser.scores[0],
             player_b_legs=parser.scores[1],
-            player_a_stats=stats_a,
-            player_b_stats=stats_b,
+            player_a_stats=_build_stats(
+                player_a,
+                0,
+                parser.stat_rows,
+            ),
+            player_b_stats=_build_stats(
+                player_b,
+                1,
+                parser.stat_rows,
+            ),
             played_at=parser.played_at,
             series_label=parser.series_label,
             week_label=parser.week_label,
@@ -94,6 +101,7 @@ class ModusRealMatchPageParser:
 class _DocumentParser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
+
         self.players = []
         self.scores = []
         self.stat_rows = {}
@@ -110,11 +118,17 @@ class _DocumentParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        classes = set((attrs.get("class") or "").split())
+        classes = set(
+            (attrs.get("class") or "").split()
+        )
 
         if tag == "div" and "meta" in classes:
             self._in_meta = True
-        elif tag == "a" and self._in_meta and "tab" in classes:
+        elif (
+            tag == "a"
+            and self._in_meta
+            and "tab" in classes
+        ):
             self._start_capture("meta")
         elif tag == "p" and "mobile-date" in classes:
             self._start_capture("date")
@@ -125,7 +139,11 @@ class _DocumentParser(HTMLParser):
         elif tag == "span" and self._in_score_area:
             self._start_capture("score")
         elif tag == "div" and "stat-row" in classes:
-            self._row = {"left": None, "label": None, "right": None}
+            self._row = {
+                "left": None,
+                "label": None,
+                "right": None,
+            }
         elif tag == "div" and self._row is not None:
             if "stat-left" in classes:
                 self._start_capture("left")
@@ -140,10 +158,17 @@ class _DocumentParser(HTMLParser):
 
     def handle_endtag(self, tag):
         if self._capture and (
-            (self._capture in {"meta"} and tag == "a")
+            (self._capture == "meta" and tag == "a")
             or (self._capture == "date" and tag == "p")
-            or (self._capture in {"player", "left", "label", "right"} and tag == "div")
-            or (self._capture == "score" and tag == "span")
+            or (
+                self._capture
+                in {"player", "left", "label", "right"}
+                and tag == "div"
+            )
+            or (
+                self._capture == "score"
+                and tag == "span"
+            )
         ):
             kind = self._capture
             value = _clean(self._buffer)
@@ -154,11 +179,21 @@ class _DocumentParser(HTMLParser):
         if tag == "div" and self._in_score_area:
             self._in_score_area = False
 
-        if tag == "div" and self._row is not None and all(
-            self._row.get(key) is not None for key in ("left", "label", "right")
+        if (
+            tag == "div"
+            and self._row is not None
+            and all(
+                self._row.get(key) is not None
+                for key in ("left", "label", "right")
+            )
         ):
-            label = _normalise_label(self._row["label"])
-            self.stat_rows[label] = (self._row["left"], self._row["right"])
+            label = _normalise_label(
+                self._row["label"]
+            )
+            self.stat_rows[label] = (
+                self._row["left"],
+                self._row["right"],
+            )
             self._row = None
 
         if tag == "div" and self._in_meta:
@@ -171,9 +206,11 @@ class _DocumentParser(HTMLParser):
     def _finish_capture(self, kind, value):
         if not value:
             return
+
         if kind == "meta":
             if value.lower() == "back":
                 return
+
             if value.startswith("Series "):
                 self.series_label = value
             elif value.startswith("Week "):
@@ -182,77 +219,183 @@ class _DocumentParser(HTMLParser):
                 self.group = value
             elif "/" in value and self.played_at is None:
                 self.played_at = _parse_datetime(value)
+
         elif kind == "date" and self.played_at is None:
             self.played_at = _parse_datetime(value)
         elif kind == "player":
             self.players.append(value)
         elif kind == "score":
             self.scores.append(int(value))
-        elif kind in {"left", "label", "right"} and self._row is not None:
+        elif (
+            kind in {"left", "label", "right"}
+            and self._row is not None
+        ):
             self._row[kind] = value
 
 
 def _build_stats(player_name, index, rows):
-    completed, attempts = _parse_fraction(rows["checkouts"][index])
-    percentage = _parse_percentage(rows["checkout %"][index])
-    calculated = round(completed / attempts * 100, 2) if attempts else 0.0
-    if abs(calculated - percentage) > 0.1:
-        raise ValueError(
-            f"Checkout percentage for {player_name} does not match "
-            "completed/attempted checkouts."
+    completed, attempts, percentage = (
+        _parse_checkout_statistics(
+            player_name=player_name,
+            fraction=rows["checkouts"][index],
+            percentage=rows["checkout %"][index],
         )
+    )
 
     return ModusPlayerMatchStats(
         player_name=player_name,
-        three_dart_average=_parse_average(rows["average"][index]),
+        three_dart_average=_parse_average(
+            rows["average"][index]
+        ),
         scores_100_plus=int(rows["100+"][index]),
         scores_140_plus=int(rows["140+"][index]),
         scores_180=int(rows["180s"][index]),
         checkout_attempts=attempts,
         checkouts_completed=completed,
         checkout_percentage=percentage,
-        highest_checkout=int(rows["high checkout"][index]),
-        ton_plus_checkouts=int(rows["ton+ checkouts"][index]),
+        highest_checkout=int(
+            rows["high checkout"][index]
+        ),
+        ton_plus_checkouts=int(
+            rows["ton+ checkouts"][index]
+        ),
     )
 
 
+def _parse_checkout_statistics(
+    *,
+    player_name,
+    fraction,
+    percentage,
+):
+    from app.services.modus_data_quality_policy import (
+        modus_data_quality_policy,
+    )
+
+    try:
+        completed, attempts = _parse_fraction(
+            fraction
+        )
+    except ValueError as exc:
+        if (
+            "Completed checkouts cannot exceed attempts."
+            in str(exc)
+        ):
+            return None, None, None
+
+        raise
+
+    resolution = (
+        modus_data_quality_policy
+        .resolve_checkout_percentage(
+            completed=completed,
+            attempts=attempts,
+            displayed_value=percentage,
+        )
+    )
+
+    return (
+        completed,
+        attempts,
+        resolution.percentage,
+    )
+
 def _parse_fraction(value):
-    match = re.fullmatch(r"\s*(\d+)\s*/\s*(\d+)\s*", value or "")
+    match = re.fullmatch(
+        r"\s*(\d+)\s*/\s*(\d+)\s*",
+        value or "",
+    )
+
     if not match:
-        raise ValueError("Checkouts must use completed/attempted format.")
-    completed, attempts = int(match.group(1)), int(match.group(2))
+        raise ValueError(
+            "Checkouts must use completed/attempted format."
+        )
+
+    completed = int(match.group(1))
+    attempts = int(match.group(2))
+
     if completed > attempts:
-        raise ValueError("Completed checkouts cannot exceed attempts.")
+        raise ValueError(
+            "Completed checkouts cannot exceed attempts."
+        )
+
     return completed, attempts
 
 
 def _parse_percentage(value):
-    result = float((value or "").replace("%", "").strip())
+    text = (
+        (value or "")
+        .replace("%", "")
+        .strip()
+    )
+
+    if not re.fullmatch(
+        r"\d+(?:\.\d+)?",
+        text,
+    ):
+        raise ValueError(
+            "Checkout percentage must be a number between 0 and 100."
+        )
+
+    result = float(text)
+
     if not 0 <= result <= 100:
-        raise ValueError("Checkout percentage must be between 0 and 100.")
-    return result
+        raise ValueError(
+            "Checkout percentage must be between 0 and 100."
+        )
+
+    decimal_places = (
+        len(text.split(".", 1)[1])
+        if "." in text
+        else 0
+    )
+
+    return result, decimal_places
 
 
 def _parse_average(value):
-    result = float((value or "").replace(" ", "").strip())
+    result = float(
+        (value or "")
+        .replace(" ", "")
+        .strip()
+    )
+
     if not 0 <= result <= 180:
-        raise ValueError("Three-dart average must be between 0 and 180.")
+        raise ValueError(
+            "Three-dart average must be between 0 and 180."
+        )
+
     return result
 
 
 def _parse_datetime(value):
     text = " ".join((value or "").split())
-    for fmt in ("%d %b %Y / %H:%M", "%d %b %Y %H:%M"):
+
+    for fmt in (
+        "%d %b %Y / %H:%M",
+        "%d %b %Y %H:%M",
+    ):
         try:
-            return datetime.strptime(text, fmt)
+            return datetime.strptime(
+                text,
+                fmt,
+            )
         except ValueError:
             pass
-    raise ValueError(f"Unsupported MODUS date/time format: {value!r}")
+
+    raise ValueError(
+        "Unsupported MODUS date/time format: "
+        f"{value!r}"
+    )
 
 
 def _normalise_label(value):
-    return " ".join((value or "").lower().split())
+    return " ".join(
+        (value or "").lower().split()
+    )
 
 
 def _clean(parts):
-    return " ".join("".join(parts).split())
+    return " ".join(
+        "".join(parts).split()
+    )

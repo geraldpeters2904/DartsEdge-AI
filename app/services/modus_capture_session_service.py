@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from app.providers.adapters.modus_official.parser import ModusSavedPageParser
+from app.providers.adapters.modus_official.real_match_parser import ModusRealMatchPageParser
 from app.providers.adapters.modus_official.urls import ModusUrlModel
+from app.services.capture_provider import CaptureRequest
 
 
 SESSION_FILENAME = ".modus_capture_session.json"
@@ -98,6 +100,7 @@ class ModusCaptureSessionService:
 
     def __init__(self):
         self.results_parser = ModusSavedPageParser()
+        self.match_parser = ModusRealMatchPageParser()
         self.urls = ModusUrlModel()
 
     def create_session(
@@ -172,6 +175,25 @@ class ModusCaptureSessionService:
     ) -> ModusCaptureSession:
         return self.refresh_session(destination_folder)
 
+    def next_capture_request(
+        self,
+        destination_folder: str | Path,
+    ) -> Optional[CaptureRequest]:
+        session = self.load_session(destination_folder)
+        item = session.next_item
+
+        if item is None:
+            return None
+
+        return CaptureRequest(
+            match_id=item.match_id,
+            source_url=item.source_url,
+            destination_folder=session.destination_folder,
+            destination_filename=item.destination_filename,
+            player_a_name=item.player_a_name,
+            player_b_name=item.player_b_name,
+        )
+
     def _build_session(
         self,
         *,
@@ -195,7 +217,10 @@ class ModusCaptureSessionService:
                     player_b_legs=match.player_b_legs,
                     source_url=self.urls.match_stats_url(match.match_id),
                     destination_filename=filename,
-                    captured=(destination / filename).exists(),
+                    captured=self._captured_page_is_valid(
+                        destination / filename,
+                        match.match_id,
+                    ),
                 )
             )
 
@@ -210,6 +235,39 @@ class ModusCaptureSessionService:
             created_at=created_at,
             updated_at=updated_at,
             items=items,
+        )
+
+    def _captured_page_is_valid(
+        self,
+        path: Path,
+        match_id: int,
+    ) -> bool:
+        del match_id
+
+        if not path.is_file():
+            return False
+
+        try:
+            html = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return False
+
+        lowered = html.casefold()
+
+        browser_error_markers = (
+            "can’t open the page",
+            "can't open the page",
+            "isn’t responding",
+            "isn't responding",
+            "this site can’t be reached",
+            "this site can't be reached",
+            "err_connection",
+            "server where this page is located",
+        )
+
+        return not any(
+            marker in lowered
+            for marker in browser_error_markers
         )
 
     @staticmethod

@@ -120,6 +120,17 @@ class ModusCanonicalBuilder:
                 match_id=match_id,
             )
 
+            # Some official MODUS results contain 0-0 placeholder matches.
+            # They have no winner and cannot form a completed canonical result.
+            # Exclude them only when both the results page and match page agree.
+            if (
+                listed.player_a_legs == 0
+                and listed.player_b_legs == 0
+                and detail.player_a_legs == 0
+                and detail.player_b_legs == 0
+            ):
+                continue
+
             if detail.played_at is None:
                 raise ValueError(
                     f"match_{match_id}.html has no usable match date/time."

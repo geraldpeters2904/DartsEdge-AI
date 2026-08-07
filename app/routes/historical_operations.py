@@ -11,9 +11,6 @@ from app.services.capture_library_service import DEFAULT_CAPTURE_ROOT
 from app.services.historical_operations_service import (
     HistoricalOperationsService,
 )
-from app.services.historical_workflow_service import (
-    HistoricalWorkflowService,
-)
 from app.services.historical_workflow_worker import (
     historical_workflow_worker,
 )
@@ -22,7 +19,9 @@ from app.templates_config import templates
 
 router = APIRouter()
 historical_operations_service = HistoricalOperationsService()
-historical_workflow_service = HistoricalWorkflowService()
+historical_workflow_service = (
+    historical_workflow_worker.workflow_service
+)
 
 
 def _redirect(root: str, message: str):

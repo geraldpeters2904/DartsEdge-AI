@@ -161,5 +161,52 @@ class ModusCaptureSessionServiceTests(unittest.TestCase):
             )
 
 
+    def test_next_capture_request_uses_first_missing_item(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.service.create_session(
+                results_filename="source.html",
+                results_html=self.results_html,
+                destination_folder=folder,
+            )
+
+            request = self.service.next_capture_request(folder)
+
+            self.assertIsNotNone(request)
+            self.assertEqual(request.match_id, 16947)
+            self.assertEqual(
+                request.destination_filename,
+                "match_16947.html",
+            )
+            self.assertEqual(request.player_a_name, "Jeff Smith")
+            self.assertEqual(
+                request.player_b_name,
+                "Dawson Murschell",
+            )
+            self.assertTrue(
+                request.source_url.endswith("match_id=16947")
+            )
+
+    def test_next_capture_request_returns_none_when_complete(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = self.service.create_session(
+                results_filename="source.html",
+                results_html=self.results_html,
+                destination_folder=folder,
+            )
+
+            for item in session.items:
+                Path(
+                    folder,
+                    item.destination_filename,
+                ).write_text(
+                    "<html></html>",
+                    encoding="utf-8",
+                )
+
+            request = self.service.next_capture_request(folder)
+
+            self.assertIsNone(request)
+
+
 if __name__ == "__main__":
     unittest.main()

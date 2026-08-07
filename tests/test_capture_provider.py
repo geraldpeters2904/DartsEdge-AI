@@ -138,6 +138,10 @@ class CaptureProviderTests(unittest.TestCase):
             "match_16954.html",
         )
         self.assertIn("Fake match page", saved_html)
+        self.assertEqual(
+            written.bytes_written,
+            len(saved_html.encode("utf-8")),
+        )
 
     def test_writer_rejects_missing_html(self):
         with tempfile.TemporaryDirectory() as folder:

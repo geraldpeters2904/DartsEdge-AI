@@ -157,11 +157,18 @@ class HistoricalImportManagerService:
     ) -> HistoricalImportFolder:
         try:
             manifest = self.folder_service.inspect(folder)
+            importable_match_ids = self._importable_match_ids(
+                manifest
+            )
             imported_count = self._imported_fixture_count(
                 db,
-                manifest.expected_match_ids,
+                importable_match_ids,
             )
-            status = self._status(manifest, imported_count)
+            status = self._status(
+                manifest,
+                imported_count,
+                importable_count=len(importable_match_ids),
+            )
 
             return HistoricalImportFolder(
                 folder=folder,
@@ -177,6 +184,26 @@ class HistoricalImportManagerService:
                 imported_count=0,
                 error_message=str(exc),
             )
+
+    def _importable_match_ids(
+        self,
+        manifest: ModusFolderManifest,
+    ) -> List[int]:
+        if manifest.results_file is None:
+            return list(manifest.expected_match_ids)
+
+        page = self.folder_service.results_parser.parse_results_document(
+            manifest.results_file.read_text(encoding="utf-8")
+        )
+
+        return [
+            match.match_id
+            for match in page.matches
+            if not (
+                match.player_a_legs == 0
+                and match.player_b_legs == 0
+            )
+        ]
 
     @staticmethod
     def _imported_fixture_count(
@@ -205,10 +232,16 @@ class HistoricalImportManagerService:
     def _status(
         manifest: ModusFolderManifest,
         imported_count: int,
+        *,
+        importable_count: Optional[int] = None,
     ) -> str:
-        expected_count = len(manifest.expected_match_ids)
+        target_count = (
+            len(manifest.expected_match_ids)
+            if importable_count is None
+            else int(importable_count)
+        )
 
-        if expected_count and imported_count >= expected_count:
+        if manifest.ready and imported_count >= target_count:
             return "imported"
 
         if imported_count > 0:

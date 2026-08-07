@@ -5,6 +5,7 @@ from typing import Optional
 from app.models.canonical_data import ProviderEntityMapping
 from app.models.match import Match
 from app.models.player import Player
+from app.services.player_name_service import resolve_player_by_name
 from app.schemas.canonical import CanonicalMatchResult
 from app.services.canonical_data_service import map_entity
 
@@ -118,10 +119,9 @@ def map_player_external_id(
 ) -> None:
     """Create or update a provider mapping for a canonical player ID."""
 
-    player = (
-        db.query(Player)
-        .filter(Player.name == player_name)
-        .first()
+    player = resolve_player_by_name(
+        db,
+        player_name,
     )
 
     if player is None:

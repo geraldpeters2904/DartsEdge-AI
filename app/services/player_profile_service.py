@@ -1,58 +1,121 @@
-from app.services.rating_service import dartsedge_rating
+from __future__ import annotations
+
+from typing import Optional
+
+from sqlalchemy.orm import Session
+
 from app.models.player import Player
-from app.models.player_stats import PlayerStats
-from app.services.form_service import weighted_expected_180s
+from app.models.player_career_profile import (
+    PlayerCareerProfile,
+)
+from app.services.player_career_profile_cache_service import (
+    ALL_COMPETITIONS,
+    PlayerCareerProfileCacheService,
+)
+from app.services.rating_service import dartsedge_rating
 
 
-def get_player_profile(db, player_name):
+profile_cache_service = PlayerCareerProfileCacheService()
 
-    player = db.query(Player).filter(
-        Player.name == player_name
-    ).first()
 
-    if not player:
+def get_player_profile(
+    db: Session,
+    player_name: str,
+) -> Optional[dict]:
+    """
+    Return the compatibility player-profile payload from the modern cache.
+
+    The public keys used by Player Intelligence remain available while
+    richer warehouse-derived statistics are included for new consumers.
+    """
+
+    player = (
+        db.query(Player)
+        .filter(Player.name == player_name)
+        .one_or_none()
+    )
+
+    if player is None:
         return None
 
-    stats = db.query(PlayerStats).filter(
-        PlayerStats.player_id == player.id
-    ).first()
+    profile = (
+        db.query(PlayerCareerProfile)
+        .filter(
+            PlayerCareerProfile.player_id == player.id,
+            PlayerCareerProfile.competition_code
+            == ALL_COMPETITIONS,
+        )
+        .one_or_none()
+    )
 
-    form = weighted_expected_180s(db, player_name)
+    if profile is None:
+        profile = profile_cache_service.refresh_player(
+            db,
+            player_id=player.id,
+        )
 
-    matches = stats.matches if stats else 0
-    wins = stats.wins if stats else 0
-    losses = stats.losses if stats else 0
+    recent_form = (
+        profile_cache_service.recent_form(profile)
+    )
 
-    confidence = min(95, 40 + matches)
-    profile = {
+    payload = {
         "name": player.name,
         "elo": player.elo,
-        "average": player.average,
-        "checkout": player.checkout,
-        "matches": matches,
-        "wins": wins,
-        "losses": losses,
-        "win_pct": round((wins / matches) * 100, 1) if matches else 0,
-        "legs_won": stats.legs_won if stats else 0,
-        "legs_lost": stats.legs_lost if stats else 0,
-        "form": form,
-        "confidence": confidence
+        "average": (
+            profile.average_three_dart_average
+            if profile.average_three_dart_average is not None
+            else player.average
+        ),
+        "checkout": (
+            profile.calculated_checkout_percentage
+            if profile.calculated_checkout_percentage is not None
+            else player.checkout
+        ),
+        "matches": profile.matches_played,
+        "wins": profile.wins,
+        "losses": profile.losses,
+        "win_pct": profile.win_percentage,
+        "legs_won": profile.legs_won,
+        "legs_lost": profile.legs_lost,
+        "leg_difference": profile.leg_difference,
+        "first_nine_average": (
+            profile.average_first_nine_average
+        ),
+        "scores_100_plus": profile.scores_100_plus,
+        "scores_140_plus": profile.scores_140_plus,
+        "scores_180": profile.scores_180,
+        "maximums_per_match": profile.maximums_per_match,
+        "checkout_attempts": profile.checkout_attempts,
+        "checkouts_completed": profile.checkouts_completed,
+        "highest_checkout": profile.highest_checkout,
+        "recent_form": recent_form,
+        "form": {
+            "expected": profile.maximums_per_match,
+            "recent": recent_form,
+        },
+        "confidence": min(
+            95,
+            40 + profile.matches_played,
+        ),
+        "first_match_date": (
+            profile.first_match_date.isoformat()
+            if profile.first_match_date
+            else None
+        ),
+        "latest_match_date": (
+            profile.latest_match_date.isoformat()
+            if profile.latest_match_date
+            else None
+        ),
+        "profile_refreshed_at": (
+            profile.refreshed_at.isoformat()
+            if profile.refreshed_at
+            else None
+        ),
     }
 
-    profile["dartsedge_rating"] = dartsedge_rating(profile)
+    payload["dartsedge_rating"] = (
+        dartsedge_rating(payload)
+    )
 
-    return profile
-    return {
-        "name": player.name,
-        "elo": player.elo,
-        "average": player.average,
-        "checkout": player.checkout,
-        "matches": matches,
-        "wins": wins,
-        "losses": losses,
-        "win_pct": round((wins / matches) * 100, 1) if matches else 0,
-        "legs_won": stats.legs_won if stats else 0,
-        "legs_lost": stats.legs_lost if stats else 0,
-        "form": form,
-        "confidence": confidence
-    }
+    return payload

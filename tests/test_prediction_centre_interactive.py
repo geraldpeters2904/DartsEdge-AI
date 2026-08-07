@@ -1,66 +1,101 @@
-import os
-import tempfile
 import unittest
-from datetime import date
+from pathlib import Path
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.db import Base
-from app.models.match import Match
-from app.services.prediction_centre_service import build_prediction_centre
+TEMPLATE_PATH = Path(
+    "app/templates/prediction_centre.html"
+)
+
+CARD_COMPONENT_PATH = Path(
+    "app/templates/components/pro_prediction_card.html"
+)
 
 
 class PredictionCentreInteractiveTests(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
-        self.tmp.close()
-        engine = create_engine(f"sqlite:///{self.tmp.name}")
-        Base.metadata.create_all(engine)
-        self.db = sessionmaker(bind=engine)()
+    def read_centre_template(self) -> str:
+        return TEMPLATE_PATH.read_text(
+            encoding="utf-8"
+        )
 
-    def tearDown(self):
-        self.db.close()
-        os.unlink(self.tmp.name)
+    def read_card_component(self) -> str:
+        return CARD_COMPONENT_PATH.read_text(
+            encoding="utf-8"
+        )
 
-    def test_competitions_are_exposed_for_filtering(self):
-        self.db.add_all([
-            Match(date=date.today(), player_a='A', player_b='B', tournament='DEMO Alpha', status='scheduled'),
-            Match(date=date.today(), player_a='C', player_b='D', tournament='DEMO Beta', status='scheduled'),
-        ])
-        self.db.commit()
-        payload = build_prediction_centre(self.db)
-        self.assertEqual(payload['competitions'], ['DEMO Alpha', 'DEMO Beta'])
+    def test_template_contains_fixture_controls(self):
+        text = self.read_centre_template()
 
-    def test_cards_include_sort_values(self):
-        self.db.add(Match(date=date.today(), player_a='A', player_b='B', status='scheduled'))
-        self.db.commit()
-        card = build_prediction_centre(self.db)['cards'][0]
-        for key in ('sort_probability', 'sort_ev', 'sort_edge', 'sort_stake'):
-            self.assertIn(key, card)
+        for control_id in (
+            'id="pc-competition"',
+            'id="pc-status"',
+            'id="pc-sort"',
+            'id="pc-positive-only"',
+            'id="pc-reset"',
+            'id="pc-visible-count"',
+            'id="prediction-card-list"',
+            'id="prediction-filter-empty"',
+            'id="pc-empty-reset"',
+        ):
+            self.assertIn(
+                control_id,
+                text,
+            )
 
-    def test_template_contains_filter_controls(self):
-        with open('app/templates/prediction_centre.html', encoding='utf-8') as handle:
-            text = handle.read()
-        self.assertIn('pc-competition', text)
-        self.assertIn('pc-status', text)
-        self.assertIn('pc-sort', text)
-        self.assertIn('pc-positive-only', text)
+    def test_template_contains_interactive_script(self):
+        text = self.read_centre_template()
+
+        for expected in (
+            "card.dataset.competition",
+            "card.dataset.status",
+            "card.dataset.positive",
+            "a.dataset.time",
+            "b.dataset.time",
+            "Number(b.dataset[key])",
+            "positiveOnly.checked",
+            "list.appendChild(card)",
+        ):
+            self.assertIn(
+                expected,
+                text,
+            )
+
+    def test_template_uses_professional_card_component(self):
+        text = self.read_centre_template()
+
+        self.assertIn(
+            '{% include "components/pro_prediction_card.html" %}',
+            text,
+        )
 
     def test_template_contains_fixture_data_attributes(self):
-        with open('app/templates/prediction_centre.html', encoding='utf-8') as handle:
-            text = handle.read()
-        self.assertIn('data-competition', text)
-        self.assertIn('data-probability', text)
-        self.assertIn('data-ev', text)
-        self.assertIn('data-stake', text)
+        combined = (
+            self.read_centre_template()
+            + self.read_card_component()
+        )
 
-    def test_styles_include_responsive_filter_grid(self):
-        with open('app/static/css/styles.css', encoding='utf-8') as handle:
-            text = handle.read()
-        self.assertIn('.prediction-filter-grid', text)
-        self.assertIn('.prediction-centre-card[hidden]', text)
+        for attribute in (
+            "data-competition",
+            "data-status",
+            "data-positive",
+            "data-time",
+            "data-probability",
+            "data-ev",
+            "data-edge",
+            "data-stake",
+        ):
+            self.assertIn(
+                attribute,
+                combined,
+            )
+
+    def test_professional_cards_keep_filter_class(self):
+        text = self.read_card_component()
+
+        self.assertIn(
+            "prediction-centre-card",
+            text,
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

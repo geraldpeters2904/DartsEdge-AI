@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Live Opportunities · DartsEdge AI{% endblock %}
+{% block content %}
+
+<style>
+  .opportunity-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0 1.4rem;
+  }
+
+  .opportunity-card {
+    display: grid;
+    grid-template-columns: 90px minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .opportunity-score {
+    text-align: center;
+  }
+
+  .opportunity-score strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .opportunity-state {
+    margin-top: .35rem;
+    font-weight: 700;
+  }
+
+  .opportunity-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(90px, 1fr));
+    gap: .65rem;
+    margin-top: .8rem;
+  }
+
+  @media (max-width: 950px) {
+    .opportunity-card {
+      grid-template-columns: 1fr;
+    }
+
+    .opportunity-metrics {
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+
+    .opportunity-kpis {
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Vertical Slice 1</div>
+    <h1>Live Opportunity Centre</h1>
+    <p class="muted">
+      Today's priced opportunities ranked by Decision Intelligence,
+      with market context and lifecycle state.
+    </p>
+  </div>
+
+  <div class="button-row">
+    <a class="button secondary" href="/prediction-centre">
+      Prediction Centre
+    </a>
+    <a class="button secondary" href="/odds-warehouse">
+      Odds Warehouse
+    </a>
+  </div>
+</div>
+
+<div class="opportunity-kpis">
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Opportunities</span>
+    <strong class="prediction-kpi-value">{{ opportunity_count }}</strong>
+    <small>Priced and decision-scored</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">BET</span>
+    <strong class="prediction-kpi-value">{{ bet_count }}</strong>
+    <small>Top recommendation tier</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Watch</span>
+    <strong class="prediction-kpi-value">{{ watch_count }}</strong>
+    <small>Needs more confirmation</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Mature / Peak</span>
+    <strong class="prediction-kpi-value">{{ mature_count }}</strong>
+    <small>Established opportunities</small>
+  </article>
+</div>
+
+{% if top_opportunity %}
+<section class="panel">
+  <div class="eyebrow">Top opportunity</div>
+  <h2>
+    {{ top_opportunity.player_a }}
+    <span class="muted">v</span>
+    {{ top_opportunity.player_b }}
+  </h2>
+
+  <p>
+    <strong>{{ top_opportunity.selection }}</strong>
+    · Decision {{ top_opportunity.decision_score }}
+    · {{ top_opportunity.recommendation }}
+    · {{ top_opportunity.lifecycle_state }}
+  </p>
+
+  <p class="muted">
+    EV {{ '%+.2f%%'|format(top_opportunity.expected_value_percent) }}
+    · Edge {{ '%+.2f%%'|format(top_opportunity.edge_percent) }}
+    {% if top_opportunity.decimal_odds %}
+    · {{ top_opportunity.bookmaker }} {{ '%.2f'|format(top_opportunity.decimal_odds) }}
+    {% endif %}
+  </p>
+</section>
+{% endif %}
+
+<div class="stack-lg">
+{% for item in opportunities %}
+<section class="panel opportunity-card">
+  <div class="opportunity-score">
+    <strong>{{ item.decision_score }}</strong>
+    <small>/ 100</small>
+    <div class="opportunity-state">{{ item.lifecycle_state }}</div>
+  </div>
+
+  <div>
+    <div class="eyebrow">{{ item.tournament }}</div>
+    <h2>{{ item.player_a }} v {{ item.player_b }}</h2>
+    <p>
+      <strong>{{ item.selection }}</strong>
+      · {{ item.recommendation }}
+      · {{ item.decision_grade }}
+    </p>
+
+    <div class="opportunity-metrics">
+      <div class="metric-card">
+        <span>Probability</span>
+        <strong>{{ '%.1f'|format(item.model_probability) }}%</strong>
+      </div>
+
+      <div class="metric-card">
+        <span>EV</span>
+        <strong>{{ '%+.2f%%'|format(item.expected_value_percent) }}</strong>
+      </div>
+
+      <div class="metric-card">
+        <span>Edge</span>
+        <strong>{{ '%+.2f%%'|format(item.edge_percent) }}</strong>
+      </div>
+
+      <div class="metric-card">
+        <span>Consensus</span>
+        <strong>
+          {{ '%.0f'|format(item.consensus_score) if item.consensus_score is not none else '—' }}
+        </strong>
+      </div>
+
+      <div class="metric-card">
+        <span>Steam</span>
+        <strong>{{ item.steam_strength|title if item.steam_strength else '—' }}</strong>
+        <small>{{ item.steam_direction|title if item.steam_direction else '' }}</small>
+      </div>
+
+      <div class="metric-card">
+        <span>Stake</span>
+        <strong>£{{ '{:,.2f}'.format(item.suggested_stake) }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    {% if item.decimal_odds %}
+    <strong>{{ item.bookmaker }}</strong>
+    <div>{{ '%.2f'|format(item.decimal_odds) }}</div>
+    {% endif %}
+    <small>
+      Age {{ item.age_minutes if item.age_minutes is not none else 0 }} min
+    </small>
+  </div>
+</section>
+{% else %}
+<section class="panel empty-state">
+  <h2>No live opportunities yet</h2>
+  <p>
+    Opportunities appear when a fixture has a model prediction,
+    matched bookmaker odds and a Decision Intelligence score.
+  </p>
+</section>
+{% endfor %}
+</div>
+
+{% endblock %}

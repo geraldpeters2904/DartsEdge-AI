@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Odds Warehouse · DartsEdge AI{% endblock %}
+{% block content %}
+
+<style>
+  .odds-kpis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(130px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .coverage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .8rem;
+  }
+
+  .coverage-card {
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(127,127,127,.07);
+  }
+
+  .coverage-card strong,
+  .coverage-card small {
+    display: block;
+  }
+
+  .consensus-score {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .market-signal {
+    display: block;
+    margin-top: .2rem;
+  }
+
+  .outlier-list {
+    font-size: .85rem;
+  }
+
+  @media (max-width: 1100px) {
+    .odds-kpis {
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .odds-kpis {
+      grid-template-columns: repeat(2, minmax(130px, 1fr));
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Market data</div>
+    <h1>Odds Warehouse</h1>
+    <p class="muted">
+      Latest stored prices, bookmaker coverage, best-price comparison,
+      market consensus and coordinated steam detection.
+    </p>
+  </div>
+
+  <div class="button-row">
+    <a class="button secondary" href="/expected-value">Expected Value</a>
+    <a class="button secondary" href="/prediction-centre">Prediction Centre</a>
+  </div>
+</div>
+
+<div class="odds-kpis">
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Markets</span>
+    <strong class="prediction-kpi-value">{{ market_count }}</strong>
+    <small>Distinct selections</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Bookmakers</span>
+    <strong class="prediction-kpi-value">{{ bookmaker_count }}</strong>
+    <small>Captured sources</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Snapshots</span>
+    <strong class="prediction-kpi-value">{{ snapshot_count }}</strong>
+    <small>Stored observations</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Strong consensus</span>
+    <strong class="prediction-kpi-value">{{ strong_consensus_count }}</strong>
+    <small>Score 75+</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Coordinated moves</span>
+    <strong class="prediction-kpi-value">{{ coordinated_count }}</strong>
+    <small>Steam / drift signals</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Outlier markets</span>
+    <strong class="prediction-kpi-value">{{ outlier_market_count }}</strong>
+    <small>At least one price outlier</small>
+  </article>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Primary execution view</div>
+      <h2>Paddy Power & Bet365</h2>
+    </div>
+  </div>
+
+  {% if priority_coverage %}
+  <div class="coverage-grid">
+    {% for item in priority_coverage %}
+    <div class="coverage-card">
+      <strong>{{ item.bookmaker }}</strong>
+      <small>{{ item.snapshots }} snapshots</small>
+      <small>{{ item.fixtures }} fixtures</small>
+      <small>{{ item.markets }} markets</small>
+      <small>{{ item.selections }} selections</small>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No Paddy Power or Bet365 snapshots are stored yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Price + market intelligence</div>
+      <h2>Latest market prices</h2>
+    </div>
+  </div>
+
+  {% if markets %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Match</th>
+          <th>Selection</th>
+          <th>Paddy Power</th>
+          <th>Bet365</th>
+          <th>Best price</th>
+          <th>Consensus</th>
+          <th>Steam</th>
+          <th>Outliers</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for row in markets %}
+        <tr>
+          <td>{{ row.fixture_date }}</td>
+
+          <td>
+            <strong>{{ row.player_a }} v {{ row.player_b }}</strong>
+            <small class="opportunity-subline">
+              {{ row.tournament }} · {{ row.market }}
+            </small>
+          </td>
+
+          <td><strong>{{ row.selection }}</strong></td>
+
+          <td>
+            {% if row.paddy_power_odds is not none %}
+              {{ '%.2f'|format(row.paddy_power_odds) }}
+            {% else %}—{% endif %}
+          </td>
+
+          <td>
+            {% if row.bet365_odds is not none %}
+              {{ '%.2f'|format(row.bet365_odds) }}
+            {% else %}—{% endif %}
+          </td>
+
+          <td>
+            {% if row.best_odds is not none %}
+              <strong>{{ '%.2f'|format(row.best_odds) }}</strong>
+              <small class="opportunity-subline">{{ row.best_bookmaker }}</small>
+            {% else %}—{% endif %}
+          </td>
+
+          <td>
+            {% if row.consensus %}
+              <span class="consensus-score">{{ row.consensus.consensus_score }}</span>
+              <small class="market-signal">{{ row.consensus.consensus_grade }}</small>
+              <small class="market-signal">
+                Fair consensus {{ '%.2f'|format(row.consensus.consensus_odds) }}
+              </small>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <td>
+            {% if row.consensus and row.consensus.coordinated_move %}
+              <strong>{{ row.consensus.steam_strength|title }}</strong>
+              <small class="market-signal">
+                {{ row.consensus.steam_direction|title }}
+              </small>
+            {% elif row.consensus %}
+              <span class="muted">Mixed / none</span>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <td>
+            {% if row.consensus and row.consensus.outlier_bookmakers %}
+              <span class="outlier-list">
+                {{ row.consensus.outlier_bookmakers|join(', ') }}
+              </span>
+            {% else %}
+              <span class="muted">None</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No odds snapshots stored yet</h3>
+    <p>Captured bookmaker prices will appear here automatically.</p>
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Source coverage</div>
+      <h2>All bookmakers</h2>
+    </div>
+  </div>
+
+  {% if coverage %}
+  <div class="coverage-grid">
+    {% for item in coverage %}
+    <div class="coverage-card">
+      <strong>{{ item.bookmaker }}</strong>
+      <small>{{ item.snapshots }} snapshots</small>
+      <small>{{ item.fixtures }} fixtures</small>
+      <small>{{ item.markets }} markets</small>
+      {% if item.priority %}<small>Priority bookmaker</small>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No bookmaker coverage recorded yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

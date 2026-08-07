@@ -10,6 +10,7 @@ CONFIG_FILENAME = ".historical_capture_config.json"
 SUPPORTED_PROVIDERS = {
     "manual",
     "safari",
+    "chrome",
 }
 
 
@@ -28,7 +29,7 @@ class HistoricalCaptureConfig:
         if provider not in SUPPORTED_PROVIDERS:
             raise ValueError(
                 f"Unsupported capture provider: {self.provider!r}. "
-                "Expected manual or safari."
+                "Expected manual, safari or chrome."
             )
 
         if self.browser_timeout_seconds <= 0:

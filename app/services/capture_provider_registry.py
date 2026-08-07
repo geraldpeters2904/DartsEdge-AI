@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Dict
 
 from app.services.capture_provider import CaptureProvider
+from app.services.chrome_capture_provider import (
+    ChromeCaptureProvider,
+)
 from app.services.manual_capture_provider import (
     ManualCaptureProvider,
 )
@@ -18,10 +21,14 @@ class CaptureProviderRegistry:
         self,
         *,
         include_safari: bool = True,
+        include_chrome: bool = True,
     ) -> None:
         self._providers: Dict[str, CaptureProvider] = {}
 
         self.register(ManualCaptureProvider())
+
+        if include_chrome:
+            self.register(ChromeCaptureProvider())
 
         if include_safari:
             self.register(SafariCaptureProvider())

@@ -1,0 +1,373 @@
+<section
+  class="panel prediction-centre-card pro-prediction-card"
+  data-competition="{{ card.competition|lower }}"
+  data-status="{{ card.status|lower }}"
+  data-positive="{{ 'true' if card.assessment and card.assessment.has_value else 'false' }}"
+  data-time="{{ card.fixture.date }}"
+  data-decision="{{ card.sort_decision|default(-999) }}"
+  data-probability="{{ card.sort_probability }}"
+  data-ev="{{ card.sort_ev }}"
+  data-edge="{{ card.sort_edge }}"
+  data-stake="{{ card.sort_stake }}"
+>
+  <div class="pro-prediction-heading">
+    <div>
+      <div class="eyebrow">
+        {{ card.fixture.tournament or 'Tournament not set' }}
+      </div>
+
+      <h2>
+        {{ card.fixture.player_a }}
+        <span class="muted">v</span>
+        {{ card.fixture.player_b }}
+      </h2>
+
+      <div class="muted">
+        {{ card.fixture.date }}
+        · {{ card.fixture.stage or 'Stage not set' }}
+        · {{ card.fixture.match_format or 'Format not set' }}
+      </div>
+    </div>
+
+    <div class="pro-prediction-badges">
+      {% if card.opportunity %}
+      <span class="model-version-badge">
+        {{ card.opportunity.model_version }}
+      </span>
+      {% endif %}
+
+      {% if card.decision_intelligence %}
+      <span class="status-pill {{ 'good' if card.decision_intelligence.score >= 70 else 'warning' }}">
+        Decision {{ card.decision_intelligence.score }}
+      </span>
+      {% endif %}
+
+      <span class="status-pill {{ card.tone }}">
+        {{ card.status }}
+      </span>
+    </div>
+  </div>
+
+  {% if card.opportunity %}
+  <div class="pro-prediction-verdict">
+    <div>
+      <span class="pro-prediction-label">Model selection</span>
+
+      <strong class="pro-prediction-selection">
+        {{ card.opportunity.selection }}
+      </strong>
+
+      <span class="pro-prediction-probability">
+        {{ card.opportunity.probability }}% win probability
+      </span>
+    </div>
+
+    <div class="probability-meter" aria-label="Model probability">
+      <div
+        class="probability-meter-fill"
+        style="width: {{ card.opportunity.probability }}%;"
+      ></div>
+    </div>
+
+    <div class="pro-model-confidence">
+      <span>Model confidence</span>
+      <strong>
+        {{ '%.1f'|format(card.opportunity.model_confidence) }}%
+      </strong>
+    </div>
+  </div>
+
+  {% if card.decision_intelligence %}
+  <section class="decision-score-panel" aria-label="Decision Intelligence">
+    <div class="decision-score-number">
+      <div class="eyebrow">Decision Intelligence</div>
+
+      <strong>
+        {{ card.decision_intelligence.score }}
+        <span class="muted">/ 100</span>
+      </strong>
+
+      <div class="decision-stars">
+        {% for _ in range(card.decision_intelligence.stars) %}★{% endfor %}
+        {% for _ in range(5 - card.decision_intelligence.stars) %}☆{% endfor %}
+      </div>
+
+      <div>
+        <strong>{{ card.decision_intelligence.recommendation }}</strong>
+        <small>{{ card.decision_intelligence.grade }}</small>
+      </div>
+    </div>
+
+    <div>
+      <div class="decision-breakdown">
+        <div class="decision-factor">
+          <span>Value</span>
+          <strong>{{ '%.0f'|format(card.decision_intelligence.breakdown.value) }}</strong>
+          <small>EV + edge</small>
+        </div>
+
+        <div class="decision-factor">
+          <span>Model</span>
+          <strong>{{ '%.0f'|format(card.decision_intelligence.breakdown.model) }}</strong>
+          <small>Probability + evidence</small>
+        </div>
+
+        <div class="decision-factor">
+          <span>Trust</span>
+          <strong>{{ '%.0f'|format(card.decision_intelligence.breakdown.trust) }}</strong>
+          <small>Historical trust</small>
+        </div>
+
+        <div class="decision-factor">
+          <span>Market</span>
+          <strong>{{ '%.0f'|format(card.decision_intelligence.breakdown.market) }}</strong>
+          <small>Movement + CLV</small>
+        </div>
+
+        <div class="decision-factor">
+          <span>Portfolio</span>
+          <strong>{{ '%.0f'|format(card.decision_intelligence.breakdown.portfolio) }}</strong>
+          <small>Exposure + stake</small>
+        </div>
+      </div>
+
+      <div class="decision-reasons">
+        <div>
+          <strong>Supporting signals</strong>
+          {% if card.decision_intelligence.positive_reasons %}
+          <ul>
+            {% for reason in card.decision_intelligence.positive_reasons[:5] %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="muted">No strong supporting signals recorded.</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <strong>Cautions</strong>
+          {% if card.decision_intelligence.caution_reasons %}
+          <ul>
+            {% for reason in card.decision_intelligence.caution_reasons[:5] %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="muted">No material cautions recorded.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+  {% elif not card.price %}
+  <div class="decision-unavailable">
+    <strong>Decision Score awaiting bookmaker odds</strong>
+    <span class="muted">
+      The model signal is available, but EV and strategy qualification
+      require a current market price.
+    </span>
+  </div>
+  {% endif %}
+
+  <div class="metric-grid compact pro-prediction-metrics">
+    <div class="metric-card">
+      <span>Fair odds</span>
+      <strong>
+        {{ '%.2f'|format(card.opportunity.fair_odds) }}
+      </strong>
+      <small>
+        Minimum value price
+        {{ '%.2f'|format(card.opportunity.minimum_odds) }}
+      </small>
+    </div>
+
+    <div class="metric-card">
+      <span>Best odds</span>
+      <strong>
+        {{ '%.2f'|format(card.price.decimal_odds) if card.price else '—' }}
+      </strong>
+      <small>
+        {{ card.price.bookmaker if card.price else 'No matched price' }}
+      </small>
+    </div>
+
+    <div class="metric-card">
+      <span>Expected value</span>
+      <strong>
+        {{ ('%+.2f%%'|format(card.assessment.expected_value_percent)) if card.assessment else '—' }}
+      </strong>
+      <small>
+        {{ ('Edge %+.2f%%'|format(card.assessment.edge_percent)) if card.assessment else 'Odds required' }}
+      </small>
+    </div>
+
+    <div class="metric-card">
+      <span>Suggested stake</span>
+      <strong>
+        £{{
+          '{:,.2f}'.format(
+            card.decision_intelligence.strategy_suggested_stake
+          )
+          if card.decision_intelligence
+          else (
+            '{:,.2f}'.format(card.assessment.recommended_stake)
+            if card.assessment
+            else '0.00'
+          )
+        }}
+      </strong>
+      <small>
+        {% if card.decision_intelligence %}
+          {{ card.decision_intelligence.strategy_status }}
+        {% else %}
+          {{ card.assessment.risk_level if card.assessment else 'No official decision' }}
+        {% endif %}
+      </small>
+    </div>
+
+    <div class="metric-card">
+      <span>Historical coverage</span>
+      <strong>
+        {{ card.opportunity.player_a_history_matches }}
+        /
+        {{ card.opportunity.player_b_history_matches }}
+      </strong>
+      <small>Previous matches available</small>
+    </div>
+
+    <div class="metric-card">
+      <span>Model Trust</span>
+      <strong>
+        {{ card.model_trust.trust_score if card.model_trust else '—' }}
+      </strong>
+      <small>
+        {{ card.model_trust.trust_grade if card.model_trust else 'Not available' }}
+      </small>
+    </div>
+  </div>
+
+  <div class="pro-prediction-intelligence">
+    <section class="pro-explanation-panel">
+      <div class="section-heading-row">
+        <div>
+          <div class="eyebrow">Model explanation</div>
+          <h3>Why does v3.3 lean this way?</h3>
+        </div>
+      </div>
+
+      <ul class="pro-explanation-list">
+        {% for explanation in card.opportunity.explanations %}
+        <li>{{ explanation }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="pro-contribution-panel">
+      <div class="section-heading-row">
+        <div>
+          <div class="eyebrow">Feature impact</div>
+          <h3>Strongest model signals</h3>
+        </div>
+      </div>
+
+      <div class="pro-contribution-list">
+        {% for contribution in card.opportunity.contributions[:6] %}
+        <div class="pro-contribution-row">
+          <div class="pro-contribution-title">
+            <strong>{{ contribution.label }}</strong>
+
+            <span>
+              {% if contribution.direction == 'player_a' %}
+                Supports {{ card.fixture.player_a }}
+              {% elif contribution.direction == 'player_b' %}
+                Supports {{ card.fixture.player_b }}
+              {% else %}
+                Neutral
+              {% endif %}
+            </span>
+          </div>
+
+          <div class="pro-contribution-track">
+            <div
+              class="pro-contribution-fill {{ contribution.direction }}"
+              style="width: {{ contribution.impact_percent }}%;"
+            ></div>
+          </div>
+
+          <small>{{ contribution.explanation }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  {% else %}
+  <div class="pro-prediction-unavailable">
+    <strong>Model analysis unavailable</strong>
+    <p>
+      This fixture does not currently meet the minimum historical-data requirement.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="button-row pro-prediction-actions">
+    <a
+      class="button"
+      href="/match-intelligence/{{ card.fixture.id }}"
+    >
+      Open intelligence
+    </a>
+
+    {% if card.opportunity and card.price %}
+    <form method="post" action="/bet-slip/add">
+      <input type="hidden" name="fixture_id" value="{{ card.fixture.id }}">
+      <input type="hidden" name="market" value="Match Winner">
+      <input type="hidden" name="selection" value="{{ card.opportunity.selection }}">
+      <input type="hidden" name="bookmaker" value="{{ card.price.bookmaker }}">
+      <input type="hidden" name="odds" value="{{ card.price.decimal_odds }}">
+      <input
+        type="hidden"
+        name="stake"
+        value="{{
+          card.decision_intelligence.strategy_suggested_stake
+          if card.decision_intelligence and card.decision_intelligence.strategy_suggested_stake > 0
+          else (
+            card.assessment.recommended_stake
+            if card.assessment and card.assessment.recommended_stake > 0
+            else 1.00
+          )
+        }}"
+      >
+      <input type="hidden" name="model_probability" value="{{ card.opportunity.probability }}">
+      <input
+        type="hidden"
+        name="expected_value"
+        value="{{ card.assessment.expected_value_percent if card.assessment else 0 }}"
+      >
+      <input
+        type="hidden"
+        name="kelly_stake"
+        value="{{ card.assessment.recommended_stake if card.assessment else 0 }}"
+      >
+      <input
+        type="hidden"
+        name="strategy_name"
+        value="{{ active_strategy.name }} v{{ active_strategy.version }}"
+      >
+
+      <button class="button secondary" type="submit">
+        Add to Bet Slip
+      </button>
+    </form>
+    {% endif %}
+
+    <a class="button secondary" href="/expected-value">
+      Expected Value
+    </a>
+
+    <a class="button secondary" href="/ai-coach">
+      AI Coach
+    </a>
+  </div>
+</section>

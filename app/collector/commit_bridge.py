@@ -19,6 +19,7 @@ from app.models.historical_import import (
 )
 from app.models.match import Match
 from app.models.player import Player
+from app.services.player_name_service import resolve_player_by_name
 from app.schemas.canonical import (
     CanonicalFixture,
     CanonicalMatchResult,
@@ -418,10 +419,9 @@ class CollectorCommitBridge:
         player_name: str,
         competition_code: str,
     ) -> None:
-        player = (
-            db.query(Player)
-            .filter(Player.name == player_name)
-            .first()
+        player = resolve_player_by_name(
+            db,
+            player_name,
         )
 
         if player is None:

@@ -407,7 +407,7 @@ class _ResultsDocumentParser(HTMLParser):
                     stats[3],
                     "leg_difference",
                 ),
-                three_dart_average=float(stats[4]),
+                three_dart_average=_optional_float(stats[4]),
                 points=_required_int(points_values[0], "points"),
             )
         )

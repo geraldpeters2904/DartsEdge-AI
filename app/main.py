@@ -8,6 +8,7 @@ from app.routes.bet_slip import router as bet_slip_router
 from app.routes.demo_data import router as demo_data_router
 from app.routes.match_intelligence import router as match_intelligence_router
 from app.routes.prediction_centre import router as prediction_centre_router
+from app.routes.live_opportunity_centre import router as live_opportunity_centre_router
 from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
 from app.routes.feed_connectors import router as feed_connectors_router
 from app.models.strategy_decision import StrategyDecision
@@ -17,7 +18,9 @@ from app.routes.strategies import router as strategies_router
 from app.models.automation_job_run import AutomationJobRun
 from app.routes.automation import router as automation_router
 from app.routes.daily_briefing import router as daily_briefing_router
+from app.routes.decision_board import router as decision_board_router
 from app.routes.expected_value import router as expected_value_router
+from app.routes.odds_warehouse import router as odds_warehouse_router
 from app.routes.odds_providers import router as odds_providers_router
 from app.routes.data_providers import router as data_providers_router
 from app.routes.model_performance_lab import router as model_performance_lab_router
@@ -93,14 +96,17 @@ app.include_router(bet_slip_router)
 app.include_router(demo_data_router)
 app.include_router(match_intelligence_router)
 app.include_router(prediction_centre_router)
+app.include_router(live_opportunity_centre_router)
 app.include_router(feed_connectors_router)
 app.include_router(strategy_analytics_router)
 app.include_router(strategies_router)
 app.include_router(automation_router)
 app.include_router(daily_briefing_router)
+app.include_router(decision_board_router)
 app.include_router(data_providers_router)
 app.include_router(odds_providers_router)
 app.include_router(expected_value_router)
+app.include_router(odds_warehouse_router)
 app.include_router(audit_trail_router)
 app.include_router(shadow_comparison_router)
 app.include_router(model_performance_lab_router)

@@ -10,6 +10,9 @@ from app.services.capture_library_service import DEFAULT_CAPTURE_ROOT
 from app.services.current_capture_session_service import (
     CurrentCaptureSessionService,
 )
+from app.services.historical_workflow_worker import (
+    historical_workflow_worker,
+)
 from app.services.modus_capture_assistant_runtime import (
     capture_assistant_service,
 )
@@ -20,7 +23,9 @@ from app.templates_config import templates
 
 
 router = APIRouter()
-operations_service = OperationsDashboardService()
+operations_service = OperationsDashboardService(
+    workflow_service=historical_workflow_worker.workflow_service,
+)
 current_capture_service = CurrentCaptureSessionService()
 
 
@@ -101,3 +106,57 @@ def stop_operations_capture_assistant(
         capture_root,
         "Capture Assistant stopped.",
     )
+
+
+@router.post("/operations/capture-iteration")
+def run_operations_capture_iteration(
+    capture_root: str = Form(...),
+):
+    try:
+        workflow = (
+            historical_workflow_worker
+            .workflow_service
+            .capture_iteration(capture_root)
+        )
+
+        summary = (
+            historical_workflow_worker
+            .workflow_service
+            .latest_capture_summary()
+        )
+
+        if summary is None:
+            message = (
+                "Capture iteration completed without a summary."
+            )
+        elif summary.errors:
+            message = (
+                "Capture iteration failed with "
+                f"{summary.errors} error(s)."
+            )
+        elif summary.matches_captured:
+            message = (
+                "Captured "
+                f"{summary.matches_captured} match(es), "
+                f"{summary.bytes_written} bytes written. "
+                f"Next match: {workflow.current_match_id or 'none'}."
+            )
+        elif summary.captures_waiting:
+            message = (
+                "Capture iteration is waiting for the next match."
+            )
+        else:
+            message = (
+                "Capture iteration completed. "
+                f"Workflow status: {workflow.status}."
+            )
+
+        return _redirect(
+            capture_root,
+            message,
+        )
+    except Exception as exc:
+        return _redirect(
+            capture_root,
+            "Capture iteration failed: " + str(exc),
+        )

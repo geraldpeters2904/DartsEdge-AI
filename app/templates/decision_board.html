@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}Decision Board · DartsEdge AI{% endblock %}
+{% block content %}
+
+<style>
+  .decision-board-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.25rem;
+    align-items: center;
+  }
+
+  .decision-board-hero-score {
+    min-width: 145px;
+    text-align: center;
+  }
+
+  .decision-board-hero-score strong {
+    display: block;
+    font-size: 2.8rem;
+    line-height: 1;
+  }
+
+  .decision-board-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .decision-board-table td,
+  .decision-board-table th {
+    vertical-align: middle;
+  }
+
+  .decision-rank {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .decision-score-cell strong {
+    display: block;
+    font-size: 1.25rem;
+  }
+
+  .decision-star-line {
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+
+  .decision-board-empty {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .decision-reason-line {
+    max-width: 300px;
+  }
+
+  @media (max-width: 1050px) {
+    .decision-board-grid {
+      grid-template-columns: repeat(2, minmax(130px, 1fr));
+    }
+
+    .decision-board-hero {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Daily Decision Intelligence</div>
+    <h1>Decision Board</h1>
+    <p class="muted">
+      Ranked opportunities using Decision Score, Expected Value,
+      model evidence, trust, market intelligence and portfolio discipline.
+    </p>
+  </div>
+
+  <div class="button-row">
+    <a class="button secondary" href="/prediction-centre">
+      Open Prediction Centre
+    </a>
+
+    <a class="button secondary" href="/bet-slip">
+      Open Bet Slip
+    </a>
+  </div>
+</div>
+
+<div class="decision-board-grid">
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Scored opportunities</span>
+    <strong class="prediction-kpi-value">{{ decision_scored_count }}</strong>
+    <small>{{ fixture_count }} fixtures in current scope</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">BET</span>
+    <strong class="prediction-kpi-value">{{ bet_count }}</strong>
+    <small>Highest recommendation tier</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Small bet</span>
+    <strong class="prediction-kpi-value">{{ small_bet_count }}</strong>
+    <small>Controlled opportunities</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Suggested exposure</span>
+    <strong class="prediction-kpi-value">
+      £{{ '{:,.2f}'.format(total_suggested_stake) }}
+    </strong>
+    <small>Across BET + SMALL BET rows shown</small>
+  </article>
+
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Average score</span>
+    <strong class="prediction-kpi-value">
+      {{ average_decision_score if average_decision_score is not none else '—' }}
+    </strong>
+    <small>Decision Intelligence / 100</small>
+  </article>
+</div>
+
+{% if top_decision %}
+<section class="panel decision-board-hero">
+  <div>
+    <div class="eyebrow">Top decision</div>
+
+    <h2>
+      {{ top_decision.player_a }}
+      <span class="muted">v</span>
+      {{ top_decision.player_b }}
+    </h2>
+
+    <p>
+      <strong>{{ top_decision.selection }}</strong>
+      · {{ top_decision.bookmaker }}
+      @ {{ '%.2f'|format(top_decision.decimal_odds) }}
+    </p>
+
+    <p class="muted">
+      EV {{ '%+.2f%%'|format(top_decision.expected_value_percent) }}
+      · Edge {{ '%+.2f%%'|format(top_decision.edge_percent) }}
+      · Stake £{{ '{:,.2f}'.format(top_decision.suggested_stake) }}
+    </p>
+
+    {% if top_decision.positive_reasons %}
+    <p>
+      ✓ {{ top_decision.positive_reasons[0] }}
+    </p>
+    {% endif %}
+  </div>
+
+  <div class="decision-board-hero-score">
+    <strong>{{ top_decision.decision_score }}</strong>
+    <span>/ 100</span>
+
+    <div class="decision-star-line">
+      {% for _ in range(top_decision.stars) %}★{% endfor %}
+      {% for _ in range(5 - top_decision.stars) %}☆{% endfor %}
+    </div>
+
+    <div>
+      <strong>{{ top_decision.recommendation }}</strong>
+      <small>{{ top_decision.decision_grade }}</small>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Ranked card</div>
+      <h2>Today’s Decision Queue</h2>
+    </div>
+
+    <div class="status-pill {{ 'good' if decision_engine_active else 'warning' }}">
+      {{ active_strategy.name }} v{{ active_strategy.version }}
+      · {{ 'Active' if decision_engine_active else 'Shadow' }}
+    </div>
+  </div>
+
+  {% if decisions %}
+  <div class="table-wrap">
+    <table class="decision-board-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Match</th>
+          <th>Selection</th>
+          <th>Decision</th>
+          <th>Score</th>
+          <th>Probability</th>
+          <th>Odds</th>
+          <th>EV</th>
+          <th>Edge</th>
+          <th>Stake</th>
+          <th>Market</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for item in decisions %}
+        <tr>
+          <td class="decision-rank">#{{ item.rank }}</td>
+
+          <td>
+            <strong>{{ item.player_a }} v {{ item.player_b }}</strong>
+            <small class="opportunity-subline">
+              {{ item.tournament }} · {{ item.fixture_date }}
+            </small>
+          </td>
+
+          <td>
+            <strong>{{ item.selection }}</strong>
+          </td>
+
+          <td>
+            <span class="status-pill {{ 'good' if item.decision_score >= 70 else 'warning' }}">
+              {{ item.recommendation }}
+            </span>
+          </td>
+
+          <td class="decision-score-cell">
+            <strong>{{ item.decision_score }}</strong>
+            <span class="decision-star-line">
+              {% for _ in range(item.stars) %}★{% endfor %}
+              {% for _ in range(5 - item.stars) %}☆{% endfor %}
+            </span>
+          </td>
+
+          <td>
+            {{ '%.1f'|format(item.model_probability) }}%
+          </td>
+
+          <td>
+            <strong>{{ '%.2f'|format(item.decimal_odds) }}</strong>
+            <small class="opportunity-subline">{{ item.bookmaker }}</small>
+          </td>
+
+          <td>{{ '%+.2f%%'|format(item.expected_value_percent) }}</td>
+
+          <td>{{ '%+.2f%%'|format(item.edge_percent) }}</td>
+
+          <td>£{{ '{:,.2f}'.format(item.suggested_stake) }}</td>
+
+          <td>
+            {{ item.market_direction or '—' }}
+            <small class="opportunity-subline">
+              {{ item.market_volatility or 'No volatility reading' }}
+            </small>
+          </td>
+
+          <td class="decision-reason-line">
+            {% if item.positive_reasons %}
+              {{ item.positive_reasons[0] }}
+            {% else %}
+              No dominant positive reason.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="decision-board-empty">
+    <h3>No scored decisions yet</h3>
+
+    <p class="muted">
+      Decision Intelligence requires a model prediction and matched
+      bookmaker odds. Fixtures without a price remain unscored.
+    </p>
+
+    <div class="button-row">
+      <a class="button" href="/prediction-centre">
+        Open Prediction Centre
+      </a>
+
+      <a class="button secondary" href="/expected-value">
+        Add / review odds
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Risk context</div>
+      <h2>Portfolio capacity</h2>
+    </div>
+  </div>
+
+  <div class="metric-grid compact">
+    <div class="metric-card">
+      <span>Available bankroll</span>
+      <strong>£{{ '{:,.2f}'.format(portfolio.available_bankroll) }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Open exposure</span>
+      <strong>£{{ '{:,.2f}'.format(portfolio.open_exposure) }}</strong>
+      <small>{{ '%.2f'|format(portfolio.exposure_percent) }}%</small>
+    </div>
+
+    <div class="metric-card">
+      <span>Watch decisions</span>
+      <strong>{{ watch_count }}</strong>
+      <small>No automatic stake implied</small>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
