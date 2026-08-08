@@ -4,6 +4,11 @@ import importlib
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping, Optional
 
+from sqlalchemy.orm import Session
+
+from app.services.bookmaker_capture_types import BookmakerCaptureReport
+from app.services.paddy_power_live_capture import build_paddy_power_capture_once
+
 
 CANDIDATE_MODULES = (
     "app.services.paddy_power_live_capture",
@@ -29,12 +34,34 @@ class PaddyPowerBridgeResolution:
     callable: Callable[..., Any]
 
 
+@dataclass(frozen=True)
+class PaddyPowerLiveRun:
+    ready: bool
+    report: Optional[BookmakerCaptureReport]
+    message: str
+    error: Optional[str] = None
+
+
 def resolve_capture_callable(
     *,
     modules: Iterable[str] = CANDIDATE_MODULES,
     function_names: Iterable[str] = CANDIDATE_FUNCTIONS,
 ) -> PaddyPowerBridgeResolution:
-    import_errors = []
+    try:
+        capture_once, service = build_paddy_power_capture_once()
+        try:
+            if callable(capture_once):
+                return PaddyPowerBridgeResolution(
+                    module_name="app.services.paddy_power_live_capture",
+                    function_name="build_paddy_power_capture_once",
+                    callable=capture_once,
+                )
+        finally:
+            service.close()
+    except Exception:
+        pass
+
+    errors = []
 
     for module_name in modules:
         try:
@@ -42,7 +69,7 @@ def resolve_capture_callable(
                 module_name
             )
         except Exception as exc:
-            import_errors.append(
+            errors.append(
                 f"{module_name}: {exc}"
             )
             continue
@@ -62,8 +89,8 @@ def resolve_capture_callable(
                 )
 
     details = (
-        "; ".join(import_errors)
-        if import_errors
+        "; ".join(errors)
+        if errors
         else "modules imported but no compatible callable was found"
     )
 
@@ -74,9 +101,7 @@ def resolve_capture_callable(
     )
 
 
-def _as_rows(
-    raw: Any,
-) -> list[dict]:
+def _as_rows(raw: Any) -> list[dict]:
     if raw is None:
         return []
 
@@ -97,17 +122,17 @@ def _as_rows(
         raw,
         (list, tuple),
     ):
-        try:
-            raw = list(raw)
-        except TypeError as exc:
-            raise ValueError(
-                "Paddy Power capture result is not iterable."
-            ) from exc
+        raw = list(
+            raw
+        )
 
     rows = []
 
     for item in raw:
-        if isinstance(item, Mapping):
+        if isinstance(
+            item,
+            Mapping,
+        ):
             rows.append(
                 dict(item)
             )
@@ -125,18 +150,23 @@ def _as_rows(
             "source_reference",
             "url",
         ):
-            if hasattr(item, name):
+            if hasattr(
+                item,
+                name,
+            ):
                 row[name] = getattr(
                     item,
                     name,
                 )
 
-        if row:
-            rows.append(row)
-        else:
+        if not row:
             raise ValueError(
                 "Unsupported Paddy Power quote row type."
             )
+
+        rows.append(
+            row
+        )
 
     return rows
 
@@ -204,7 +234,9 @@ def _normalise_row(
             decimal_odds
         ),
         "source_reference": (
-            str(source_reference)
+            str(
+                source_reference
+            )
             if source_reference
             else None
         ),
@@ -223,15 +255,74 @@ def fetch_existing_paddy_power_quotes(
         else resolve_capture_callable()
     )
 
-    raw = resolution.callable()
+    if (
+        resolver is None
+        and resolution.function_name
+        == "build_paddy_power_capture_once"
+    ):
+        raise RuntimeError(
+            "The real Paddy Power capture path requires a database session. "
+            "Use run_existing_paddy_power_capture(db)."
+        )
 
-    rows = _as_rows(
-        raw
-    )
+    raw = resolution.callable()
 
     return [
         _normalise_row(
             row
         )
-        for row in rows
+        for row in _as_rows(
+            raw
+        )
     ]
+
+
+def run_existing_paddy_power_capture(
+    db: Session,
+) -> PaddyPowerLiveRun:
+    capture_once = None
+    service = None
+
+    try:
+        capture_once, service = (
+            build_paddy_power_capture_once()
+        )
+
+        report = capture_once(
+            db
+        )
+
+        if report.challenge_detected:
+            return PaddyPowerLiveRun(
+                ready=False,
+                report=report,
+                message=(
+                    "Paddy Power presented an access or "
+                    "verification challenge."
+                ),
+                error=report.message,
+            )
+
+        return PaddyPowerLiveRun(
+            ready=True,
+            report=report,
+            message=(
+                "Paddy Power live capture completed."
+            ),
+        )
+
+    except Exception as exc:
+        return PaddyPowerLiveRun(
+            ready=False,
+            report=None,
+            message=(
+                "Paddy Power live capture failed."
+            ),
+            error=str(
+                exc
+            ),
+        )
+
+    finally:
+        if service is not None:
+            service.close()
