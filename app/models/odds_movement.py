@@ -6,14 +6,13 @@ from sqlalchemy import (
     Float,
     Integer,
     String,
-    UniqueConstraint,
 )
 
 from app.db import Base
 
 
-class OddsSnapshot(Base):
-    __tablename__ = "odds_snapshots"
+class OddsMovement(Base):
+    __tablename__ = "odds_movements"
 
     id = Column(Integer, primary_key=True, index=True)
 
@@ -33,7 +32,6 @@ class OddsSnapshot(Base):
         String,
         nullable=False,
         index=True,
-        default="match_winner",
     )
 
     selection = Column(
@@ -42,35 +40,34 @@ class OddsSnapshot(Base):
         index=True,
     )
 
-    decimal_odds = Column(
+    previous_odds = Column(
         Float,
         nullable=False,
     )
 
-    implied_probability = Column(
+    new_odds = Column(
         Float,
         nullable=False,
     )
 
-    captured_at = Column(
+    absolute_change = Column(
+        Float,
+        nullable=False,
+    )
+
+    percentage_change = Column(
+        Float,
+        nullable=False,
+    )
+
+    direction = Column(
+        String,
+        nullable=False,
+    )
+
+    detected_at = Column(
         DateTime,
         nullable=False,
         default=datetime.utcnow,
         index=True,
-    )
-
-    source_reference = Column(
-        String,
-        nullable=True,
-    )
-
-    __table_args__ = (
-        UniqueConstraint(
-            "fixture_id",
-            "bookmaker_code",
-            "market",
-            "selection",
-            "captured_at",
-            name="uq_odds_snapshot_identity",
-        ),
     )
