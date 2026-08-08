@@ -188,6 +188,14 @@
     <small>
       Age {{ item.age_minutes if item.age_minutes is not none else 0 }} min
     </small>
+    <div style="margin-top:.7rem">
+      <a
+        class="button secondary"
+        href="/opportunities/{{ item.fixture_id }}/replay"
+      >
+        Replay
+      </a>
+    </div>
   </div>
 </section>
 {% else %}

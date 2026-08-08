@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Opportunity Replay · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Opportunity Replay</div>
+    <h1>{{ replay.player_a }} v {{ replay.player_b }}</h1>
+    <p class="muted">
+      {{ replay.opportunity_id }}
+      · Selection {{ replay.selection }}
+      {% if replay.bookmaker %}· {{ replay.bookmaker }}{% endif %}
+    </p>
+  </div>
+  <a class="button secondary" href="/opportunities">Live Opportunity Centre</a>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:.8rem;margin:1rem 0 1.4rem">
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">First score</span>
+    <strong class="prediction-kpi-value">{{ replay.first_score }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Latest score</span>
+    <strong class="prediction-kpi-value">{{ replay.latest_score }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Peak</span>
+    <strong class="prediction-kpi-value">{{ replay.peak_score }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">State</span>
+    <strong class="prediction-kpi-value">{{ replay.latest_state }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Lifetime</span>
+    <strong class="prediction-kpi-value">{{ replay.age_minutes }}m</strong>
+  </article>
+</div>
+
+<section class="panel">
+  <div class="eyebrow">Interactive replay</div>
+  <h2>Opportunity evolution</h2>
+
+  <div style="display:flex;gap:.6rem;align-items:center;margin:1rem 0">
+    <button class="button" id="replay-start" type="button">▶ Replay</button>
+    <button class="button secondary" id="replay-reset" type="button">Reset</button>
+    <span id="replay-position">0 / {{ replay.timeline|length }}</span>
+  </div>
+
+  <div id="replay-frame" style="padding:1rem;border-radius:12px;background:rgba(127,127,127,.06)">
+    Select Replay to step through the recorded opportunity history.
+  </div>
+</section>
+
+<section class="panel">
+  <div class="eyebrow">Recorded snapshots</div>
+  <h2>Timeline</h2>
+
+  {% for point in replay.timeline %}
+  <div style="display:grid;grid-template-columns:100px 90px 110px minmax(0,1fr);gap:.8rem;padding:.85rem 0;border-bottom:1px solid rgba(127,127,127,.15)">
+    <div>{{ point.captured_at.strftime('%H:%M:%S') }}</div>
+    <div><strong>{{ point.decision_score }}</strong></div>
+    <div>{{ point.lifecycle_state }}</div>
+    <div>
+      {{ point.recommendation }}
+      {% if point.decimal_odds is not none %}· Odds {{ '%.2f'|format(point.decimal_odds) }}{% endif %}
+      {% if point.expected_value_percent is not none %}· EV {{ '%+.2f%%'|format(point.expected_value_percent) }}{% endif %}
+      {% if point.consensus_score is not none %}· Consensus {{ '%.0f'|format(point.consensus_score) }}{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="panel">
+  <div class="eyebrow">Meaningful changes</div>
+  <h2>Opportunity Events</h2>
+
+  {% for event in replay.events %}
+  <div style="padding:.8rem;margin:.55rem 0;border-radius:10px;background:rgba(127,127,127,.07)">
+    <strong>{{ event.captured_at.strftime('%H:%M:%S') }}</strong>
+    · {{ event.message }}
+  </div>
+  {% else %}
+  <p class="muted">No derived events yet.</p>
+  {% endfor %}
+</section>
+
+<script>
+(() => {
+  const frames = [
+    {% for point in replay.timeline %}
+    {
+      time: {{ point.captured_at.strftime('%H:%M:%S')|tojson }},
+      score: {{ point.decision_score }},
+      state: {{ point.lifecycle_state|tojson }},
+      recommendation: {{ point.recommendation|tojson }},
+      odds: {{ point.decimal_odds if point.decimal_odds is not none else 'null' }},
+      ev: {{ point.expected_value_percent if point.expected_value_percent is not none else 'null' }},
+      consensus: {{ point.consensus_score if point.consensus_score is not none else 'null' }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const frame = document.getElementById('replay-frame');
+  const position = document.getElementById('replay-position');
+  const start = document.getElementById('replay-start');
+  const reset = document.getElementById('replay-reset');
+
+  let timer = null;
+  let index = 0;
+
+  function render(item) {
+    const parts = [
+      `<strong>${item.time}</strong>`,
+      `Decision ${item.score}`,
+      item.state,
+      item.recommendation
+    ];
+
+    if (item.odds !== null) parts.push(`Odds ${Number(item.odds).toFixed(2)}`);
+    if (item.ev !== null) parts.push(`EV ${Number(item.ev).toFixed(2)}%`);
+    if (item.consensus !== null) parts.push(`Consensus ${Number(item.consensus).toFixed(0)}`);
+
+    frame.innerHTML = parts.join(' · ');
+    position.textContent = `${index + 1} / ${frames.length}`;
+  }
+
+  function stop() {
+    if (timer !== null) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  start.addEventListener('click', () => {
+    if (!frames.length) return;
+    stop();
+    if (index >= frames.length) index = 0;
+    render(frames[index]);
+
+    timer = setInterval(() => {
+      index += 1;
+      if (index >= frames.length) {
+        stop();
+        return;
+      }
+      render(frames[index]);
+    }, 900);
+  });
+
+  reset.addEventListener('click', () => {
+    stop();
+    index = 0;
+    frame.textContent =
+      'Select Replay to step through the recorded opportunity history.';
+    position.textContent = `0 / ${frames.length}`;
+  });
+})();
+</script>
+
+{% endblock %}
