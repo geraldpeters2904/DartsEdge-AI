@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Fixture Catch-Up · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.6 Pack 2</div>
+    <h1>Forward Fixture Catch-Up</h1>
+    <p class="muted">
+      {{ candidate_count }} stale scheduled MODUS fixture(s) awaiting lifecycle confirmation.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Lifecycle bridge</div>
+      <h2>Refresh readiness</h2>
+    </div>
+  </div>
+
+  <p>
+    <strong>Status:</strong>
+    {{ "READY" if resolution.ready else "NOT READY" }}
+  </p>
+
+  <p>
+    <strong>Resolved:</strong>
+    {% if resolution.ready %}
+      {{ resolution.module_name }} · {{ resolution.function_name }}
+    {% else %}
+      No compatible lifecycle refresh callable found.
+    {% endif %}
+  </p>
+
+  <p class="muted">
+    This page is read-only. It never marks a fixture completed without the
+    existing lifecycle/capture service confirming the result.
+  </p>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Catch-up queue</div>
+      <h2>Stale scheduled fixtures</h2>
+    </div>
+  </div>
+
+  {% if candidates %}
+    {% for item in candidates %}
+    <div style="padding:.75rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
+      <strong>{{ item.player_a }} v {{ item.player_b }}</strong>
+      <div class="muted">
+        {{ item.fixture_date }}
+        · Fixture #{{ item.fixture_id }}
+        · {{ item.days_stale }} day(s) stale
+        · {{ item.tournament }}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">
+      No stale scheduled MODUS fixtures were found.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}

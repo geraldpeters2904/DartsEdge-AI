@@ -11,6 +11,7 @@ from app.routes.prediction_centre import router as prediction_centre_router
 from app.routes.live_opportunity_centre import router as live_opportunity_centre_router
 from app.routes.live_operations import router as live_operations_router
 from app.routes.upcoming_fixture_intelligence import router as upcoming_fixture_intelligence_router
+from app.routes.forward_fixture_catchup import router as forward_fixture_catchup_router
 from app.routes.opportunity_replay import router as opportunity_replay_router
 from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
 from app.routes.feed_connectors import router as feed_connectors_router
@@ -102,6 +103,7 @@ app.include_router(prediction_centre_router)
 app.include_router(live_opportunity_centre_router)
 app.include_router(live_operations_router)
 app.include_router(upcoming_fixture_intelligence_router)
+app.include_router(forward_fixture_catchup_router)
 app.include_router(opportunity_replay_router)
 app.include_router(feed_connectors_router)
 app.include_router(strategy_analytics_router)
