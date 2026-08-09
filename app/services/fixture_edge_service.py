@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.match import Match
 from app.models.odds_snapshot import OddsSnapshot
+from app.services.fixture_prediction_adapter_service import predict_fixture
 
 
 @dataclass(frozen=True)
@@ -140,227 +141,16 @@ def _prediction_probability(
     player_a: str,
     player_b: str,
 ) -> Optional[float]:
-    """
-    Resolve a match-winner probability from the existing prediction stack.
-
-    DartsEdge has evolved through several prediction service generations, so
-    this adapter intentionally discovers compatible callables instead of
-    hard-coding one historical implementation.
-    """
-    import importlib
-    import inspect
-
-    candidates = (
-        (
-            "app.services.prediction_centre_service",
-            (
-                "predict_fixture",
-                "prediction_for_fixture",
-                "build_fixture_prediction",
-            ),
-        ),
-        (
-            "app.services.predictor",
-            (
-                "predict_match",
-                "predict",
-            ),
-        ),
-        (
-            "app.services.prediction_service",
-            (
-                "predict_fixture",
-                "predict_match",
-                "predict",
-            ),
-        ),
+    result = predict_fixture(
+        db,
+        fixture_id=fixture_id,
     )
 
-    for module_name, function_names in candidates:
-        try:
-            module = importlib.import_module(
-                module_name
-            )
-        except Exception:
-            continue
-
-        for function_name in function_names:
-            fn = getattr(
-                module,
-                function_name,
-                None,
-            )
-
-            if not callable(
-                fn
-            ):
-                continue
-
-            try:
-                signature = inspect.signature(
-                    fn
-                )
-            except Exception:
-                continue
-
-            kwargs = {}
-
-            names = set(
-                signature.parameters
-            )
-
-            if "db" in names:
-                kwargs["db"] = db
-            elif "session" in names:
-                kwargs["session"] = db
-
-            if "fixture_id" in names:
-                kwargs["fixture_id"] = fixture_id
-            elif "match_id" in names:
-                kwargs["match_id"] = fixture_id
-
-            if "player_a" in names:
-                kwargs["player_a"] = player_a
-
-            if "player_b" in names:
-                kwargs["player_b"] = player_b
-
-            try:
-                result = fn(
-                    **kwargs
-                )
-            except Exception:
-                continue
-
-            probability = _extract_probability(
-                result,
-                player_a=player_a,
-            )
-
-            if probability is not None:
-                return probability
-
-    return None
-
-
-def _extract_probability(
-    result,
-    *,
-    player_a: str,
-) -> Optional[float]:
-    if result is None:
+    if not result.ready:
         return None
 
-    if isinstance(
-        result,
-        (float, int),
-    ):
-        value = float(
-            result
-        )
+    return result.player_a_probability
 
-        if 0.0 < value < 1.0:
-            return value
-
-        if 1.0 <= value <= 100.0:
-            return value / 100.0
-
-        return None
-
-    if isinstance(
-        result,
-        dict,
-    ):
-        for key in (
-            "player_a_probability",
-            "probability_a",
-            "home_probability",
-            "win_probability",
-            "probability",
-            "model_probability",
-        ):
-            if key not in result:
-                continue
-
-            value = result[key]
-
-            try:
-                number = float(
-                    value
-                )
-            except Exception:
-                continue
-
-            if 0.0 < number < 1.0:
-                return number
-
-            if 1.0 <= number <= 100.0:
-                return number / 100.0
-
-        winner = result.get(
-            "predicted_winner"
-        )
-
-        confidence = result.get(
-            "confidence"
-        )
-
-        if (
-            winner
-            and confidence is not None
-        ):
-            try:
-                number = float(
-                    confidence
-                )
-            except Exception:
-                number = None
-
-            if number is not None:
-                if 1.0 <= number <= 100.0:
-                    number = (
-                        number / 100.0
-                    )
-
-                if 0.0 < number < 1.0:
-                    return (
-                        number
-                        if str(winner).strip().casefold()
-                        == str(player_a).strip().casefold()
-                        else 1.0 - number
-                    )
-
-    for attr in (
-        "player_a_probability",
-        "probability_a",
-        "home_probability",
-        "win_probability",
-        "probability",
-        "model_probability",
-    ):
-        if not hasattr(
-            result,
-            attr,
-        ):
-            continue
-
-        try:
-            number = float(
-                getattr(
-                    result,
-                    attr,
-                )
-            )
-        except Exception:
-            continue
-
-        if 0.0 < number < 1.0:
-            return number
-
-        if 1.0 <= number <= 100.0:
-            return number / 100.0
-
-    return None
 
 
 def build_fixture_edge_rows(

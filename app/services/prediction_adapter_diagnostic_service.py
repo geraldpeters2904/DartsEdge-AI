@@ -28,6 +28,12 @@ class PredictionAdapterDiagnostic:
 
 CANDIDATES = (
     (
+        "app.services.fixture_prediction_adapter_service",
+        (
+            "predict_fixture",
+        ),
+    ),
+    (
         "app.services.prediction_centre_service",
         (
             "predict_fixture",
