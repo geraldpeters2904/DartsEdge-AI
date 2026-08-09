@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Forward Schedule · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.7 Pack 2</div>
+    <h1>Forward Schedule Discovery</h1>
+    <p class="muted">
+      {{ row_count }} scheduled MODUS fixture(s) currently stored.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Published schedule</div>
+      <h2>Current forward fixtures</h2>
+    </div>
+  </div>
+
+  {% if rows %}
+    {% for row in rows %}
+    <div style="padding:.75rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
+      <strong>{{ row.player_a }} v {{ row.player_b }}</strong>
+      <div class="muted">
+        {{ row.date }}
+        · Fixture #{{ row.id }}
+        · {{ row.stage or "Scheduled" }}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">
+      No future MODUS fixtures are currently published in the stored schedule.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}
