@@ -1,0 +1,38 @@
+
+{% extends "base.html" %}
+{% block title %}Live Edge Monitor · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.8 Pack 2</div>
+    <h1>Automatic Live Odds Monitor</h1>
+    <p class="muted">
+      Periodically capture Paddy Power odds and refresh Fixture Edge.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Monitor status</h2>
+
+  <p><strong>Running:</strong> {{ "YES" if status.running else "NO" }}</p>
+  <p><strong>Runs:</strong> {{ status.runs }}</p>
+  <p><strong>Failures:</strong> {{ status.failures }}</p>
+  <p><strong>Last fixture count:</strong> {{ status.last_fixture_count }}</p>
+  <p><strong>Last priced rows:</strong> {{ status.last_priced_rows }}</p>
+  <p><strong>Last value rows:</strong> {{ status.last_value_rows }}</p>
+  <p><strong>Last run:</strong> {{ status.last_run_at or "—" }}</p>
+  <p><strong>Next run:</strong> {{ status.next_run_at or "—" }}</p>
+  <p><strong>Message:</strong> {{ status.last_message }}</p>
+
+  {% if status.last_error %}
+  <p><strong>Last error:</strong> {{ status.last_error }}</p>
+  {% endif %}
+
+  <form method="post" action="/live-edge-monitor/run-once">
+    <button type="submit">Run live edge now</button>
+  </form>
+</section>
+
+{% endblock %}
