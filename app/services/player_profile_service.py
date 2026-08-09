@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.player import Player
+from app.models.player_stats import PlayerStats
 from app.models.player_career_profile import (
     PlayerCareerProfile,
 )
@@ -58,6 +59,52 @@ def get_player_profile(
         profile_cache_service.recent_form(profile)
     )
 
+
+    legacy_stats = None
+
+    if int(profile.matches_played or 0) == 0:
+        legacy_stats = (
+            db.query(PlayerStats)
+            .filter(PlayerStats.player_id == player.id)
+            .one_or_none()
+        )
+
+    matches = (
+        int(legacy_stats.matches or 0)
+        if legacy_stats is not None
+        else int(profile.matches_played or 0)
+    )
+
+    wins = (
+        int(legacy_stats.wins or 0)
+        if legacy_stats is not None
+        else int(profile.wins or 0)
+    )
+
+    losses = (
+        int(legacy_stats.losses or 0)
+        if legacy_stats is not None
+        else int(profile.losses or 0)
+    )
+
+    legs_won = (
+        int(legacy_stats.legs_won or 0)
+        if legacy_stats is not None
+        else int(profile.legs_won or 0)
+    )
+
+    legs_lost = (
+        int(legacy_stats.legs_lost or 0)
+        if legacy_stats is not None
+        else int(profile.legs_lost or 0)
+    )
+
+    win_pct = (
+        (wins / matches * 100.0)
+        if legacy_stats is not None and matches > 0
+        else profile.win_percentage
+    )
+
     payload = {
         "name": player.name,
         "elo": player.elo,
@@ -71,13 +118,13 @@ def get_player_profile(
             if profile.calculated_checkout_percentage is not None
             else player.checkout
         ),
-        "matches": profile.matches_played,
-        "wins": profile.wins,
-        "losses": profile.losses,
-        "win_pct": profile.win_percentage,
-        "legs_won": profile.legs_won,
-        "legs_lost": profile.legs_lost,
-        "leg_difference": profile.leg_difference,
+        "matches": matches,
+        "wins": wins,
+        "losses": losses,
+        "win_pct": win_pct,
+        "legs_won": legs_won,
+        "legs_lost": legs_lost,
+        "leg_difference": legs_won - legs_lost,
         "first_nine_average": (
             profile.average_first_nine_average
         ),
@@ -95,7 +142,7 @@ def get_player_profile(
         },
         "confidence": min(
             95,
-            40 + profile.matches_played,
+            40 + matches,
         ),
         "first_match_date": (
             profile.first_match_date.isoformat()

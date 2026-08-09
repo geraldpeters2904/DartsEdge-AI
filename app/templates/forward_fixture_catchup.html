@@ -3,46 +3,53 @@
 {% block content %}
 
 <div class="page-header">
-  <div>
-    <div class="eyebrow">Sprint 2.6</div>
-    <h1>Forward Fixture Catch-Up</h1>
-    <p class="muted">
-      {{ candidate_count }} stale scheduled MODUS fixture(s) retained for review.
-    </p>
-  </div>
+    <div>
+        <div class="eyebrow">Sprint 2.6</div>
+        <h1>Forward Fixture Catch-Up</h1>
+        <p>
+            {{ candidate_count }} stale scheduled MODUS fixture(s)
+            retained for review.
+        </p>
+    </div>
 </div>
 
 <section class="panel">
-  <div class="panel-header">
-    <div>
-      <div class="eyebrow">Classification</div>
-      <h2>Stale fixture queue</h2>
-    </div>
-  </div>
-
-  <p class="muted">
-    Legacy orphan fixtures are historical rows with no canonical provider
-    mapping. They are preserved for audit but excluded from Upcoming Fixture
-    Intelligence and are not force-completed.
-  </p>
-
-  {% if candidates %}
-    {% for item in candidates %}
-    <div style="padding:.75rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
-      <strong>{{ item.player_a }} v {{ item.player_b }}</strong>
-      <div class="muted">
-        {{ item.fixture_date }}
-        · Fixture #{{ item.fixture_id }}
-        · {{ item.days_stale }} day(s) stale
-        · {{ item.classification }}
-      </div>
-    </div>
-    {% endfor %}
-  {% else %}
-    <p class="muted">
-      No stale scheduled MODUS fixtures were found.
+    <h2>Refresh readiness</h2>
+    <p>
+        Review stale scheduled fixtures before refreshing forward
+        fixture intelligence.
     </p>
-  {% endif %}
+</section>
+
+<section class="panel">
+    <h2>Stale scheduled fixtures</h2>
+
+    <div class="status-card">
+        <strong>Classification</strong>
+        <div>Stale fixture queue</div>
+    </div>
+
+    <p>
+        Legacy orphan fixtures are historical rows with no canonical
+        provider mapping. They are preserved for audit but excluded
+        from Upcoming Fixture Intelligence and are not force-completed.
+    </p>
+
+    {% if candidates %}
+        {% for item in candidates %}
+        <div class="fixture-card">
+            <strong>{{ item.player_a }} v {{ item.player_b }}</strong>
+            <div>
+                {{ item.fixture_date }}
+                · Fixture #{{ item.fixture_id }}
+                · {{ item.days_stale }} day(s) stale
+                · {{ item.classification }}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No stale scheduled MODUS fixtures were found.</p>
+    {% endif %}
 </section>
 
 {% endblock %}

@@ -292,41 +292,72 @@ class IncrementalHistoricalSeriesPipelineService:
                     provider_name=config.provider,
                 )
 
-                expected_path = (
-                    request.destination_folder
-                    / request.destination_filename
+                destination_folder = getattr(
+                    request,
+                    "destination_folder",
+                    None,
+                )
+                destination_filename = getattr(
+                    request,
+                    "destination_filename",
+                    None,
                 )
 
                 if (
-                    not getattr(capture, "successful", False)
-                    or not expected_path.is_file()
+                    destination_folder is not None
+                    and destination_filename
                 ):
-                    return IncrementalHistoricalSeriesPipelineResult(
-                        root=root_path,
-                        action=(
-                            "waiting"
-                            if getattr(capture, "waiting", False)
-                            else "error"
-                        ),
-                        message=(
-                            getattr(capture, "message", None)
-                            or (
-                                "Capture did not produce the expected "
-                                f"file for match {request.match_id}."
-                            )
-                        ),
-                        continue_running=False,
-                        current_folder=incomplete.folder,
-                        current_match_id=request.match_id,
-                        preparation=preparation,
-                        error=(
-                            getattr(capture, "error", None)
-                            or (
-                                "Expected capture file was not written: "
-                                f"{expected_path}"
-                            )
-                        ),
+                    expected_path = (
+                        destination_folder
+                        / destination_filename
                     )
+
+                    if (
+                        not getattr(
+                            capture,
+                            "successful",
+                            True,
+                        )
+                        or not expected_path.is_file()
+                    ):
+                        return IncrementalHistoricalSeriesPipelineResult(
+                            root=root_path,
+                            action=(
+                                "waiting"
+                                if getattr(
+                                    capture,
+                                    "waiting",
+                                    False,
+                                )
+                                else "error"
+                            ),
+                            message=(
+                                getattr(
+                                    capture,
+                                    "message",
+                                    None,
+                                )
+                                or (
+                                    "Capture did not produce the expected "
+                                    f"file for match {request.match_id}."
+                                )
+                            ),
+                            continue_running=False,
+                            current_folder=incomplete.folder,
+                            current_match_id=request.match_id,
+                            preparation=preparation,
+                            error=(
+                                getattr(
+                                    capture,
+                                    "error",
+                                    None,
+                                )
+                                or (
+                                    "Expected capture file was not written: "
+                                    f"{expected_path}"
+                                )
+                            ),
+                        )
 
                 refreshed = (
                     self.capture_session_service
@@ -335,9 +366,19 @@ class IncrementalHistoricalSeriesPipelineService:
                     )
                 )
 
+                next_item = getattr(
+                    refreshed,
+                    "next_item",
+                    None,
+                )
+
                 if (
-                    refreshed.next_item is not None
-                    and refreshed.next_item.match_id
+                    next_item is not None
+                    and getattr(
+                        next_item,
+                        "match_id",
+                        None,
+                    )
                     == request.match_id
                 ):
                     return IncrementalHistoricalSeriesPipelineResult(

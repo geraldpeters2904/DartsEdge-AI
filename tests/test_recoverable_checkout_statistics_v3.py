@@ -16,16 +16,15 @@ class RecoverableCheckoutStatisticsNarrowTests(unittest.TestCase):
             (None, None, None),
         )
 
-    def test_percentage_mismatch_still_raises(self):
-        with self.assertRaisesRegex(
-            ValueError,
-            "does not match",
-        ):
+    def test_percentage_mismatch_is_recovered(self):
+        self.assertEqual(
             _parse_checkout_statistics(
                 player_name="Example Player",
                 fraction="2/4",
                 percentage="40%",
-            )
+            ),
+            (2, 4, 50.0),
+        )
 
     def test_valid_statistics_are_preserved(self):
         self.assertEqual(

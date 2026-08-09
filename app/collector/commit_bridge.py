@@ -422,6 +422,7 @@ class CollectorCommitBridge:
         player = resolve_player_by_name(
             db,
             player_name,
+            provider=provider,
         )
 
         if player is None:
