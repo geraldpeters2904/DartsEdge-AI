@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}MODUS Match-ID Diagnostic · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 3.0 Pack 1.1</div>
+    <h1>MODUS Match-ID Extraction Diagnostic</h1>
+    <p class="muted">
+      Compare raw official match-detail links with canonical fixture parsing.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Summary</h2>
+  <p><strong>Series:</strong> {{ report.series_label }}</p>
+  <p><strong>Week:</strong> {{ report.week_label }}</p>
+  <p><strong>Total raw links:</strong> {{ report.total_raw_links }}</p>
+  <p><strong>Total unique match IDs:</strong> {{ report.total_unique_match_ids }}</p>
+  <p><strong>Total canonical fixtures:</strong> {{ report.total_canonical_fixtures }}</p>
+  <p><strong>Message:</strong> {{ report.message }}</p>
+</section>
+
+{% for target in report.targets %}
+<section class="panel">
+  <h2>{{ target.group }}</h2>
+  <p><strong>HTML length:</strong> {{ target.html_length }}</p>
+  <p><strong>Raw match links:</strong> {{ target.raw_match_link_count }}</p>
+  <p><strong>Unique match IDs:</strong> {{ target.unique_match_ids|length }}</p>
+  <p><strong>Canonical fixtures:</strong> {{ target.canonical_fixture_count }}</p>
+  <p><strong>Canonical IDs retained:</strong> {{ target.canonical_fixture_ids|length }}</p>
+  <p><strong>Message:</strong> {{ target.message }}</p>
+
+  {% if target.unique_match_ids %}
+  <div class="muted">
+    <strong>Sample IDs:</strong>
+    {{ target.unique_match_ids[:12]|join(", ") }}
+  </div>
+  {% endif %}
+
+  {% if target.sample_links %}
+  <div style="margin-top:.7rem">
+    <strong>Sample raw links</strong>
+    {% for link in target.sample_links %}
+      <div class="muted">{{ link }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% endblock %}
