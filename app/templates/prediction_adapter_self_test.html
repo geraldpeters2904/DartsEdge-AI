@@ -1,0 +1,75 @@
+
+{% extends "base.html" %}
+{% block title %}Prediction Self-Test · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.9 Pack 3</div>
+    <h1>Prediction Adapter Self-Test</h1>
+    <p class="muted">
+      Diagnostic run against a recent completed MODUS match.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Self-test result</h2>
+
+  <p><strong>Ready:</strong> {{ "YES" if report.ready else "NO" }}</p>
+  <p><strong>Fixture:</strong>
+    {% if report.fixture_id %}
+      #{{ report.fixture_id }} · {{ report.fixture_date }}
+      · {{ report.player_a }} v {{ report.player_b }}
+    {% else %}
+      —
+    {% endif %}
+  </p>
+
+  <p><strong>Model:</strong> {{ report.model_name or "—" }}</p>
+  <p><strong>Minimum history:</strong> {{ report.minimum_history_matches }}</p>
+
+  <p><strong>{{ report.player_a or "Player A" }} probability:</strong>
+    {% if report.player_a_probability is not none %}
+      {{ '%.2f'|format(report.player_a_probability * 100) }}%
+    {% else %}
+      —
+    {% endif %}
+  </p>
+
+  <p><strong>{{ report.player_a or "Player A" }} fair odds:</strong>
+    {% if report.player_a_fair_odds is not none %}
+      {{ '%.2f'|format(report.player_a_fair_odds) }}
+    {% else %}
+      —
+    {% endif %}
+  </p>
+
+  <p><strong>{{ report.player_b or "Player B" }} probability:</strong>
+    {% if report.player_b_probability is not none %}
+      {{ '%.2f'|format(report.player_b_probability * 100) }}%
+    {% else %}
+      —
+    {% endif %}
+  </p>
+
+  <p><strong>{{ report.player_b or "Player B" }} fair odds:</strong>
+    {% if report.player_b_fair_odds is not none %}
+      {{ '%.2f'|format(report.player_b_fair_odds) }}
+    {% else %}
+      —
+    {% endif %}
+  </p>
+
+  <p><strong>Model confidence:</strong>
+    {% if report.model_confidence is not none %}
+      {{ '%.2f'|format(report.model_confidence * 100) }}%
+    {% else %}
+      —
+    {% endif %}
+  </p>
+
+  <p><strong>Message:</strong> {{ report.message }}</p>
+</section>
+
+{% endblock %}

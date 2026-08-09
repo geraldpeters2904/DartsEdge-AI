@@ -19,6 +19,7 @@ from app.routes.live_fixture_edge_capture import router as live_fixture_edge_cap
 from app.routes.live_edge_monitor import router as live_edge_monitor_router
 from app.routes.prediction_readiness_dashboard import router as prediction_readiness_dashboard_router
 from app.routes.prediction_adapter_diagnostic import router as prediction_adapter_diagnostic_router
+from app.routes.prediction_adapter_self_test import router as prediction_adapter_self_test_router
 from app.services.live_edge_monitor_service import live_edge_monitor
 from app.services.forward_schedule_monitor_service import forward_schedule_monitor
 from app.routes.opportunity_replay import router as opportunity_replay_router
@@ -120,6 +121,7 @@ app.include_router(live_fixture_edge_capture_router)
 app.include_router(live_edge_monitor_router)
 app.include_router(prediction_readiness_dashboard_router)
 app.include_router(prediction_adapter_diagnostic_router)
+app.include_router(prediction_adapter_self_test_router)
 live_edge_monitor.start()
 forward_schedule_monitor.start()
 app.include_router(opportunity_replay_router)
