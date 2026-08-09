@@ -1,0 +1,43 @@
+
+{% extends "base.html" %}
+{% block title %}Prediction Adapter · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.9 Pack 1</div>
+    <h1>Prediction Adapter Diagnostic</h1>
+    <p class="muted">
+      Verify which existing DartsEdge prediction callable can feed Fixture Edge.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Adapter status</h2>
+
+  <p><strong>Ready:</strong> {{ "YES" if diagnostic.ready else "NO" }}</p>
+  <p><strong>Resolved module:</strong> {{ diagnostic.module_name or "—" }}</p>
+  <p><strong>Resolved function:</strong> {{ diagnostic.function_name or "—" }}</p>
+  <p><strong>Message:</strong> {{ diagnostic.message }}</p>
+</section>
+
+<section class="panel">
+  <h2>Candidate callables</h2>
+
+  {% for item in diagnostic.candidates %}
+  <div style="padding:.7rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
+    <strong>{{ item.module_name }} · {{ item.function_name }}</strong>
+    <div class="muted">
+      Import {{ "OK" if item.import_ok else "FAILED" }}
+      · Callable {{ "YES" if item.callable_found else "NO" }}
+      · Signature {{ "COMPATIBLE" if item.compatible_signature else "NOT COMPATIBLE" }}
+    </div>
+    {% if item.error %}
+      <div class="muted">{{ item.error }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+{% endblock %}
