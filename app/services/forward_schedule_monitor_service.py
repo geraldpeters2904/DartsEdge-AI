@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 from typing import Optional
 
@@ -79,8 +79,8 @@ class ForwardScheduleMonitor:
             self._copy(
                 running=True,
                 started_at=now.isoformat(),
-                next_run_at=datetime.utcfromtimestamp(
-                    now.timestamp() + self.initial_delay_seconds
+                next_run_at=(
+                    now + timedelta(seconds=self.initial_delay_seconds)
                 ).isoformat(),
                 last_message="Forward schedule monitor started.",
                 last_error=None,
@@ -110,8 +110,8 @@ class ForwardScheduleMonitor:
             with self._lock:
                 self._copy(
                     last_run_at=now.isoformat(),
-                    next_run_at=datetime.utcfromtimestamp(
-                        now.timestamp() + self.interval_seconds
+                    next_run_at=(
+                        now + timedelta(seconds=self.interval_seconds)
                     ).isoformat() if self._status.running else None,
                     runs=self._status.runs + 1,
                     latest_series=report.series_label,
@@ -125,8 +125,8 @@ class ForwardScheduleMonitor:
             with self._lock:
                 self._copy(
                     last_run_at=now.isoformat(),
-                    next_run_at=datetime.utcfromtimestamp(
-                        now.timestamp() + self.interval_seconds
+                    next_run_at=(
+                        now + timedelta(seconds=self.interval_seconds)
                     ).isoformat() if self._status.running else None,
                     runs=self._status.runs + 1,
                     failures=self._status.failures + 1,
