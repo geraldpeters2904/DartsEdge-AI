@@ -27,6 +27,8 @@
   </p>
 
   <p><strong>Model:</strong> {{ report.model_name or "—" }}</p>
+  <p><strong>Model version:</strong> {{ report.model_version or "—" }}</p>
+  <p><strong>Predicted winner:</strong> {{ report.predicted_winner or "—" }}</p>
   <p><strong>Minimum history:</strong> {{ report.minimum_history_matches }}</p>
 
   <p><strong>{{ report.player_a or "Player A" }} probability:</strong>
