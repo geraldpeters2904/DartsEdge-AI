@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Live Operations · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.5</div>
+    <h1>Live Operations Centre</h1>
+    <p class="muted">
+      Generated {{ summary.generated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC.
+    </p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:.8rem;margin:1rem 0 1.4rem">
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Scheduled matches</span>
+    <strong class="prediction-kpi-value">{{ summary.scheduled_matches }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Completed matches</span>
+    <strong class="prediction-kpi-value">{{ summary.completed_matches }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Odds snapshots</span>
+    <strong class="prediction-kpi-value">{{ summary.odds_snapshots }}</strong>
+  </article>
+  <article class="prediction-kpi-card">
+    <span class="prediction-kpi-label">Odds movements</span>
+    <strong class="prediction-kpi-value">{{ summary.odds_movements }}</strong>
+  </article>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Capture health</div>
+      <h2>Live market readiness</h2>
+    </div>
+  </div>
+
+  <p><strong>Paddy Power bridge:</strong>
+    {{ "READY" if summary.paddy_power_ready else "NOT READY" }}
+  </p>
+
+  <p><strong>Resolved function:</strong>
+    {{ summary.paddy_power_function or "—" }}
+  </p>
+
+  <p><strong>Last odds snapshot:</strong>
+    {% if summary.latest_odds_at %}
+      {{ summary.latest_odds_at.strftime('%Y-%m-%d %H:%M:%S') }}
+    {% else %}
+      No live odds captured yet
+    {% endif %}
+  </p>
+
+  <p><strong>Last odds movement:</strong>
+    {% if summary.latest_movement_at %}
+      {{ summary.latest_movement_at.strftime('%Y-%m-%d %H:%M:%S') }}
+    {% else %}
+      No movement recorded yet
+    {% endif %}
+  </p>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Market activity</div>
+      <h2>Recent odds movements</h2>
+    </div>
+  </div>
+
+  {% if movements %}
+    {% for movement in movements %}
+    <div style="padding:.7rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
+      <strong>{{ movement.detected_at.strftime('%H:%M:%S') }}</strong>
+      · {{ movement.bookmaker_code }}
+      · Fixture #{{ movement.fixture_id }}
+      · {{ movement.selection }}
+      · {{ '%.2f'|format(movement.previous_odds) }}
+      → {{ '%.2f'|format(movement.new_odds) }}
+      · {{ movement.direction }}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">No live odds movements have been recorded yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Operations log</div>
+      <h2>Current state</h2>
+    </div>
+  </div>
+
+  <p><strong>System:</strong> {{ summary.paddy_power_message }}</p>
+  <p><strong>Warehouse:</strong>
+    {{ summary.odds_snapshots }} snapshots /
+    {{ summary.odds_movements }} movements
+  </p>
+</section>
+
+{% endblock %}
