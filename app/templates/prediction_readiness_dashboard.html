@@ -1,0 +1,104 @@
+
+{% extends "base.html" %}
+{% block title %}Prediction Readiness · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.8 Pack 3</div>
+    <h1>Prediction Readiness Dashboard</h1>
+    <p class="muted">
+      One view of schedule, history, model, odds and edge readiness.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Pipeline status</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:.8rem">
+    <div><small>Fixtures</small><br><strong>{{ dashboard.fixture_count }}</strong></div>
+    <div><small>History ready</small><br><strong>{{ dashboard.history_ready_count }}</strong></div>
+    <div><small>Model ready</small><br><strong>{{ dashboard.model_ready_count }}</strong></div>
+    <div><small>Odds ready</small><br><strong>{{ dashboard.odds_ready_count }}</strong></div>
+    <div><small>Edge ready</small><br><strong>{{ dashboard.edge_ready_count }}</strong></div>
+    <div><small>Value fixtures</small><br><strong>{{ dashboard.value_fixture_count }}</strong></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Automation health</h2>
+
+  <p>
+    <strong>Forward monitor:</strong>
+    {{ "RUNNING" if dashboard.forward_monitor_running else "STOPPED" }}
+    · Runs {{ dashboard.forward_monitor_runs }}
+    · Failures {{ dashboard.forward_monitor_failures }}
+    · Future fixtures {{ dashboard.forward_monitor_future_fixtures }}
+  </p>
+
+  <p>
+    <strong>Live edge monitor:</strong>
+    {{ "RUNNING" if dashboard.live_edge_monitor_running else "STOPPED" }}
+    · Runs {{ dashboard.live_edge_monitor_runs }}
+    · Failures {{ dashboard.live_edge_monitor_failures }}
+    · Priced rows {{ dashboard.live_edge_last_priced_rows }}
+    · Value rows {{ dashboard.live_edge_last_value_rows }}
+  </p>
+</section>
+
+<section class="panel">
+  <h2>Fixture readiness</h2>
+
+  {% if dashboard.rows %}
+    {% for row in dashboard.rows %}
+    <div style="padding:.9rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
+      <strong>{{ row.player_a }} v {{ row.player_b }}</strong>
+
+      <div class="muted">
+        {{ row.fixture_date }}
+        · Fixture #{{ row.fixture_id }}
+        · History {{ row.history_label }}
+        · Minimum history {{ row.minimum_history_matches }}
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:.7rem;margin-top:.7rem">
+        <div>
+          <small>History</small><br>
+          <strong>{{ "READY" if row.history_ready else "NOT READY" }}</strong>
+        </div>
+
+        <div>
+          <small>Model</small><br>
+          <strong>{{ "READY" if row.model_ready else "WAITING" }}</strong>
+        </div>
+
+        <div>
+          <small>Odds</small><br>
+          <strong>{{ "READY" if row.odds_ready else "WAITING" }}</strong>
+        </div>
+
+        <div>
+          <small>Edge</small><br>
+          <strong>{{ "READY" if row.edge_ready else "WAITING" }}</strong>
+        </div>
+
+        <div>
+          <small>Verdict</small><br>
+          <strong>{{ row.best_verdict }}</strong>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:.5rem">
+        {{ row.message }}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">
+      No genuinely upcoming MODUS fixtures are currently stored.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}
