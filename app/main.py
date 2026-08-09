@@ -14,6 +14,8 @@ from app.routes.upcoming_fixture_intelligence import router as upcoming_fixture_
 from app.routes.forward_fixture_catchup import router as forward_fixture_catchup_router
 from app.routes.fixture_edge import router as fixture_edge_router
 from app.routes.forward_schedule import router as forward_schedule_router
+from app.routes.forward_schedule_monitor import router as forward_schedule_monitor_router
+from app.services.forward_schedule_monitor_service import forward_schedule_monitor
 from app.routes.opportunity_replay import router as opportunity_replay_router
 from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
 from app.routes.feed_connectors import router as feed_connectors_router
@@ -108,6 +110,8 @@ app.include_router(upcoming_fixture_intelligence_router)
 app.include_router(forward_fixture_catchup_router)
 app.include_router(fixture_edge_router)
 app.include_router(forward_schedule_router)
+app.include_router(forward_schedule_monitor_router)
+forward_schedule_monitor.start()
 app.include_router(opportunity_replay_router)
 app.include_router(feed_connectors_router)
 app.include_router(strategy_analytics_router)

@@ -1,5 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Live Operations · DartsEdge AI{% endblock %}
+{% block title %}Live Operations · DartsEdge AI
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Forward discovery</div>
+      <h2>Upcoming schedule monitor</h2>
+    </div>
+  </div>
+  <p><strong>Status:</strong> {{ "RUNNING" if forward_monitor.running else "STOPPED" }}</p>
+  <p><strong>Runs:</strong> {{ forward_monitor.runs }}</p>
+  <p><strong>Failures:</strong> {{ forward_monitor.failures }}</p>
+  <p><strong>Latest series/week:</strong>
+    {{ forward_monitor.latest_series or "—" }} /
+    {{ forward_monitor.latest_week or "—" }}
+  </p>
+  <p><strong>Future fixtures:</strong> {{ forward_monitor.future_fixtures }}</p>
+  <p><strong>Last run:</strong> {{ forward_monitor.last_run_at or "—" }}</p>
+  <p><strong>Next run:</strong> {{ forward_monitor.next_run_at or "—" }}</p>
+  <p class="muted">{{ forward_monitor.last_message }}</p>
+</section>
+
+{% endblock %}
 {% block content %}
 
 <div class="page-header">

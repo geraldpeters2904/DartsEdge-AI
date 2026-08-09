@@ -1,0 +1,34 @@
+
+{% extends "base.html" %}
+{% block title %}Forward Monitor · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.7 Pack 3</div>
+    <h1>Forward Schedule Monitor</h1>
+    <p class="muted">Automatic discovery of newly published MODUS fixtures.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Monitor status</h2>
+  <p><strong>Running:</strong> {{ "YES" if status.running else "NO" }}</p>
+  <p><strong>Runs:</strong> {{ status.runs }}</p>
+  <p><strong>Failures:</strong> {{ status.failures }}</p>
+  <p><strong>Latest series:</strong> {{ status.latest_series or "—" }}</p>
+  <p><strong>Latest week:</strong> {{ status.latest_week or "—" }}</p>
+  <p><strong>Future fixtures:</strong> {{ status.future_fixtures }}</p>
+  <p><strong>Last run:</strong> {{ status.last_run_at or "—" }}</p>
+  <p><strong>Next run:</strong> {{ status.next_run_at or "—" }}</p>
+  <p><strong>Message:</strong> {{ status.last_message }}</p>
+  {% if status.last_error %}
+  <p><strong>Last error:</strong> {{ status.last_error }}</p>
+  {% endif %}
+
+  <form method="post" action="/forward-monitor/run-once">
+    <button type="submit">Run discovery now</button>
+  </form>
+</section>
+
+{% endblock %}

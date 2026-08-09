@@ -5,6 +5,7 @@ from app.services.live_operations_centre_service import (
     build_live_ops_summary,
     recent_odds_movements,
 )
+from app.services.forward_schedule_monitor_service import forward_schedule_monitor
 from app.templates_config import templates
 
 
@@ -28,6 +29,7 @@ def live_operations_page(request: Request):
                 "request": request,
                 "summary": summary,
                 "movements": movements,
+                "forward_monitor": forward_schedule_monitor.status(),
             },
         )
     finally:
