@@ -57,16 +57,23 @@ def build_upcoming_fixture_intelligence(
     competition_keyword: str = "MODUS",
     minimum_history_matches: int = 20,
     limit: int = 100,
+    today: Optional[date] = None,
 ) -> tuple[UpcomingFixtureIntelligence, ...]:
     keyword = str(
         competition_keyword
         or "MODUS"
     ).strip()
 
+    current_day = (
+        today
+        or date.today()
+    )
+
     query = (
         db.query(Match)
         .filter(
             Match.status == "scheduled",
+            Match.date >= current_day,
         )
         .order_by(
             Match.date.asc(),

@@ -4,10 +4,10 @@
 
 <div class="page-header">
   <div>
-    <div class="eyebrow">Sprint 2.6 Pack 2</div>
+    <div class="eyebrow">Sprint 2.6</div>
     <h1>Forward Fixture Catch-Up</h1>
     <p class="muted">
-      {{ candidate_count }} stale scheduled MODUS fixture(s) awaiting lifecycle confirmation.
+      {{ candidate_count }} stale scheduled MODUS fixture(s) retained for review.
     </p>
   </div>
 </div>
@@ -15,38 +15,16 @@
 <section class="panel">
   <div class="panel-header">
     <div>
-      <div class="eyebrow">Lifecycle bridge</div>
-      <h2>Refresh readiness</h2>
+      <div class="eyebrow">Classification</div>
+      <h2>Stale fixture queue</h2>
     </div>
   </div>
-
-  <p>
-    <strong>Status:</strong>
-    {{ "READY" if resolution.ready else "NOT READY" }}
-  </p>
-
-  <p>
-    <strong>Resolved:</strong>
-    {% if resolution.ready %}
-      {{ resolution.module_name }} · {{ resolution.function_name }}
-    {% else %}
-      No compatible lifecycle refresh callable found.
-    {% endif %}
-  </p>
 
   <p class="muted">
-    This page is read-only. It never marks a fixture completed without the
-    existing lifecycle/capture service confirming the result.
+    Legacy orphan fixtures are historical rows with no canonical provider
+    mapping. They are preserved for audit but excluded from Upcoming Fixture
+    Intelligence and are not force-completed.
   </p>
-</section>
-
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <div class="eyebrow">Catch-up queue</div>
-      <h2>Stale scheduled fixtures</h2>
-    </div>
-  </div>
 
   {% if candidates %}
     {% for item in candidates %}
@@ -56,7 +34,7 @@
         {{ item.fixture_date }}
         · Fixture #{{ item.fixture_id }}
         · {{ item.days_stale }} day(s) stale
-        · {{ item.tournament }}
+        · {{ item.classification }}
       </div>
     </div>
     {% endfor %}

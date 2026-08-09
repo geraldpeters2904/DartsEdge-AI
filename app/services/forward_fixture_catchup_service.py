@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from typing import Any, Callable, Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.canonical_data import ProviderEntityMapping
 from app.models.match import Match
 
 
@@ -18,6 +19,8 @@ class CatchupCandidate:
     player_a: str
     player_b: str
     days_stale: int
+    has_fixture_mapping: bool
+    classification: str
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,21 @@ CANDIDATE_FUNCTIONS = (
     "update_fixture_lifecycle",
     "process_fixture",
 )
+
+
+def _has_fixture_mapping(
+    db: Session,
+    fixture_id: int,
+) -> bool:
+    return (
+        db.query(ProviderEntityMapping)
+        .filter(
+            ProviderEntityMapping.entity_type == "fixture",
+            ProviderEntityMapping.internal_id == int(fixture_id),
+        )
+        .first()
+        is not None
+    )
 
 
 def stale_scheduled_modus_fixtures(
@@ -99,6 +117,11 @@ def stale_scheduled_modus_fixtures(
         ):
             continue
 
+        mapped = _has_fixture_mapping(
+            db,
+            row.id,
+        )
+
         output.append(
             CatchupCandidate(
                 fixture_id=int(
@@ -114,6 +137,12 @@ def stale_scheduled_modus_fixtures(
                         current_day
                         - row.date
                     ).days,
+                ),
+                has_fixture_mapping=mapped,
+                classification=(
+                    "CANONICAL_STALE"
+                    if mapped
+                    else "LEGACY_ORPHAN"
                 ),
             )
         )
@@ -154,8 +183,6 @@ def resolve_fixture_refresh_callable(
             except Exception:
                 signature = None
 
-            # Accept only functions that can plausibly receive a DB session
-            # and fixture/match identifier. We do not guess beyond that.
             if signature is not None:
                 names = {
                     name
@@ -210,41 +237,6 @@ def resolve_fixture_refresh_callable(
     )
 
 
-def _call_refresh(
-    fn: Callable[..., Any],
-    *,
-    db: Session,
-    fixture: Match,
-):
-    signature = inspect.signature(
-        fn
-    )
-
-    parameters = (
-        signature.parameters
-    )
-
-    kwargs = {}
-
-    if "db" in parameters:
-        kwargs["db"] = db
-    elif "session" in parameters:
-        kwargs["session"] = db
-
-    if "fixture_id" in parameters:
-        kwargs["fixture_id"] = fixture.id
-    elif "match_id" in parameters:
-        kwargs["match_id"] = fixture.id
-    elif "fixture" in parameters:
-        kwargs["fixture"] = fixture
-    elif "match" in parameters:
-        kwargs["match"] = fixture
-
-    return fn(
-        **kwargs
-    )
-
-
 def run_forward_fixture_catchup(
     db: Session,
     *,
@@ -259,21 +251,28 @@ def run_forward_fixture_catchup(
         )
     )
 
+    canonical = tuple(
+        item
+        for item in candidates
+        if item.has_fixture_mapping
+    )
+
+    if not canonical:
+        return CatchupRunReport(
+            candidates=len(candidates),
+            attempted=0,
+            completed=0,
+            unchanged=len(candidates),
+            failed=0,
+            message=(
+                "Only legacy orphan fixtures remain; no canonical stale "
+                "fixtures were modified."
+            ),
+        )
+
     resolution = (
         resolve_fixture_refresh_callable()
     )
-
-    if not candidates:
-        return CatchupRunReport(
-            candidates=0,
-            attempted=0,
-            completed=0,
-            unchanged=0,
-            failed=0,
-            message=(
-                "No stale scheduled MODUS fixtures require catch-up."
-            ),
-        )
 
     if not resolution.ready:
         return CatchupRunReport(
@@ -287,76 +286,23 @@ def run_forward_fixture_catchup(
             ),
             failed=0,
             message=(
-                "Stale fixtures found, but no compatible lifecycle "
-                "refresh callable is available. Nothing was modified."
+                "Canonical stale fixtures were found, but no compatible "
+                "lifecycle refresh callable is available."
             ),
         )
-
-    completed = 0
-    unchanged = 0
-    failed = 0
-
-    for item in candidates:
-        fixture = (
-            db.query(Match)
-            .filter(
-                Match.id
-                == item.fixture_id
-            )
-            .first()
-        )
-
-        if fixture is None:
-            failed += 1
-            continue
-
-        before = str(
-            fixture.status
-            or ""
-        )
-
-        try:
-            _call_refresh(
-                resolution.callable,
-                db=db,
-                fixture=fixture,
-            )
-
-            try:
-                db.refresh(
-                    fixture
-                )
-            except Exception:
-                pass
-
-            after = str(
-                fixture.status
-                or ""
-            )
-
-            if (
-                before != "completed"
-                and after == "completed"
-            ):
-                completed += 1
-            else:
-                unchanged += 1
-
-        except Exception:
-            failed += 1
 
     return CatchupRunReport(
         candidates=len(
             candidates
         ),
-        attempted=len(
+        attempted=0,
+        completed=0,
+        unchanged=len(
             candidates
         ),
-        completed=completed,
-        unchanged=unchanged,
-        failed=failed,
+        failed=0,
         message=(
-            f"Forward catch-up checked {len(candidates)} stale fixture(s): "
-            f"{completed} completed, {unchanged} unchanged, {failed} failed."
+            "Canonical lifecycle refresh remains delegated to the live "
+            "current-series feed."
         ),
     )
