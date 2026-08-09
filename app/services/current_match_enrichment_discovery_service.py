@@ -1,9 +1,9 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, timedelta
-import re
 from typing import Optional
 
 from sqlalchemy import inspect, text
@@ -53,30 +53,12 @@ class CurrentMatchEnrichmentDiscoveryReport:
     message: str
 
 
-def _normalise(value: str | None) -> str:
-    return " ".join(
-        (value or "")
-        .strip()
-        .casefold()
-        .split()
-    )
 
-
-def _fixture_key(
-    player_a: str,
-    player_b: str,
-) -> frozenset[str]:
-    return frozenset(
-        (
-            _normalise(player_a),
-            _normalise(player_b),
-        )
-    )
-
-
-def _external_match_id(value) -> Optional[int]:
+def _external_match_id(value):
     if value is None:
         return None
+
+    import re
 
     match = re.search(
         r"(\d+)",
@@ -90,75 +72,75 @@ def _external_match_id(value) -> Optional[int]:
         match.group(1)
     )
 
+def _normalise(value: str | None) -> str:
+    return " ".join(
+        (value or "")
+        .strip()
+        .casefold()
+        .split()
+    )
 
-def _fixture_date(fixture) -> Optional[date]:
-    for name in (
-        "fixture_date",
-        "date",
-        "match_date",
-    ):
-        value = getattr(
-            fixture,
-            name,
-            None,
+
+def _pair_key(
+    player_a: str,
+    player_b: str,
+) -> frozenset[str]:
+    return frozenset(
+        (
+            _normalise(player_a),
+            _normalise(player_b),
         )
-
-        if value is None:
-            continue
-
-        if isinstance(
-            value,
-            date,
-        ):
-            return value
-
-        try:
-            return date.fromisoformat(
-                str(value)[:10]
-            )
-        except Exception:
-            continue
-
-    return None
+    )
 
 
-def _fixture_stage(fixture) -> str:
+def _canonical_pair_key(fixture) -> frozenset[str]:
+    return _pair_key(
+        getattr(
+            fixture,
+            "player_a_name",
+            "",
+        ),
+        getattr(
+            fixture,
+            "player_b_name",
+            "",
+        ),
+    )
+
+
+def _canonical_stage(fixture) -> str:
     return _normalise(
         getattr(
             fixture,
             "stage",
             None,
         )
+        or getattr(
+            fixture,
+            "group",
+            None,
+        )
     )
 
 
-def _fixture_match_id(fixture) -> Optional[int]:
-    direct = getattr(
+def _canonical_match_id(
+    fixture,
+) -> Optional[int]:
+    external_id = getattr(
         fixture,
-        "match_id",
+        "external_id",
         None,
     )
 
-    if direct is not None:
-        try:
-            return int(
-                direct
-            )
-        except Exception:
-            pass
+    if external_id:
+        digits = "".join(
+            ch
+            for ch in str(external_id)
+            if ch.isdigit()
+        )
 
-    provider_id = getattr(
-        fixture,
-        "provider_id",
-        None,
-    )
-
-    value = _external_match_id(
-        provider_id
-    )
-
-    if value is not None:
-        return value
+        if digits:
+            return int(digits)
 
     source = getattr(
         fixture,
@@ -166,15 +148,25 @@ def _fixture_match_id(fixture) -> Optional[int]:
         None,
     )
 
-    external_id = getattr(
+    source_external_id = getattr(
         source,
         "external_id",
         None,
     )
 
-    return _external_match_id(
-        external_id
-    )
+    if source_external_id:
+        digits = "".join(
+            ch
+            for ch in str(
+                source_external_id
+            )
+            if ch.isdigit()
+        )
+
+        if digits:
+            return int(digits)
+
+    return None
 
 
 def _completed_without_performance(
@@ -212,7 +204,7 @@ def _completed_without_performance(
                       FROM player_match_performances p
                       WHERE p.match_id = m.id
                   )
-                ORDER BY m.date DESC, m.id DESC
+                ORDER BY m.date ASC, m.id ASC
                 LIMIT :limit
                 """
             ),
@@ -263,16 +255,176 @@ def _latest_week(catalog):
     )
 
 
-def _canonical_page_fixtures(
-    html_text: str,
+def _official_groups(
+    fixtures,
 ):
-    return (
-        ModusFixtureLifecycleService()
-        .build_canonical_fixtures(
-            html_text
-        )
-        .fixtures
+    grouped = defaultdict(
+        list
     )
+
+    for fixture in fixtures:
+        match_id = (
+            _canonical_match_id(
+                fixture
+            )
+        )
+
+        if match_id is None:
+            continue
+
+        key = (
+            _canonical_stage(
+                fixture
+            ),
+            _canonical_pair_key(
+                fixture
+            ),
+        )
+
+        grouped[key].append(
+            (
+                match_id,
+                fixture,
+            )
+        )
+
+    for key in grouped:
+        grouped[key].sort(
+            key=lambda item: item[0]
+        )
+
+    return grouped
+
+
+def _internal_groups(
+    matches,
+):
+    grouped = defaultdict(
+        list
+    )
+
+    for match in matches:
+        key = (
+            _normalise(
+                getattr(
+                    match,
+                    "stage",
+                    None,
+                )
+            ),
+            _pair_key(
+                match.player_a,
+                match.player_b,
+            ),
+        )
+
+        grouped[key].append(
+            match
+        )
+
+    for key in grouped:
+        grouped[key].sort(
+            key=lambda row: int(
+                row.id
+            )
+        )
+
+    return grouped
+
+
+def _resolve_by_occurrence(
+    internal_matches,
+    official_matches,
+):
+    results = {}
+
+    internal_count = len(
+        internal_matches
+    )
+
+    official_count = len(
+        official_matches
+    )
+
+    if internal_count == 0:
+        return results
+
+    if official_count == 0:
+        for match in internal_matches:
+            results[int(match.id)] = (
+                None,
+                (),
+                "unresolved",
+                (
+                    "No official MODUS fixture matched this player pair "
+                    "and stage/group."
+                ),
+            )
+        return results
+
+    candidate_ids = tuple(
+        match_id
+        for match_id, _fixture
+        in official_matches
+    )
+
+    if internal_count == official_count:
+        for match, (
+            official_id,
+            _fixture,
+        ) in zip(
+            internal_matches,
+            official_matches,
+        ):
+            results[int(match.id)] = (
+                official_id,
+                (
+                    official_id,
+                ),
+                "resolved",
+                (
+                    "Resolved by occurrence order within the same "
+                    "player pair and stage/group."
+                ),
+            )
+
+        return results
+
+    if (
+        internal_count == 1
+        and official_count == 1
+    ):
+        match = internal_matches[0]
+        official_id = (
+            official_matches[0][0]
+        )
+
+        results[int(match.id)] = (
+            official_id,
+            (
+                official_id,
+            ),
+            "resolved",
+            (
+                "One unambiguous official MODUS fixture matched the "
+                "player pair and stage/group."
+            ),
+        )
+
+        return results
+
+    for match in internal_matches:
+        results[int(match.id)] = (
+            None,
+            candidate_ids,
+            "ambiguous",
+            (
+                "The number of internal and official occurrences differs "
+                "for this player pair/stage, so no mapping was guessed."
+            ),
+        )
+
+    return results
 
 
 def run_current_match_enrichment_discovery(
@@ -286,6 +438,9 @@ def run_current_match_enrichment_discovery(
     url_model = ModusUrlModel()
     catalog_service = (
         ModusHistoricalCatalogService()
+    )
+    lifecycle = (
+        ModusFixtureLifecycleService()
     )
 
     try:
@@ -338,7 +493,7 @@ def run_current_match_enrichment_discovery(
             catalog
         )
 
-        official = []
+        official_fixtures = []
 
         for group in CURRENT_GROUPS:
             source_url = (
@@ -367,124 +522,79 @@ def run_current_match_enrichment_discovery(
                 description="MODUS fixture cards",
             )
 
-            official.extend(
-                _canonical_page_fixtures(
+            preview = (
+                lifecycle
+                .build_canonical_fixtures(
                     browser.html()
+                )
+            )
+
+            official_fixtures.extend(
+                preview.fixtures
+            )
+
+        internal_groups = (
+            _internal_groups(
+                missing
+            )
+        )
+
+        official_groups = (
+            _official_groups(
+                official_fixtures
+            )
+        )
+
+        resolutions = {}
+
+        all_keys = set(
+            internal_groups
+        )
+
+        for key in all_keys:
+            internal_rows = (
+                internal_groups.get(
+                    key,
+                    [],
+                )
+            )
+
+            official_rows = (
+                official_groups.get(
+                    key,
+                    [],
+                )
+            )
+
+            resolutions.update(
+                _resolve_by_occurrence(
+                    internal_rows,
+                    official_rows,
                 )
             )
 
         output = []
 
         for match in missing:
-            key = _fixture_key(
-                match.player_a,
-                match.player_b,
-            )
-
-            same_pair = [
-                fixture
-                for fixture in official
-                if (
-                    _fixture_key(
-                        getattr(
-                            fixture,
-                            "player_a",
-                            "",
-                        ),
-                        getattr(
-                            fixture,
-                            "player_b",
-                            "",
-                        ),
-                    )
-                    == key
-                )
-            ]
-
-            same_date = [
-                fixture
-                for fixture in same_pair
-                if (
-                    _fixture_date(
-                        fixture
-                    )
-                    in {
-                        None,
-                        match.date,
-                    }
-                )
-            ]
-
-            stage = _normalise(
-                getattr(
-                    match,
-                    "stage",
+            (
+                resolved_id,
+                candidate_ids,
+                status,
+                message,
+            ) = resolutions.get(
+                int(
+                    match.id
+                ),
+                (
                     None,
-                )
+                    (),
+                    "unresolved",
+                    (
+                        "No official resolution was produced "
+                        "for this fixture."
+                    ),
+                ),
             )
-
-            stage_matches = [
-                fixture
-                for fixture in same_date
-                if (
-                    not stage
-                    or not _fixture_stage(
-                        fixture
-                    )
-                    or _fixture_stage(
-                        fixture
-                    )
-                    == stage
-                )
-            ]
-
-            pool = (
-                stage_matches
-                if stage_matches
-                else same_date
-            )
-
-            candidate_ids = tuple(
-                sorted(
-                    {
-                        match_id
-                        for match_id in (
-                            _fixture_match_id(
-                                fixture
-                            )
-                            for fixture in pool
-                        )
-                        if match_id is not None
-                    }
-                )
-            )
-
-            if len(
-                candidate_ids
-            ) == 1:
-                status = "resolved"
-                resolved = (
-                    candidate_ids[0]
-                )
-                message = (
-                    "One unambiguous official MODUS match ID was resolved."
-                )
-            elif len(
-                candidate_ids
-            ) > 1:
-                status = "ambiguous"
-                resolved = None
-                message = (
-                    "Multiple official MODUS match IDs match this internal fixture; "
-                    "no mapping was guessed."
-                )
-            else:
-                status = "unresolved"
-                resolved = None
-                message = (
-                    "No official MODUS match ID could be resolved from the "
-                    "latest current-series result pages."
-                )
 
             output.append(
                 EnrichmentCandidate(
@@ -499,8 +609,10 @@ def run_current_match_enrichment_discovery(
                         "stage",
                         None,
                     ),
-                    resolved_modus_match_id=resolved,
-                    candidate_modus_match_ids=candidate_ids,
+                    resolved_modus_match_id=resolved_id,
+                    candidate_modus_match_ids=tuple(
+                        candidate_ids
+                    ),
                     status=status,
                     message=message,
                 )
@@ -548,8 +660,8 @@ def run_current_match_enrichment_discovery(
                     output
                 ),
                 message=(
-                    "Current match enrichment discovery completed without "
-                    "writing provider mappings."
+                    "Current match enrichment discovery completed using "
+                    "pair/stage occurrence matching without writing mappings."
                 ),
             )
         )
@@ -559,3 +671,25 @@ def run_current_match_enrichment_discovery(
             db.close()
         finally:
             browser.close()
+
+# Backward compatibility helpers
+
+def _fixture_key(
+    player_a: str,
+    player_b: str,
+):
+    def clean(value):
+        return " ".join(
+            (value or "")
+            .strip()
+            .casefold()
+            .split()
+        )
+
+    return frozenset(
+        (
+            clean(player_a),
+            clean(player_b),
+        )
+    )
+
