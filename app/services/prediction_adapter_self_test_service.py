@@ -48,7 +48,7 @@ def _recent_completed_modus_fixture(
     )
 
 
-def _fair_odds(
+def _normalise_probability(
     probability: Optional[float],
 ) -> Optional[float]:
     if probability is None:
@@ -56,7 +56,23 @@ def _fair_odds(
 
     value = float(probability)
 
-    if value <= 0.0 or value >= 1.0:
+    if 0.0 < value < 1.0:
+        return value
+
+    if 1.0 < value <= 100.0:
+        return value / 100.0
+
+    return None
+
+
+def _fair_odds(
+    probability: Optional[float],
+) -> Optional[float]:
+    value = _normalise_probability(
+        probability
+    )
+
+    if value is None:
         return None
 
     return round(
@@ -139,10 +155,10 @@ def run_prediction_adapter_self_test(
         player_a=context.player_a_name,
         player_b=context.player_b_name,
         ready=True,
-        player_a_probability=float(
+        player_a_probability=_normalise_probability(
             context.player_a_probability
         ),
-        player_b_probability=float(
+        player_b_probability=_normalise_probability(
             context.player_b_probability
         ),
         player_a_fair_odds=_fair_odds(
@@ -151,7 +167,7 @@ def run_prediction_adapter_self_test(
         player_b_fair_odds=_fair_odds(
             context.player_b_probability
         ),
-        model_confidence=float(
+        model_confidence=_normalise_probability(
             context.model_confidence
         ),
         minimum_history_matches=minimum_history,
