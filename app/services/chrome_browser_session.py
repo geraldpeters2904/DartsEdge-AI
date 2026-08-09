@@ -50,6 +50,8 @@ class ChromeBrowserSession:
         if self.running:
             return
 
+        first_error = None
+
         try:
             driver = (
                 self._driver_factory()
@@ -57,11 +59,46 @@ class ChromeBrowserSession:
                 else self._create_chrome_driver()
             )
         except Exception as exc:
+            first_error = exc
             self._cleanup_profile()
-            raise RuntimeError(
-                "Could not start dedicated Chrome automation: "
-                + str(exc)
-            ) from exc
+
+            # On older macOS/Chrome combinations, Selenium may be able to
+            # launch Chrome normally while headless startup fails with
+            # "session not created / chrome not reachable". Preserve the
+            # requested headless behaviour when it works, but recover by
+            # retrying once with a fresh visible Chrome session.
+            if (
+                self._driver_factory is None
+                and self._headless
+            ):
+                original_headless = self._headless
+                self._headless = False
+
+                try:
+                    driver = (
+                        self._create_chrome_driver()
+                    )
+                except Exception as fallback_exc:
+                    self._cleanup_profile()
+                    self._headless = original_headless
+
+                    raise RuntimeError(
+                        "Could not start dedicated Chrome automation "
+                        "in headless mode or visible fallback mode. "
+                        f"Headless error: {first_error}. "
+                        f"Visible fallback error: {fallback_exc}"
+                    ) from fallback_exc
+
+                # Keep the live session marked as non-headless so any later
+                # session recovery during this object's lifetime uses the
+                # working mode rather than retrying the broken mode.
+                self._headless = False
+
+            else:
+                raise RuntimeError(
+                    "Could not start dedicated Chrome automation: "
+                    + str(exc)
+                ) from exc
 
         self._driver = driver
 
@@ -88,21 +125,11 @@ class ChromeBrowserSession:
             driver = self._require_driver()
 
             try:
-                driver.set_page_load_timeout(timeout_seconds)
-                driver.get(target)
-
-                self.wait_for(
-                    lambda: (
-                        driver.execute_script(
-                            "return document.readyState"
-                        )
-                        == "complete"
-                    ),
-                    timeout_seconds=timeout_seconds,
-                    description="document.readyState=complete",
+                driver.set_page_load_timeout(
+                    float(timeout_seconds)
                 )
+                driver.get(target)
                 return
-
             except Exception as exc:
                 if first_error is None:
                     first_error = exc
@@ -119,6 +146,24 @@ class ChromeBrowserSession:
             f"Dedicated Chrome could not load {target}: {first_error}"
         )
 
+    def html(self) -> str:
+        return str(
+            self._require_driver().page_source
+            or ""
+        )
+
+    def title(self) -> str:
+        return str(
+            self._require_driver().title
+            or ""
+        )
+
+    def current_url(self) -> str:
+        return str(
+            self._require_driver().current_url
+            or ""
+        )
+
     def wait_for(
         self,
         predicate: Callable[[], bool],
@@ -126,51 +171,25 @@ class ChromeBrowserSession:
         timeout_seconds: float = 30.0,
         description: str = "browser condition",
     ) -> None:
-        if timeout_seconds <= 0:
-            raise ValueError(
-                "Browser wait timeout must be positive."
-            )
-
-        deadline = time.monotonic() + timeout_seconds
-        last_error: Optional[Exception] = None
+        deadline = (
+            time.monotonic()
+            + float(timeout_seconds)
+        )
 
         while time.monotonic() < deadline:
             try:
                 if predicate():
                     return
-            except Exception as exc:
-                last_error = exc
+            except Exception:
+                pass
 
-            time.sleep(self._poll_interval_seconds)
-
-        message = (
-            f"Dedicated Chrome did not satisfy {description} "
-            f"within {timeout_seconds:.1f} seconds."
-        )
-
-        if last_error is not None:
-            message += f" Last error: {last_error}"
-
-        raise TimeoutError(message)
-
-    def html(self) -> str:
-        driver = self._require_driver()
-        html = str(driver.page_source or "")
-
-        if not html.strip():
-            raise RuntimeError(
-                "Dedicated Chrome returned an empty HTML document."
+            time.sleep(
+                self._poll_interval_seconds
             )
 
-        return html
-
-    def title(self) -> str:
-        driver = self._require_driver()
-        return str(driver.title or "")
-
-    def current_url(self) -> str:
-        driver = self._require_driver()
-        return str(driver.current_url or "")
+        raise TimeoutError(
+            f"Timed out waiting for {description}."
+        )
 
     def close(self) -> None:
         driver = self._driver
@@ -184,38 +203,52 @@ class ChromeBrowserSession:
 
         self._cleanup_profile()
 
-    @staticmethod
-    def _session_is_lost(exc: Exception) -> bool:
-        message = str(exc or "").casefold()
-
-        return any(
-            marker in message
-            for marker in (
-                "invalid session id",
-                "session deleted",
-                "browser has closed the connection",
-                "not connected to devtools",
-                "disconnected",
-                "chrome not reachable",
-                "target window already closed",
-                "timed out receiving message from renderer",
-                "timeout: timed out receiving message",
-                "renderer timeout",
-            )
-        )
-
     def _require_driver(self):
         if self._driver is None:
             raise RuntimeError(
-                "Dedicated Chrome browser session is not running."
+                "Chrome browser session is not open."
             )
 
         return self._driver
 
+    @staticmethod
+    def _session_is_lost(
+        exc: Exception,
+    ) -> bool:
+        message = str(exc).casefold()
+
+        markers = (
+            "invalid session id",
+            "chrome not reachable",
+            "disconnected",
+            "not connected to devtools",
+            "timed out receiving message from renderer",
+        )
+
+        return any(
+            marker in message
+            for marker in markers
+        )
+
+    def _cleanup_profile(self) -> None:
+        profile = self._profile_path
+        self._profile_path = None
+
+        if (
+            profile is not None
+            and profile.exists()
+        ):
+            shutil.rmtree(
+                profile,
+                ignore_errors=True,
+            )
+
     def _create_chrome_driver(self):
         try:
             from selenium import webdriver
-            from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.options import (
+                Options,
+            )
         except ImportError as exc:
             raise RuntimeError(
                 "Selenium is not installed. Run: "
@@ -244,8 +277,9 @@ class ChromeBrowserSession:
         if binary is not None:
             options.binary_location = str(binary)
 
-        # Selenium Manager resolves a compatible ChromeDriver automatically.
-        return webdriver.Chrome(options=options)
+        return webdriver.Chrome(
+            options=options
+        )
 
     def _create_profile_path(self) -> Path:
         if self._configured_profile_root is not None:
@@ -256,7 +290,9 @@ class ChromeBrowserSession:
             profile = Path(
                 tempfile.mkdtemp(
                     prefix="dartsedge-chrome-",
-                    dir=str(self._configured_profile_root),
+                    dir=str(
+                        self._configured_profile_root
+                    ),
                 )
             )
         else:
@@ -286,35 +322,8 @@ class ChromeBrowserSession:
             ),
         )
 
-        return next(
-            (
-                path
-                for path in candidates
-                if path.is_file()
-            ),
-            None,
-        )
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
 
-    def _cleanup_profile(self) -> None:
-        profile = self._profile_path
-        self._profile_path = None
-
-        if profile is None:
-            return
-
-        shutil.rmtree(
-            profile,
-            ignore_errors=True,
-        )
-
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(
-        self,
-        exc_type,
-        exc_value,
-        traceback,
-    ) -> None:
-        self.close()
+        return None
