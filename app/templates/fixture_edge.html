@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Fixture Edge · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.7</div>
+    <h1>Prediction · Fair Odds · Edge</h1>
+    <p class="muted">
+      {{ row_count }} selection row(s) across genuinely upcoming MODUS fixtures.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Model vs market</div>
+      <h2>Match winner edge</h2>
+    </div>
+  </div>
+
+  {% if rows %}
+    {% for row in rows %}
+    <div style="padding:.9rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
+      <strong>
+        {{ row.player_a }} v {{ row.player_b }}
+      </strong>
+
+      <div class="muted">
+        {{ row.fixture_date }}
+        · Fixture #{{ row.fixture_id }}
+        · Selection: {{ row.selection }}
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:.7rem;margin-top:.7rem">
+        <div>
+          <small>Model %</small><br>
+          <strong>
+            {% if row.model_probability is not none %}
+              {{ '%.1f'|format(row.model_probability * 100) }}%
+            {% else %}
+              —
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <small>Fair odds</small><br>
+          <strong>
+            {% if row.fair_odds is not none %}
+              {{ '%.2f'|format(row.fair_odds) }}
+            {% else %}
+              —
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <small>Bookmaker</small><br>
+          <strong>{{ row.bookmaker_code or "—" }}</strong>
+        </div>
+
+        <div>
+          <small>Market odds</small><br>
+          <strong>
+            {% if row.bookmaker_odds is not none %}
+              {{ '%.2f'|format(row.bookmaker_odds) }}
+            {% else %}
+              —
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <small>Edge</small><br>
+          <strong>
+            {% if row.edge_percent is not none %}
+              {{ '%+.2f'|format(row.edge_percent) }}%
+            {% else %}
+              —
+            {% endif %}
+          </strong>
+        </div>
+
+        <div>
+          <small>Verdict</small><br>
+          <strong>{{ row.classification }}</strong>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:.5rem">
+        {{ row.message }}
+        {% if row.expected_value_percent is not none %}
+          · EV {{ '%+.2f'|format(row.expected_value_percent) }}%
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">
+      No genuinely upcoming MODUS fixtures are currently available.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}
