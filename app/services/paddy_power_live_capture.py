@@ -32,7 +32,7 @@ def _scheduled_modus_fixtures(
             Match
         )
         .filter(
-            Match.date == today,
+            Match.date >= today,
             Match.status == "scheduled",
         )
         .order_by(

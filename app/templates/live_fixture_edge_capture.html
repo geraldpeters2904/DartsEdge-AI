@@ -1,0 +1,43 @@
+
+{% extends "base.html" %}
+{% block title %}Live Edge Capture · DartsEdge AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.8 Pack 1</div>
+    <h1>Live Odds → Fixture Edge</h1>
+    <p class="muted">
+      Capture Paddy Power match-winner prices and refresh the Fixture Edge engine.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <form method="post" action="/live-edge-capture/run">
+    <button type="submit">Capture live odds now</button>
+  </form>
+</section>
+
+{% if report %}
+<section class="panel">
+  <h2>Latest capture</h2>
+  <p><strong>Future/current fixtures:</strong> {{ report.future_fixtures }}</p>
+  <p><strong>Bridge ready:</strong> {{ "YES" if report.bridge_ready else "NO" }}</p>
+  <p><strong>Capture attempted:</strong> {{ "YES" if report.capture_attempted else "NO" }}</p>
+  <p><strong>Extracted prices:</strong> {{ report.extracted_prices }}</p>
+  <p><strong>Stored prices:</strong> {{ report.stored_prices }}</p>
+  <p><strong>Unchanged prices:</strong> {{ report.unchanged_prices }}</p>
+  <p><strong>Skipped prices:</strong> {{ report.skipped_prices }}</p>
+  <p><strong>Challenge detected:</strong> {{ "YES" if report.challenge_detected else "NO" }}</p>
+  <p><strong>Fixture Edge rows:</strong> {{ report.edge_rows }}</p>
+  <p><strong>Priced rows:</strong> {{ report.priced_edge_rows }}</p>
+  <p><strong>Value rows:</strong> {{ report.value_rows }}</p>
+  <p><strong>Message:</strong> {{ report.message }}</p>
+  {% if report.error %}
+  <p><strong>Error:</strong> {{ report.error }}</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% endblock %}
