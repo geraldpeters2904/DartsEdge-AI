@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import shutil
 import tempfile
 import time
@@ -37,6 +38,7 @@ class ChromeBrowserSession:
         )
         self._profile_path: Optional[Path] = None
         self._driver: Optional[Any] = None
+        self._atexit_registered = False
 
     @property
     def running(self) -> bool:
@@ -101,6 +103,10 @@ class ChromeBrowserSession:
                 ) from exc
 
         self._driver = driver
+
+        if not self._atexit_registered:
+            atexit.register(self.close)
+            self._atexit_registered = True
 
     def goto(
         self,
@@ -195,9 +201,38 @@ class ChromeBrowserSession:
         driver = self._driver
         self._driver = None
 
+        service_process = None
+
         if driver is not None:
             try:
+                service = getattr(
+                    driver,
+                    "service",
+                    None,
+                )
+                service_process = getattr(
+                    service,
+                    "process",
+                    None,
+                )
+            except Exception:
+                service_process = None
+
+            try:
                 driver.quit()
+            except Exception:
+                pass
+
+        if service_process is not None:
+            try:
+                if service_process.poll() is None:
+                    service_process.terminate()
+                    try:
+                        service_process.wait(
+                            timeout=2.0
+                        )
+                    except Exception:
+                        service_process.kill()
             except Exception:
                 pass
 
