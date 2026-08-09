@@ -2,11 +2,11 @@ from datetime import datetime
 
 from sqlalchemy import (
     Column,
+    Date,
     DateTime,
     Float,
     Integer,
     String,
-    UniqueConstraint,
 )
 
 from app.db import Base
@@ -15,17 +15,22 @@ from app.db import Base
 class OddsSnapshot(Base):
     __tablename__ = "odds_snapshots"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
+    # Sprint 2 canonical identity.
     fixture_id = Column(
         Integer,
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
     bookmaker_code = Column(
         String,
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
@@ -49,7 +54,7 @@ class OddsSnapshot(Base):
 
     implied_probability = Column(
         Float,
-        nullable=False,
+        nullable=True,
     )
 
     captured_at = Column(
@@ -64,13 +69,45 @@ class OddsSnapshot(Base):
         nullable=True,
     )
 
-    __table_args__ = (
-        UniqueConstraint(
-            "fixture_id",
-            "bookmaker_code",
-            "market",
-            "selection",
-            "captured_at",
-            name="uq_odds_snapshot_identity",
-        ),
+    # Legacy fields retained so the historical odds database remains readable
+    # during the Sprint 2 transition.
+    fixture_date = Column(
+        Date,
+        nullable=True,
+        index=True,
+    )
+
+    tournament = Column(
+        String,
+        nullable=True,
+    )
+
+    player_a = Column(
+        String,
+        nullable=True,
+    )
+
+    player_b = Column(
+        String,
+        nullable=True,
+    )
+
+    bookmaker = Column(
+        String,
+        nullable=True,
+    )
+
+    provider_id = Column(
+        String,
+        nullable=True,
+    )
+
+    external_id = Column(
+        String,
+        nullable=True,
+    )
+
+    fingerprint = Column(
+        String,
+        nullable=True,
     )

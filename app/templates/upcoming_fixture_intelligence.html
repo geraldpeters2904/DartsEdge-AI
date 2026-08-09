@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Upcoming Fixtures · DartsEdge AI{% endblock %}
+{% block content %}
+
+<style>
+  .fixture-grid {
+    display: grid;
+    gap: .8rem;
+  }
+
+  .fixture-card {
+    padding: 1rem;
+    border-radius: 14px;
+    background: rgba(127,127,127,.07);
+  }
+
+  .fixture-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .history-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 140px;
+    gap: .8rem;
+    margin-top: .8rem;
+  }
+
+  .history-box {
+    padding: .7rem;
+    border-radius: 10px;
+    background: rgba(127,127,127,.06);
+  }
+
+  .readiness {
+    font-weight: 700;
+  }
+
+  @media (max-width: 800px) {
+    .history-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Sprint 2.6</div>
+    <h1>Upcoming Fixture Intelligence</h1>
+    <p class="muted">
+      {{ fixture_count }} scheduled MODUS fixture(s);
+      {{ ready_count }} with sufficient historical depth.
+    </p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="eyebrow">Forward intelligence</div>
+      <h2>Scheduled fixtures</h2>
+    </div>
+  </div>
+
+  {% if fixtures %}
+  <div class="fixture-grid">
+    {% for fixture in fixtures %}
+    <article class="fixture-card">
+      <div class="fixture-title">
+        <div>
+          <strong>
+            {{ fixture.player_a }}
+            v
+            {{ fixture.player_b }}
+          </strong>
+
+          <div class="muted">
+            {{ fixture.fixture_date }}
+            · {{ fixture.tournament }}
+            · Fixture #{{ fixture.fixture_id }}
+          </div>
+        </div>
+
+        <span class="readiness">
+          {{ fixture.readiness_label }}
+        </span>
+      </div>
+
+      <div class="history-row">
+        <div class="history-box">
+          <small>{{ fixture.player_a }}</small>
+          <strong>
+            {{ fixture.player_a_history_matches }}
+            historical matches
+          </strong>
+        </div>
+
+        <div class="history-box">
+          <small>{{ fixture.player_b }}</small>
+          <strong>
+            {{ fixture.player_b_history_matches }}
+            historical matches
+          </strong>
+        </div>
+
+        <div class="history-box">
+          <small>Minimum depth</small>
+          <strong>
+            {{ fixture.minimum_history_matches }}
+          </strong>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="muted">
+      No scheduled MODUS fixtures are currently stored.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}

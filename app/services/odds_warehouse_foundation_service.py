@@ -6,6 +6,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.match import Match
 from app.models.bookmaker import Bookmaker
 from app.models.odds_movement import OddsMovement
 from app.models.odds_snapshot import OddsSnapshot
@@ -23,7 +24,9 @@ class OddsRecordResult:
 def implied_probability(
     decimal_odds: float,
 ) -> float:
-    value = float(decimal_odds)
+    value = float(
+        decimal_odds
+    )
 
     if value <= 1.0:
         raise ValueError(
@@ -43,11 +46,16 @@ def ensure_bookmaker(
     name: str,
     priority: int = 100,
 ) -> Bookmaker:
-    normalised = code.strip().lower()
+    normalised = (
+        code.strip().lower()
+    )
 
     row = (
         db.query(Bookmaker)
-        .filter(Bookmaker.code == normalised)
+        .filter(
+            Bookmaker.code
+            == normalised
+        )
         .first()
     )
 
@@ -57,13 +65,20 @@ def ensure_bookmaker(
     row = Bookmaker(
         code=normalised,
         name=name.strip(),
-        priority=int(priority),
+        priority=int(
+            priority
+        ),
         enabled=True,
     )
 
-    db.add(row)
+    db.add(
+        row
+    )
     db.commit()
-    db.refresh(row)
+    db.refresh(
+        row
+    )
+
     return row
 
 
@@ -78,10 +93,16 @@ def _latest_snapshot(
     return (
         db.query(OddsSnapshot)
         .filter(
-            OddsSnapshot.fixture_id == int(fixture_id),
-            OddsSnapshot.bookmaker_code == bookmaker_code,
-            OddsSnapshot.market == market,
-            OddsSnapshot.selection == selection,
+            OddsSnapshot.fixture_id
+            == int(
+                fixture_id
+            ),
+            OddsSnapshot.bookmaker_code
+            == bookmaker_code,
+            OddsSnapshot.market
+            == market,
+            OddsSnapshot.selection
+            == selection,
         )
         .order_by(
             OddsSnapshot.captured_at.desc(),
@@ -99,14 +120,34 @@ def record_odds(
     market: str,
     selection: str,
     decimal_odds: float,
-    captured_at: Optional[datetime] = None,
-    source_reference: Optional[str] = None,
+    captured_at: Optional[
+        datetime
+    ] = None,
+    source_reference: Optional[
+        str
+    ] = None,
     minimum_change: float = 0.001,
 ) -> OddsRecordResult:
-    code = bookmaker_code.strip().lower()
-    market_name = market.strip().lower()
-    selection_name = selection.strip()
-    price = float(decimal_odds)
+    code = (
+        bookmaker_code
+        .strip()
+        .lower()
+    )
+
+    market_name = (
+        market
+        .strip()
+        .lower()
+    )
+
+    selection_name = (
+        selection
+        .strip()
+    )
+
+    price = float(
+        decimal_odds
+    )
 
     previous = _latest_snapshot(
         db,
@@ -119,76 +160,151 @@ def record_odds(
     if (
         previous is not None
         and abs(
-            float(previous.decimal_odds)
+            float(
+                previous.decimal_odds
+            )
             - price
-        ) < float(minimum_change)
+        )
+        < float(
+            minimum_change
+        )
     ):
         return OddsRecordResult(
             snapshot_created=False,
             movement_created=False,
             snapshot_id=previous.id,
             movement_id=None,
-            message="Odds unchanged; no new snapshot recorded.",
+            message=(
+                "Odds unchanged; no new snapshot recorded."
+            ),
         )
 
+    fixture = (
+        db.query(Match)
+        .filter(
+            Match.id
+            == int(
+                fixture_id
+            )
+        )
+        .first()
+    )
+
+    captured = (
+        captured_at
+        or datetime.utcnow()
+    )
+
     snapshot = OddsSnapshot(
-        fixture_id=int(fixture_id),
+        fixture_id=int(
+            fixture_id
+        ),
         bookmaker_code=code,
         market=market_name,
         selection=selection_name,
         decimal_odds=price,
-        implied_probability=implied_probability(price),
-        captured_at=captured_at or datetime.utcnow(),
+        implied_probability=(
+            implied_probability(
+                price
+            )
+        ),
+        captured_at=captured,
         source_reference=source_reference,
+        fixture_date=(
+            fixture.date
+            if fixture is not None
+            else None
+        ),
+        tournament=(
+            fixture.tournament
+            if fixture is not None
+            else None
+        ),
+        player_a=(
+            fixture.player_a
+            if fixture is not None
+            else None
+        ),
+        player_b=(
+            fixture.player_b
+            if fixture is not None
+            else None
+        ),
+        bookmaker=code,
+        provider_id=(
+            source_reference
+        ),
     )
 
-    db.add(snapshot)
+    db.add(
+        snapshot
+    )
     db.flush()
 
     movement = None
 
     if previous is not None:
         absolute_change = round(
-            price - float(previous.decimal_odds),
+            price
+            - float(
+                previous.decimal_odds
+            ),
             6,
         )
 
         percentage_change = round(
             (
                 absolute_change
-                / float(previous.decimal_odds)
+                / float(
+                    previous.decimal_odds
+                )
             )
             * 100.0,
             4,
         )
 
         movement = OddsMovement(
-            fixture_id=int(fixture_id),
+            fixture_id=int(
+                fixture_id
+            ),
             bookmaker_code=code,
             market=market_name,
             selection=selection_name,
-            previous_odds=float(previous.decimal_odds),
+            previous_odds=float(
+                previous.decimal_odds
+            ),
             new_odds=price,
             absolute_change=absolute_change,
             percentage_change=percentage_change,
             direction=(
                 "drifting"
-                if price > float(previous.decimal_odds)
+                if price
+                > float(
+                    previous.decimal_odds
+                )
                 else "shortening"
             ),
-            detected_at=snapshot.captured_at,
+            detected_at=captured,
         )
 
-        db.add(movement)
+        db.add(
+            movement
+        )
         db.flush()
 
     db.commit()
 
     return OddsRecordResult(
         snapshot_created=True,
-        movement_created=movement is not None,
+        movement_created=(
+            movement is not None
+        ),
         snapshot_id=snapshot.id,
-        movement_id=movement.id if movement else None,
+        movement_id=(
+            movement.id
+            if movement
+            else None
+        ),
         message=(
             "Odds snapshot and movement recorded."
             if movement is not None
