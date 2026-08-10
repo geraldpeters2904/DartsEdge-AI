@@ -125,3 +125,87 @@ class CurrentMatchEnrichmentV33ValidationServiceTests(
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CurrentMatchEnrichmentV33EligibleSelectionTests(
+    unittest.TestCase
+):
+    def test_selector_excludes_completed_rows_without_valid_winner(
+        self,
+    ):
+        from datetime import date
+
+        from app.models.match import Match
+        from tests.helpers.database import (
+            create_test_session,
+        )
+
+        db = create_test_session()
+
+        try:
+            db.add_all(
+                [
+                    Match(
+                        date=date(2026, 8, 1),
+                        status="completed",
+                        player_a="A",
+                        player_b="B",
+                        winner=None,
+                    ),
+                    Match(
+                        date=date(2026, 8, 2),
+                        status="completed",
+                        player_a="C",
+                        player_b="D",
+                        winner="Someone Else",
+                    ),
+                    Match(
+                        date=date(2026, 8, 3),
+                        status="completed",
+                        player_a="E",
+                        player_b="F",
+                        winner="E",
+                    ),
+                    Match(
+                        date=date(2026, 8, 4),
+                        status="completed",
+                        player_a="G",
+                        player_b="H",
+                        winner="H",
+                    ),
+                ]
+            )
+
+            db.commit()
+
+            ids = (
+                CurrentMatchEnrichmentV33ValidationService
+                ._select_match_ids(
+                    db,
+                    offset=0,
+                    limit=10,
+                )
+            )
+
+            rows = (
+                db.query(Match)
+                .filter(
+                    Match.id.in_(ids)
+                )
+                .order_by(Match.date.asc())
+                .all()
+            )
+
+            self.assertEqual(
+                [
+                    row.winner
+                    for row in rows
+                ],
+                [
+                    "E",
+                    "H",
+                ],
+            )
+
+        finally:
+            db.close()

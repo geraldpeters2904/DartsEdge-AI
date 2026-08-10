@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.match import Match
@@ -125,7 +126,12 @@ class CurrentMatchEnrichmentV33ValidationService:
         rows = (
             db.query(Match.id)
             .filter(
-                Match.status == "completed"
+                Match.status == "completed",
+                Match.winner.isnot(None),
+                or_(
+                    Match.winner == Match.player_a,
+                    Match.winner == Match.player_b,
+                ),
             )
             .order_by(
                 Match.date.asc(),
