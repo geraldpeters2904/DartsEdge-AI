@@ -11,6 +11,9 @@ from app.services.current_match_enrichment_discovery_service import (
 from app.services.current_match_enrichment_persistence_service import (
     CurrentMatchEnrichmentPersistenceService,
 )
+from app.services.current_match_enrichment_profile_refresh_service import (
+    CurrentMatchEnrichmentProfileRefreshService,
+)
 from app.services.current_match_enrichment_statistics_service import (
     CurrentMatchEnrichmentStatisticsService,
 )
@@ -23,6 +26,8 @@ class CurrentMatchEnrichmentWorkflowResult:
     detail_status: str
     statistics_status: str
     persistence_status: str
+    profile_refresh_status: str
+    refreshed_profiles: int
     batch_id: int
     status: str
     message: str
@@ -42,6 +47,7 @@ class CurrentMatchEnrichmentWorkflowService:
         detail_service=None,
         statistics_service=None,
         persistence_service=None,
+        profile_refresh_service=None,
     ) -> None:
         self.detail_service = (
             detail_service
@@ -54,6 +60,10 @@ class CurrentMatchEnrichmentWorkflowService:
         self.persistence_service = (
             persistence_service
             or CurrentMatchEnrichmentPersistenceService()
+        )
+        self.profile_refresh_service = (
+            profile_refresh_service
+            or CurrentMatchEnrichmentProfileRefreshService()
         )
 
     def run(
@@ -83,6 +93,15 @@ class CurrentMatchEnrichmentWorkflowService:
             statistics,
         )
 
+        profile_refresh = (
+            self.profile_refresh_service.refresh(
+                db,
+                internal_match_id=(
+                    candidate.internal_match_id
+                ),
+            )
+        )
+
         return CurrentMatchEnrichmentWorkflowResult(
             internal_match_id=int(
                 candidate.internal_match_id
@@ -93,6 +112,12 @@ class CurrentMatchEnrichmentWorkflowService:
             detail_status=detail.status,
             statistics_status=statistics.status,
             persistence_status=persisted.status,
+            profile_refresh_status=(
+                profile_refresh.status
+            ),
+            refreshed_profiles=int(
+                profile_refresh.refreshed_count
+            ),
             batch_id=int(
                 persisted.batch_id
             ),

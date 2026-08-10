@@ -50,6 +50,13 @@ class FakePersistenceResult:
     status: str = "persisted"
 
 
+@dataclass
+class FakeProfileRefreshResult:
+    internal_match_id: int = 101
+    refreshed_count: int = 2
+    status: str = "refreshed"
+
+
 class FakeDetailService:
     def __init__(self):
         self.calls = []
@@ -90,6 +97,23 @@ class FakePersistenceService:
         return FakePersistenceResult()
 
 
+
+class FakeProfileRefreshService:
+    def __init__(self):
+        self.calls = []
+
+    def refresh(
+        self,
+        db,
+        *,
+        internal_match_id,
+    ):
+        self.calls.append(
+            (db, internal_match_id)
+        )
+        return FakeProfileRefreshResult()
+
+
 class FakeDb:
     pass
 
@@ -101,11 +125,13 @@ class CurrentMatchEnrichmentWorkflowServiceTests(
         detail = FakeDetailService()
         statistics = FakeStatisticsService()
         persistence = FakePersistenceService()
+        profile_refresh = FakeProfileRefreshService()
 
         service = CurrentMatchEnrichmentWorkflowService(
             detail_service=detail,
             statistics_service=statistics,
             persistence_service=persistence,
+            profile_refresh_service=profile_refresh,
         )
 
         db = FakeDb()
@@ -133,6 +159,14 @@ class CurrentMatchEnrichmentWorkflowServiceTests(
             "persisted",
         )
         self.assertEqual(
+            result.profile_refresh_status,
+            "refreshed",
+        )
+        self.assertEqual(
+            result.refreshed_profiles,
+            2,
+        )
+        self.assertEqual(
             result.batch_id,
             55,
         )
@@ -149,6 +183,14 @@ class CurrentMatchEnrichmentWorkflowServiceTests(
             persistence.calls[0][0],
             db,
         )
+        self.assertIs(
+            profile_refresh.calls[0][0],
+            db,
+        )
+        self.assertEqual(
+            profile_refresh.calls[0][1],
+            101,
+        )
 
     def test_unresolved_candidate_is_rejected_before_fetch(self):
         detail = FakeDetailService()
@@ -157,6 +199,7 @@ class CurrentMatchEnrichmentWorkflowServiceTests(
             detail_service=detail,
             statistics_service=FakeStatisticsService(),
             persistence_service=FakePersistenceService(),
+            profile_refresh_service=FakeProfileRefreshService(),
         )
 
         with self.assertRaisesRegex(
@@ -189,11 +232,13 @@ class CurrentMatchEnrichmentWorkflowServiceTests(
 
         statistics = FakeStatisticsService()
         persistence = FakePersistenceService()
+        profile_refresh = FakeProfileRefreshService()
 
         service = CurrentMatchEnrichmentWorkflowService(
             detail_service=BrokenDetailService(),
             statistics_service=statistics,
             persistence_service=persistence,
+            profile_refresh_service=profile_refresh,
         )
 
         with self.assertRaisesRegex(
@@ -211,6 +256,10 @@ class CurrentMatchEnrichmentWorkflowServiceTests(
         )
         self.assertEqual(
             persistence.calls,
+            [],
+        )
+        self.assertEqual(
+            profile_refresh.calls,
             [],
         )
 
