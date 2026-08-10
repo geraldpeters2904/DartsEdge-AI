@@ -1,71 +1,96 @@
-
 {% extends "base.html" %}
 {% block title %}Current Match Enrichment · DartsEdge AI{% endblock %}
 {% block content %}
 
 <div class="page-header">
   <div>
-    <div class="eyebrow">Sprint 3.0 Pack 1</div>
+    <div class="eyebrow">Sprint 3.0</div>
     <h1>Current Match Enrichment Discovery</h1>
-    <p class="muted">
-      Resolve official MODUS match IDs for recent completed matches that
-      still lack canonical player performances.
+    <p>
+      Discover completed MODUS matches that are missing warehouse
+      performance statistics.
     </p>
   </div>
 </div>
 
-<section class="panel">
-  <h2>Discovery summary</h2>
+{% if message %}
+<div class="panel">
+  {{ message }}
+</div>
+{% endif %}
 
-  <p><strong>Series:</strong> {{ report.series_label }}</p>
-  <p><strong>Week:</strong> {{ report.week_label }}</p>
-  <p><strong>Targets scanned:</strong> {{ report.targets_scanned }}</p>
-  <p><strong>Missing performances:</strong> {{ report.completed_without_performance }}</p>
-  <p><strong>Resolved:</strong> {{ report.resolved }}</p>
-  <p><strong>Ambiguous:</strong> {{ report.ambiguous }}</p>
-  <p><strong>Unresolved:</strong> {{ report.unresolved }}</p>
-  <p><strong>Message:</strong> {{ report.message }}</p>
-</section>
+<div class="panel">
+  <strong>Missing performances</strong>
+  <p class="muted">
+    {{ report.completed_without_performance }} completed MODUS
+    match(es) currently have no player-match performance data.
+  </p>
+</div>
 
-<section class="panel">
-  <h2>Matches</h2>
+<div class="panel">
+  <strong>Controlled enrichment</strong>
+  <p class="muted">
+    Discovery is read-only. A warehouse write occurs only when you
+    explicitly choose Enrich this match for a resolved candidate.
+    The match is rediscovered and revalidated immediately before
+    persistence.
+  </p>
+</div>
 
-  {% if report.candidates %}
-    {% for row in report.candidates %}
-    <div style="padding:.8rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
-      <strong>
-        #{{ row.internal_match_id }}
-        · {{ row.player_a }} v {{ row.player_b }}
-      </strong>
+{% if report.candidates %}
+{% for row in report.candidates %}
+<div class="panel">
+  <strong>
+    #{{ row.internal_match_id }}
+    · {{ row.player_a }} v {{ row.player_b }}
+  </strong>
 
-      <div class="muted">
-        {{ row.fixture_date }}
-        · {{ row.stage or "Stage not set" }}
-        · {{ row.status|upper }}
-      </div>
+  <div class="muted">
+    {{ row.fixture_date }}
+    · {{ row.stage or "Stage not set" }}
+    · {{ row.status|upper }}
+  </div>
 
-      <div>
-        Official MODUS ID:
-        <strong>
-          {{ row.resolved_modus_match_id or "—" }}
-        </strong>
-      </div>
+  <div>
+    Official MODUS ID:
+    <strong>
+      {{ row.resolved_modus_match_id or "—" }}
+    </strong>
+  </div>
 
-      {% if row.candidate_modus_match_ids %}
-      <div class="muted">
-        Candidate IDs:
-        {{ row.candidate_modus_match_ids|join(", ") }}
-      </div>
-      {% endif %}
-
-      <div class="muted">{{ row.message }}</div>
-    </div>
-    {% endfor %}
-  {% else %}
-    <p class="muted">
-      No recent completed MODUS matches currently require performance enrichment.
-    </p>
+  {% if row.candidate_modus_match_ids %}
+  <div class="muted">
+    Candidate IDs:
+    {{ row.candidate_modus_match_ids|join(", ") }}
+  </div>
   {% endif %}
-</section>
+
+  <div class="muted">
+    {{ row.message }}
+  </div>
+
+  {% if row.status == "resolved" and row.resolved_modus_match_id %}
+  <form
+    method="post"
+    action="/current-enrichment/{{ row.internal_match_id }}"
+  >
+    <button type="submit">
+      Enrich this match
+    </button>
+  </form>
+  {% else %}
+  <div class="muted">
+    Enrichment is unavailable until this fixture has one
+    unambiguous official MODUS match.
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="panel">
+  No recent completed MODUS matches currently require
+  performance enrichment.
+</div>
+{% endif %}
 
 {% endblock %}
