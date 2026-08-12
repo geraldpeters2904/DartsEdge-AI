@@ -18,6 +18,9 @@ from app.services.sparse_consensus_risk_monitor_service import (
 from app.services.stale_scheduled_fixture_diagnostic_service import (
     build_stale_scheduled_fixture_diagnostic,
 )
+from app.services.fixture_acquisition_readiness_service import (
+    build_fixture_acquisition_readiness,
+)
 from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
     CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
 )
@@ -166,6 +169,15 @@ def health_endpoint(db: Session = Depends(get_db)):
         )
     )
 
+    fixture_acquisition = (
+        build_fixture_acquisition_readiness(
+            db,
+            monitor_status=(
+                forward_schedule_monitor.status()
+            ),
+        )
+    )
+
     monitors_healthy = (
         forward["healthy"]
         and live_edge["healthy"]
@@ -183,6 +195,31 @@ def health_endpoint(db: Session = Depends(get_db)):
         "version": diagnostics["release"]["version"],
         "build": diagnostics["release"]["build"],
         "checks": diagnostics["checks"],
+        "fixture_acquisition": {
+            "state": fixture_acquisition.state,
+            "ready": fixture_acquisition.ready,
+            "waiting": fixture_acquisition.waiting,
+            "stale": fixture_acquisition.stale,
+            "error": fixture_acquisition.error,
+            "future_scheduled": (
+                fixture_acquisition.future_scheduled
+            ),
+            "stale_scheduled": (
+                fixture_acquisition.stale_scheduled
+            ),
+            "latest_series": (
+                fixture_acquisition.latest_series
+            ),
+            "latest_week": (
+                fixture_acquisition.latest_week
+            ),
+            "last_checked_at": (
+                fixture_acquisition.last_checked_at
+            ),
+            "explanation": (
+                fixture_acquisition.explanation
+            ),
+        },
         "fixture_hygiene": {
             "healthy": stale_fixtures.healthy,
             "stale_scheduled_count": (
