@@ -284,6 +284,36 @@ async function loadSparseConsensusRisk() {
     >
       NOT CHECKED
     </div>
+
+    {% if item.decision_safety_state == "HIGH_CAUTION" %}
+    <div
+      class="opportunity-risk opportunity-risk-high"
+      title="{{ item.decision_safety_explanation or '' }}"
+    >
+      SAFETY · HIGH CAUTION
+    </div>
+    {% elif item.decision_safety_state == "CAUTION" %}
+    <div
+      class="opportunity-risk opportunity-risk-elevated"
+      title="{{ item.decision_safety_explanation or '' }}"
+    >
+      SAFETY · CAUTION
+    </div>
+    {% elif item.decision_safety_state == "NORMAL" %}
+    <div
+      class="opportunity-risk opportunity-risk-normal"
+      title="{{ item.decision_safety_explanation or '' }}"
+    >
+      SAFETY · NORMAL
+    </div>
+    {% else %}
+    <div
+      class="opportunity-risk opportunity-risk-unknown"
+      title="{{ item.decision_safety_explanation or '' }}"
+    >
+      SAFETY · UNKNOWN
+    </div>
+    {% endif %}
   </div>
 
   <div>

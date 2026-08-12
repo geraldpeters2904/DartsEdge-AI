@@ -46,6 +46,12 @@ class LiveOpportunity:
     sparse_consensus_risk_high: bool = False
     sparse_consensus_risk_explanation: Optional[str] = None
 
+    decision_safety_state: str = "UNKNOWN"
+    decision_safety_caution: bool = True
+    decision_safety_high_caution: bool = False
+    decision_safety_trust_score: Optional[float] = None
+    decision_safety_explanation: Optional[str] = None
+
 
 def _state(
     *,
@@ -293,6 +299,10 @@ def build_live_opportunity_centre(
 
     for card in centre["cards"]:
         decision = card.get("decision_intelligence")
+        decision_safety = (
+            card.get("decision_safety")
+            or {}
+        )
         opportunity = card.get("opportunity")
         assessment = card.get("assessment")
         fixture = card.get("fixture")
@@ -466,6 +476,47 @@ def build_live_opportunity_centre(
                     sparse_consensus_risk[
                         "explanation"
                     ]
+                ),
+                decision_safety_state=str(
+                    decision_safety.get(
+                        "state",
+                        "UNKNOWN",
+                    )
+                ),
+                decision_safety_caution=bool(
+                    decision_safety.get(
+                        "caution",
+                        True,
+                    )
+                ),
+                decision_safety_high_caution=bool(
+                    decision_safety.get(
+                        "high_caution",
+                        False,
+                    )
+                ),
+                decision_safety_trust_score=(
+                    float(
+                        decision_safety[
+                            "trust_score"
+                        ]
+                    )
+                    if decision_safety.get(
+                        "trust_score"
+                    )
+                    is not None
+                    else None
+                ),
+                decision_safety_explanation=(
+                    str(
+                        decision_safety.get(
+                            "explanation"
+                        )
+                    )
+                    if decision_safety.get(
+                        "explanation"
+                    )
+                    else None
                 ),
             )
         )
