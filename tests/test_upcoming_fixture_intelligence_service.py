@@ -100,6 +100,11 @@ class UpcomingFixtureIntelligenceTests(
             build_upcoming_fixture_intelligence(
                 self.db,
                 minimum_history_matches=5,
+                today=date(
+                    2026,
+                    8,
+                    1,
+                ),
             )
         )
 

@@ -9,6 +9,12 @@ from app.services.forward_schedule_monitor_service import (
 from app.services.live_edge_monitor_service import (
     live_edge_monitor,
 )
+from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
+    CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
+)
+from app.services.current_match_enrichment_v33_dual_low_history_risk_flag_service import (
+    CurrentMatchEnrichmentV33DualLowHistoryRiskFlagService,
+)
 from app.templates_config import templates
 from app.version import version_payload
 
@@ -145,6 +151,59 @@ def health_endpoint(db: Session = Depends(get_db)):
             "forward_schedule": forward,
             "live_edge": live_edge,
         },
+    }
+
+
+
+@router.get("/diagnostics/sparse-consensus-risk")
+def sparse_consensus_risk_endpoint(
+    db: Session = Depends(get_db),
+):
+    window_size = 1000
+
+    recent_ids = (
+        CurrentMatchEnrichmentV33DualLowHistoryRiskFlagService
+        ._select_match_ids(
+            db,
+            offset=0,
+            limit=1000000,
+        )
+    )
+
+    total_completed = len(
+        recent_ids
+    )
+
+    offset = max(
+        total_completed - window_size,
+        0,
+    )
+
+    diagnostic = (
+        CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService()
+        .analyse(
+            db,
+            offset=offset,
+            window_size=window_size,
+            probability_lower=65.0,
+            probability_upper=70.0,
+            history_threshold=3,
+            agreement_threshold=100.0,
+            competition_code="MODUS",
+        )
+    )
+
+    return {
+        "model_version": diagnostic.model_version,
+        "window_size": diagnostic.window_size,
+        "offset": diagnostic.offset,
+        "segment_matches": diagnostic.segment_matches,
+        "flagged_matches": diagnostic.flagged_matches,
+        "density": diagnostic.density,
+        "risk_state": diagnostic.risk_state,
+        "elevated": diagnostic.elevated,
+        "high": diagnostic.high,
+        "explanation": diagnostic.explanation,
     }
 
 

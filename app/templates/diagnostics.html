@@ -1,5 +1,128 @@
 {% extends "base.html" %}
-{% block title %}Diagnostics · DartsEdge AI{% endblock %}
+{% block title %}Diagnostics · DartsEdge AI
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const pill = document.getElementById(
+        "sparse-consensus-risk-pill"
+    );
+
+    const state = document.getElementById(
+        "sparse-consensus-risk-state"
+    );
+
+    const density = document.getElementById(
+        "sparse-consensus-density"
+    );
+
+    const flagged = document.getElementById(
+        "sparse-consensus-flagged"
+    );
+
+    const segment = document.getElementById(
+        "sparse-consensus-segment"
+    );
+
+    const windowValue = document.getElementById(
+        "sparse-consensus-window"
+    );
+
+    const model = document.getElementById(
+        "sparse-consensus-model"
+    );
+
+    const explanation = document.getElementById(
+        "sparse-consensus-explanation"
+    );
+
+    try {
+        const response = await fetch(
+            "/diagnostics/sparse-consensus-risk"
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        state.textContent = (
+            data.risk_state
+            .replaceAll("_", " ")
+        );
+
+        density.textContent = (
+            data.density === null
+            ? "Unavailable"
+            : `${data.density.toFixed(2)}%`
+        );
+
+        flagged.textContent = (
+            data.flagged_matches
+        );
+
+        segment.textContent = (
+            data.segment_matches
+        );
+
+        windowValue.textContent = (
+            `${data.window_size.toLocaleString()} matches`
+        );
+
+        model.textContent = (
+            data.model_version
+        );
+
+        explanation.textContent = (
+            data.explanation
+        );
+
+        if (data.high) {
+            pill.textContent = "High risk";
+            pill.className = (
+                "status-pill status-bad"
+            );
+        } else if (data.elevated) {
+            pill.textContent = "Elevated";
+            pill.className = (
+                "status-pill status-warning"
+            );
+        } else if (
+            data.risk_state === "NORMAL"
+        ) {
+            pill.textContent = "Normal";
+            pill.className = (
+                "status-pill status-good"
+            );
+        } else {
+            pill.textContent = "Unknown";
+            pill.className = (
+                "status-pill status-warning"
+            );
+        }
+    } catch (error) {
+        state.textContent = "Unavailable";
+        density.textContent = "—";
+        flagged.textContent = "—";
+        segment.textContent = "—";
+        windowValue.textContent = "—";
+        model.textContent = "—";
+
+        explanation.textContent = (
+            "The sparse-consensus diagnostic "
+            + "could not be loaded."
+        );
+
+        pill.textContent = "Unavailable";
+        pill.className = (
+            "status-pill status-warning"
+        );
+    }
+});
+</script>
+
+{% endblock %}
 {% block content %}
 <header class="page-header">
     <div>
@@ -18,6 +141,74 @@
     <article class="metric-card"><span class="metric-label">Python</span><strong>{{ diagnostics.runtime.python }}</strong><small>Runtime</small></article>
     <article class="metric-card"><span class="metric-label">FastAPI</span><strong>{{ diagnostics.runtime.fastapi }}</strong><small>Starlette {{ diagnostics.runtime.starlette }}</small></article>
 </section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Prediction reliability</p>
+            <h2>Sparse Consensus Risk</h2>
+        </div>
+
+        <span
+            id="sparse-consensus-risk-pill"
+            class="status-pill status-warning"
+        >
+            Loading
+        </span>
+    </div>
+
+    <div class="detail-grid">
+        <div>
+            <span>Risk state</span>
+            <strong id="sparse-consensus-risk-state">
+                Calculating…
+            </strong>
+        </div>
+
+        <div>
+            <span>Density</span>
+            <strong id="sparse-consensus-density">
+                —
+            </strong>
+        </div>
+
+        <div>
+            <span>Flagged predictions</span>
+            <strong id="sparse-consensus-flagged">
+                —
+            </strong>
+        </div>
+
+        <div>
+            <span>Segment matches</span>
+            <strong id="sparse-consensus-segment">
+                —
+            </strong>
+        </div>
+
+        <div>
+            <span>Window</span>
+            <strong id="sparse-consensus-window">
+                —
+            </strong>
+        </div>
+
+        <div>
+            <span>Model</span>
+            <strong id="sparse-consensus-model">
+                —
+            </strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>Explanation</span>
+            <strong id="sparse-consensus-explanation">
+                Sparse-consensus reliability diagnostic is loading.
+            </strong>
+        </div>
+    </div>
+</section>
+
 
 <section class="panel">
     <div class="panel-heading"><div><p class="eyebrow">Health checks</p><h2>Core services</h2></div></div>
