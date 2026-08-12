@@ -103,6 +103,7 @@ def _persist_if_changed(
     assessment,
     price,
     decision,
+    decision_safety,
     lifecycle_state: str,
 ) -> bool:
     history = _history(
@@ -122,6 +123,31 @@ def _persist_if_changed(
         str(decision.get("steam_direction") or ""),
         str(decision.get("steam_strength") or ""),
         lifecycle_state,
+        str(
+            decision_safety.get(
+                "state",
+                "UNKNOWN",
+            )
+        ),
+        str(
+            decision_safety.get(
+                "sparse_consensus_risk_state",
+                "UNKNOWN",
+            )
+        ),
+        (
+            round(
+                float(
+                    decision_safety["density"]
+                ),
+                6,
+            )
+            if decision_safety.get(
+                "density"
+            )
+            is not None
+            else None
+        ),
     )
 
     if latest is not None:
@@ -137,6 +163,25 @@ def _persist_if_changed(
             str(latest.steam_direction or ""),
             str(latest.steam_strength or ""),
             str(latest.lifecycle_state),
+            str(
+                latest.decision_safety_state
+                or "UNKNOWN"
+            ),
+            str(
+                latest.sparse_consensus_risk_state
+                or "UNKNOWN"
+            ),
+            (
+                round(
+                    float(
+                        latest.sparse_consensus_density
+                    ),
+                    6,
+                )
+                if latest.sparse_consensus_density
+                is not None
+                else None
+            ),
         )
 
         if comparable == latest_comparable:
@@ -172,6 +217,41 @@ def _persist_if_changed(
         steam_strength=decision.get("steam_strength"),
         coordinated_move=bool(decision.get("coordinated_move")),
         lifecycle_state=lifecycle_state,
+        decision_safety_state=str(
+            decision_safety.get(
+                "state",
+                "UNKNOWN",
+            )
+        ),
+        decision_safety_explanation=(
+            str(
+                decision_safety.get(
+                    "explanation"
+                )
+            )
+            if decision_safety.get(
+                "explanation"
+            )
+            else None
+        ),
+        sparse_consensus_density=(
+            float(
+                decision_safety[
+                    "density"
+                ]
+            )
+            if decision_safety.get(
+                "density"
+            )
+            is not None
+            else None
+        ),
+        sparse_consensus_risk_state=str(
+            decision_safety.get(
+                "sparse_consensus_risk_state",
+                "UNKNOWN",
+            )
+        ),
         suggested_stake=float(
             decision.get(
                 "strategy_suggested_stake",
@@ -371,6 +451,7 @@ def build_live_opportunity_centre(
                 assessment=assessment,
                 price=price,
                 decision=decision,
+                decision_safety=decision_safety,
                 lifecycle_state=lifecycle,
             )
 

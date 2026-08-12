@@ -46,6 +46,28 @@ class OpportunitySnapshot(Base):
 
     lifecycle_state = Column(String, nullable=False, default="NEW")
 
+    # Decision Safety state captured at the same point in time
+    # as this opportunity snapshot. Historical rows created
+    # before Decision Safety persistence remain UNKNOWN.
+    decision_safety_state = Column(
+        String,
+        nullable=False,
+        default="UNKNOWN",
+    )
+    decision_safety_explanation = Column(
+        String,
+        nullable=True,
+    )
+    sparse_consensus_density = Column(
+        Float,
+        nullable=True,
+    )
+    sparse_consensus_risk_state = Column(
+        String,
+        nullable=False,
+        default="UNKNOWN",
+    )
+
     suggested_stake = Column(Float, nullable=False, default=0.0)
 
     captured_at = Column(
