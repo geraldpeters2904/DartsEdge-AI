@@ -4,9 +4,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.models.match import Match
 from app.models.opportunity_snapshot import OpportunitySnapshot
+from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
+    CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
+)
 from app.services.prediction_centre_service import build_prediction_centre
 
 
@@ -34,6 +39,12 @@ class LiveOpportunity:
     suggested_stake: float
     lifecycle_state: str
     age_minutes: Optional[int]
+
+    sparse_consensus_density: Optional[float] = None
+    sparse_consensus_risk_state: str = "UNKNOWN"
+    sparse_consensus_risk_elevated: bool = False
+    sparse_consensus_risk_high: bool = False
+    sparse_consensus_risk_explanation: Optional[str] = None
 
 
 def _state(
@@ -170,15 +181,99 @@ def _persist_if_changed(
     return True
 
 
+
+def _current_sparse_consensus_risk(
+    db: Session,
+    *,
+    diagnostic_service=None,
+    window_size: int = 1000,
+):
+    safe_window_size = max(
+        1,
+        int(window_size),
+    )
+
+    service = (
+        diagnostic_service
+        or CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService()
+    )
+
+    try:
+        total_completed = (
+            db.query(Match.id)
+            .filter(
+                Match.status == "completed",
+                Match.winner.isnot(None),
+                or_(
+                    Match.winner == Match.player_a,
+                    Match.winner == Match.player_b,
+                ),
+            )
+            .count()
+        )
+
+        offset = max(
+            total_completed
+            - safe_window_size,
+            0,
+        )
+
+        diagnostic = service.analyse(
+            db,
+            offset=offset,
+            window_size=safe_window_size,
+            probability_lower=65.0,
+            probability_upper=70.0,
+            history_threshold=3,
+            agreement_threshold=100.0,
+            competition_code="MODUS",
+        )
+
+        return {
+            "density": diagnostic.density,
+            "state": diagnostic.risk_state,
+            "elevated": diagnostic.elevated,
+            "high": diagnostic.high,
+            "explanation": diagnostic.explanation,
+        }
+
+    except Exception:
+        # Risk metadata is observational only.
+        # Failure must never prevent the Opportunity Centre
+        # itself from being built.
+        return {
+            "density": None,
+            "state": "UNKNOWN",
+            "elevated": False,
+            "high": False,
+            "explanation": (
+                "Sparse-consensus regime risk "
+                "could not be determined."
+            ),
+        }
+
+
 def build_live_opportunity_centre(
     db: Session,
     *,
     limit: int = 30,
     persist: bool = True,
+    risk_diagnostic_service=None,
+    risk_window_size: int = 1000,
 ) -> dict:
     centre = build_prediction_centre(
         db,
         limit=limit,
+    )
+
+    sparse_consensus_risk = (
+        _current_sparse_consensus_risk(
+            db,
+            diagnostic_service=(
+                risk_diagnostic_service
+            ),
+            window_size=risk_window_size,
+        )
     )
 
     now = datetime.utcnow()
@@ -335,6 +430,31 @@ def build_live_opportunity_centre(
                 ),
                 lifecycle_state=lifecycle,
                 age_minutes=age_minutes,
+                sparse_consensus_density=(
+                    sparse_consensus_risk[
+                        "density"
+                    ]
+                ),
+                sparse_consensus_risk_state=(
+                    sparse_consensus_risk[
+                        "state"
+                    ]
+                ),
+                sparse_consensus_risk_elevated=(
+                    sparse_consensus_risk[
+                        "elevated"
+                    ]
+                ),
+                sparse_consensus_risk_high=(
+                    sparse_consensus_risk[
+                        "high"
+                    ]
+                ),
+                sparse_consensus_risk_explanation=(
+                    sparse_consensus_risk[
+                        "explanation"
+                    ]
+                ),
             )
         )
 
