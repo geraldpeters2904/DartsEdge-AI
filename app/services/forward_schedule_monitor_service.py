@@ -9,6 +9,9 @@ from typing import Optional
 from app.services.forward_schedule_discovery_service import (
     run_forward_schedule_discovery,
 )
+from app.services.automatic_odds_capture_trigger_service import (
+    automatic_odds_capture_trigger,
+)
 
 
 @dataclass(frozen=True)
@@ -22,6 +25,13 @@ class ForwardScheduleMonitorStatus:
     latest_series: Optional[str]
     latest_week: Optional[str]
     future_fixtures: int
+    odds_capture_triggered: bool
+    odds_capture_ready: bool
+    odds_capture_at: Optional[str]
+    odds_prices_extracted: int
+    odds_prices_stored: int
+    odds_capture_message: Optional[str]
+    odds_capture_error: Optional[str]
     last_message: str
     last_error: Optional[str]
 
@@ -48,6 +58,13 @@ class ForwardScheduleMonitor:
             latest_series=None,
             latest_week=None,
             future_fixtures=0,
+            odds_capture_triggered=False,
+            odds_capture_ready=True,
+            odds_capture_at=None,
+            odds_prices_extracted=0,
+            odds_prices_stored=0,
+            odds_capture_message=None,
+            odds_capture_error=None,
             last_message="Forward schedule monitor has not started.",
             last_error=None,
         )
@@ -106,33 +123,81 @@ class ForwardScheduleMonitor:
     def run_once(self):
         try:
             report = run_forward_schedule_discovery()
+
+            odds_capture = (
+                automatic_odds_capture_trigger.consider(
+                    future_fixtures=int(
+                        report.future_fixtures
+                    )
+                )
+            )
+
             now = datetime.utcnow()
+
             with self._lock:
                 self._copy(
                     last_run_at=now.isoformat(),
                     next_run_at=(
-                        now + timedelta(seconds=self.interval_seconds)
-                    ).isoformat() if self._status.running else None,
+                        now
+                        + timedelta(
+                            seconds=self.interval_seconds
+                        )
+                    ).isoformat()
+                    if self._status.running
+                    else None,
                     runs=self._status.runs + 1,
                     latest_series=report.series_label,
                     latest_week=report.week_label,
-                    future_fixtures=int(report.future_fixtures),
+                    future_fixtures=int(
+                        report.future_fixtures
+                    ),
+                    odds_capture_triggered=(
+                        odds_capture.triggered
+                    ),
+                    odds_capture_ready=(
+                        odds_capture.ready
+                    ),
+                    odds_capture_at=(
+                        odds_capture.captured_at
+                    ),
+                    odds_prices_extracted=(
+                        odds_capture.extracted_prices
+                    ),
+                    odds_prices_stored=(
+                        odds_capture.stored_prices
+                    ),
+                    odds_capture_message=(
+                        odds_capture.message
+                    ),
+                    odds_capture_error=(
+                        odds_capture.error
+                    ),
                     last_message=report.message,
                     last_error=None,
                 )
+
         except Exception as exc:
             now = datetime.utcnow()
+
             with self._lock:
                 self._copy(
                     last_run_at=now.isoformat(),
                     next_run_at=(
-                        now + timedelta(seconds=self.interval_seconds)
-                    ).isoformat() if self._status.running else None,
+                        now
+                        + timedelta(
+                            seconds=self.interval_seconds
+                        )
+                    ).isoformat()
+                    if self._status.running
+                    else None,
                     runs=self._status.runs + 1,
                     failures=self._status.failures + 1,
-                    last_message="Forward schedule discovery failed.",
+                    last_message=(
+                        "Forward schedule discovery failed."
+                    ),
                     last_error=str(exc),
                 )
+
         return self.status()
 
     def _run(self):
