@@ -21,6 +21,9 @@ from app.services.stale_scheduled_fixture_diagnostic_service import (
 from app.services.fixture_acquisition_readiness_service import (
     build_fixture_acquisition_readiness,
 )
+from app.services.odds_acquisition_readiness_service import (
+    build_odds_acquisition_readiness,
+)
 from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
     CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
 )
@@ -178,6 +181,12 @@ def health_endpoint(db: Session = Depends(get_db)):
         )
     )
 
+    odds_acquisition = (
+        build_odds_acquisition_readiness(
+            db
+        )
+    )
+
     monitors_healthy = (
         forward["healthy"]
         and live_edge["healthy"]
@@ -195,6 +204,30 @@ def health_endpoint(db: Session = Depends(get_db)):
         "version": diagnostics["release"]["version"],
         "build": diagnostics["release"]["build"],
         "checks": diagnostics["checks"],
+        "odds_acquisition": {
+            "state": odds_acquisition.state,
+            "ready": odds_acquisition.ready,
+            "waiting": odds_acquisition.waiting,
+            "error": odds_acquisition.error,
+            "future_scheduled": (
+                odds_acquisition.future_scheduled
+            ),
+            "priced_fixtures": (
+                odds_acquisition.priced_fixtures
+            ),
+            "current_prices": (
+                odds_acquisition.current_prices
+            ),
+            "bookmaker_ready": (
+                odds_acquisition.bookmaker_ready
+            ),
+            "bookmaker_error": (
+                odds_acquisition.bookmaker_error
+            ),
+            "explanation": (
+                odds_acquisition.explanation
+            ),
+        },
         "fixture_acquisition": {
             "state": fixture_acquisition.state,
             "ready": fixture_acquisition.ready,
