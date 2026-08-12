@@ -9,6 +9,9 @@ from app.services.forward_schedule_monitor_service import (
 from app.services.live_edge_monitor_service import (
     live_edge_monitor,
 )
+from app.services.model_trust_monitor_service import (
+    model_trust_monitor,
+)
 from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
     CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
 )
@@ -133,9 +136,19 @@ def health_endpoint(db: Session = Depends(get_db)):
         stale_after_seconds=600.0,
     )
 
+    model_trust_status = (
+        model_trust_monitor.status()
+    )
+
+    model_trust = _monitor_health(
+        model_trust_status,
+        stale_after_seconds=25200.0,
+    )
+
     monitors_healthy = (
         forward["healthy"]
         and live_edge["healthy"]
+        and model_trust["healthy"]
     )
 
     return {
@@ -150,6 +163,18 @@ def health_endpoint(db: Session = Depends(get_db)):
         "monitors": {
             "forward_schedule": forward,
             "live_edge": live_edge,
+            "model_trust": {
+                **model_trust,
+                "trust_score": (
+                    model_trust_status.trust_score
+                ),
+                "trust_grade": (
+                    model_trust_status.trust_grade
+                ),
+                "sample_size": (
+                    model_trust_status.sample_size
+                ),
+            },
         },
     }
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from time import monotonic
 from typing import Any, Dict, List, Optional
 
 from app.models.market_snapshot_analysis import MarketSnapshotAnalysis
@@ -16,7 +15,9 @@ from app.services.market_consensus_service import (
     analyse_market_consensus,
     consensus_summary,
 )
-from app.services.model_trust_service import build_model_trust_report
+from app.services.model_trust_monitor_service import (
+    model_trust_monitor,
+)
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.prediction_evidence_service import (
@@ -34,13 +35,6 @@ from app.services.strategy_service import (
     strategy_rules,
     strategy_summary,
 )
-
-
-_TRUST_CACHE_SECONDS = 900.0
-_trust_cache: dict[str, Any] = {
-    "created_at": 0.0,
-    "report": None,
-}
 
 
 def _normalise(value: str | None) -> str:
@@ -99,29 +93,12 @@ def _scheduled_fixtures(db, *, limit: int):
 
 def _cached_trust_report(db):
     """
-    Return an already-cached trust report without performing
-    heavyweight historical validation on an interactive request.
+    Return the latest background-refreshed trust report.
 
-    Trust-report generation is intentionally kept off the
-    Prediction Centre request path.
+    Heavy historical validation is performed by
+    model_trust_monitor rather than an interactive request.
     """
-    now = monotonic()
-    cached = _trust_cache.get("report")
-    created_at = float(
-        _trust_cache.get(
-            "created_at",
-            0.0,
-        )
-    )
-
-    if (
-        cached is not None
-        and now - created_at
-        < _TRUST_CACHE_SECONDS
-    ):
-        return cached
-
-    return None
+    return model_trust_monitor.latest_report()
 
 
 def _card_intelligence(
