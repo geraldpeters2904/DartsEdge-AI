@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional
 from app.models.market_snapshot_analysis import MarketSnapshotAnalysis
 from app.models.match import Match
 from app.models.odds_snapshot import OddsSnapshot
-from app.services.ai_coach_service import build_ai_coach_data
 from app.services.daily_briefing_service import _value_opportunities
 from app.services.decision_intelligence_service import (
     build_decision_intelligence,
@@ -99,29 +98,30 @@ def _scheduled_fixtures(db, *, limit: int):
 
 
 def _cached_trust_report(db):
+    """
+    Return an already-cached trust report without performing
+    heavyweight historical validation on an interactive request.
+
+    Trust-report generation is intentionally kept off the
+    Prediction Centre request path.
+    """
     now = monotonic()
     cached = _trust_cache.get("report")
-    created_at = float(_trust_cache.get("created_at", 0.0))
+    created_at = float(
+        _trust_cache.get(
+            "created_at",
+            0.0,
+        )
+    )
 
     if (
         cached is not None
-        and now - created_at < _TRUST_CACHE_SECONDS
+        and now - created_at
+        < _TRUST_CACHE_SECONDS
     ):
         return cached
 
-    try:
-        report = build_model_trust_report(
-            db,
-            model_name="transparent-v3.3",
-            offset=500,
-            limit=3000,
-        )
-    except Exception:
-        return None
-
-    _trust_cache["created_at"] = now
-    _trust_cache["report"] = report
-    return report
+    return None
 
 
 def _card_intelligence(
@@ -589,7 +589,12 @@ def build_prediction_centre(
             "decision_intelligence": decision_intelligence,
         })
 
-    coach = build_ai_coach_data(db)
+    coach = {
+        "summary": (
+            "Open the full AI Coach for portfolio, "
+            "opportunity and strategy guidance."
+        ),
+    }
 
     confirmed = [
         card

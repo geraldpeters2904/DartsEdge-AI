@@ -266,15 +266,27 @@ def build_live_opportunity_centre(
         limit=limit,
     )
 
-    sparse_consensus_risk = (
-        _current_sparse_consensus_risk(
-            db,
-            diagnostic_service=(
-                risk_diagnostic_service
-            ),
-            window_size=risk_window_size,
+    sparse_consensus_risk = {
+        "density": None,
+        "state": "UNKNOWN",
+        "elevated": False,
+        "high": False,
+        "explanation": (
+            "Sparse-consensus regime risk "
+            "loads asynchronously in the UI."
+        ),
+    }
+
+    if risk_diagnostic_service is not None:
+        sparse_consensus_risk = (
+            _current_sparse_consensus_risk(
+                db,
+                diagnostic_service=(
+                    risk_diagnostic_service
+                ),
+                window_size=risk_window_size,
+            )
         )
-    )
 
     now = datetime.utcnow()
     rows = []

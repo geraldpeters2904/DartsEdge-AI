@@ -1,5 +1,116 @@
 {% extends "base.html" %}
-{% block title %}Live Opportunities · DartsEdge AI{% endblock %}
+{% block title %}Live Opportunities · DartsEdge AI
+
+<script>
+async function loadSparseConsensusRisk() {
+  const badges = Array.from(
+    document.querySelectorAll(
+      ".sparse-consensus-risk-badge"
+    )
+  );
+
+  const button = document.getElementById(
+    "load-sparse-consensus-risk"
+  );
+
+  if (!badges.length) {
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Calculating risk…";
+  }
+
+  for (const badge of badges) {
+    badge.textContent = "CALCULATING";
+  }
+
+  try {
+    const response = await fetch(
+      "/diagnostics/sparse-consensus-risk"
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+
+    let label = "UNKNOWN";
+    let cssClass = (
+      "opportunity-risk-unknown"
+    );
+
+    if (data.high) {
+      label = "HIGH RISK";
+      cssClass = (
+        "opportunity-risk-high"
+      );
+    } else if (data.elevated) {
+      label = "ELEVATED";
+      cssClass = (
+        "opportunity-risk-elevated"
+      );
+    } else if (
+      data.risk_state === "NORMAL"
+    ) {
+      label = "NORMAL";
+      cssClass = (
+        "opportunity-risk-normal"
+      );
+    }
+
+    const density = (
+      data.density === null
+      ? ""
+      : ` · ${data.density.toFixed(2)}%`
+    );
+
+    for (const badge of badges) {
+      badge.className = (
+        "opportunity-risk "
+        + cssClass
+        + " sparse-consensus-risk-badge"
+      );
+
+      badge.textContent = (
+        label + density
+      );
+
+      badge.title = (
+        data.explanation || ""
+      );
+    }
+
+    if (button) {
+      button.textContent = "Risk loaded";
+    }
+  } catch (error) {
+    for (const badge of badges) {
+      badge.className = (
+        "opportunity-risk "
+        + "opportunity-risk-unknown "
+        + "sparse-consensus-risk-badge"
+      );
+
+      badge.textContent = (
+        "RISK UNAVAILABLE"
+      );
+    }
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Retry risk check";
+    }
+  }
+}
+</script>
+
+
+{% endblock %}
 {% block content %}
 
 <style>
@@ -30,6 +141,31 @@
   .opportunity-state {
     margin-top: .35rem;
     font-weight: 700;
+  }
+
+  .opportunity-risk {
+    margin-top: .45rem;
+    padding: .35rem .55rem;
+    border-radius: .4rem;
+    font-size: .78rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .opportunity-risk-normal {
+    background: rgba(46, 160, 67, .12);
+  }
+
+  .opportunity-risk-elevated {
+    background: rgba(210, 153, 34, .16);
+  }
+
+  .opportunity-risk-high {
+    background: rgba(218, 54, 51, .16);
+  }
+
+  .opportunity-risk-unknown {
+    background: rgba(128, 128, 128, .12);
   }
 
   .opportunity-metrics {
@@ -71,6 +207,14 @@
     <a class="button secondary" href="/odds-warehouse">
       Odds Warehouse
     </a>
+    <button
+      id="load-sparse-consensus-risk"
+      class="button secondary"
+      type="button"
+      onclick="loadSparseConsensusRisk()"
+    >
+      Check regime risk
+    </button>
   </div>
 </div>
 
@@ -133,6 +277,13 @@
     <strong>{{ item.decision_score }}</strong>
     <small>/ 100</small>
     <div class="opportunity-state">{{ item.lifecycle_state }}</div>
+
+    <div
+      class="opportunity-risk opportunity-risk-unknown sparse-consensus-risk-badge"
+      title="Sparse-consensus regime risk is loading."
+    >
+      NOT CHECKED
+    </div>
   </div>
 
   <div>
