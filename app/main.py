@@ -25,6 +25,7 @@ from app.routes.modus_match_id_diagnostic import router as modus_match_id_diagno
 from app.services.live_edge_monitor_service import live_edge_monitor
 from app.services.forward_schedule_monitor_service import forward_schedule_monitor
 from app.services.model_trust_monitor_service import model_trust_monitor
+from app.services.sparse_consensus_risk_monitor_service import sparse_consensus_risk_monitor
 from app.routes.opportunity_replay import router as opportunity_replay_router
 from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
 from app.routes.feed_connectors import router as feed_connectors_router
@@ -130,6 +131,7 @@ app.include_router(modus_match_id_diagnostic_router)
 live_edge_monitor.start()
 forward_schedule_monitor.start()
 model_trust_monitor.start()
+sparse_consensus_risk_monitor.start()
 app.include_router(opportunity_replay_router)
 app.include_router(feed_connectors_router)
 app.include_router(strategy_analytics_router)

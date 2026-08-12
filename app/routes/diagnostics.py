@@ -12,6 +12,9 @@ from app.services.live_edge_monitor_service import (
 from app.services.model_trust_monitor_service import (
     model_trust_monitor,
 )
+from app.services.sparse_consensus_risk_monitor_service import (
+    sparse_consensus_risk_monitor,
+)
 from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
     CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
 )
@@ -145,10 +148,20 @@ def health_endpoint(db: Session = Depends(get_db)):
         stale_after_seconds=25200.0,
     )
 
+    sparse_status = (
+        sparse_consensus_risk_monitor.status()
+    )
+
+    sparse_consensus = _monitor_health(
+        sparse_status,
+        stale_after_seconds=1800.0,
+    )
+
     monitors_healthy = (
         forward["healthy"]
         and live_edge["healthy"]
         and model_trust["healthy"]
+        and sparse_consensus["healthy"]
     )
 
     return {
@@ -173,6 +186,23 @@ def health_endpoint(db: Session = Depends(get_db)):
                 ),
                 "sample_size": (
                     model_trust_status.sample_size
+                ),
+            },
+            "sparse_consensus_risk": {
+                **sparse_consensus,
+                "density": sparse_status.density,
+                "risk_state": (
+                    sparse_status.risk_state
+                ),
+                "elevated": (
+                    sparse_status.elevated
+                ),
+                "high": sparse_status.high,
+                "segment_matches": (
+                    sparse_status.segment_matches
+                ),
+                "flagged_matches": (
+                    sparse_status.flagged_matches
                 ),
             },
         },

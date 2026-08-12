@@ -18,6 +18,12 @@ from app.services.market_consensus_service import (
 from app.services.model_trust_monitor_service import (
     model_trust_monitor,
 )
+from app.services.sparse_consensus_risk_monitor_service import (
+    sparse_consensus_risk_monitor,
+)
+from app.services.decision_safety_state_service import (
+    DecisionSafetyStateService,
+)
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.prediction_evidence_service import (
@@ -99,6 +105,52 @@ def _cached_trust_report(db):
     model_trust_monitor rather than an interactive request.
     """
     return model_trust_monitor.latest_report()
+
+
+
+def _decision_safety_state(
+    trust_report,
+):
+    risk_status = (
+        sparse_consensus_risk_monitor.status()
+    )
+
+    trust_score = (
+        float(trust_report.trust_score)
+        if trust_report is not None
+        else None
+    )
+
+    result = (
+        DecisionSafetyStateService()
+        .classify(
+            trust_score=trust_score,
+            sparse_consensus_risk_state=(
+                risk_status.risk_state
+            ),
+        )
+    )
+
+    return {
+        "state": result.state,
+        "caution": result.caution,
+        "high_caution": (
+            result.high_caution
+        ),
+        "trust_score": (
+            result.trust_score
+        ),
+        "sparse_consensus_risk_state": (
+            result
+            .sparse_consensus_risk_state
+        ),
+        "explanation": (
+            result.explanation
+        ),
+        "density": (
+            risk_status.density
+        ),
+    }
 
 
 def _card_intelligence(
@@ -458,6 +510,13 @@ def build_prediction_centre(
     }
 
     trust_report = _cached_trust_report(db)
+
+    decision_safety = (
+        _decision_safety_state(
+            trust_report
+        )
+    )
+
     portfolio = build_portfolio_health(db)
     settings = get_settings(db)
 
@@ -564,6 +623,7 @@ def build_prediction_centre(
             "market_analysis": market_analysis,
             "market_consensus": market_consensus,
             "decision_intelligence": decision_intelligence,
+            "decision_safety": decision_safety,
         })
 
     coach = {
@@ -693,6 +753,7 @@ def build_prediction_centre(
             and active_strategy["enforcement_mode"]
             == "active"
         ),
+        "decision_safety": decision_safety,
         "model_trust": (
             {
                 "trust_score": trust_report.trust_score,

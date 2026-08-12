@@ -206,6 +206,89 @@
 </section>
 {% endif %}
 
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Decision Safety</p>
+      <h2>
+        {% if decision_safety.state == "HIGH_CAUTION" %}
+        High caution
+        {% elif decision_safety.state == "CAUTION" %}
+        Caution
+        {% elif decision_safety.state == "NORMAL" %}
+        Normal
+        {% else %}
+        Unknown
+        {% endif %}
+      </h2>
+    </div>
+
+    {% if decision_safety.state == "HIGH_CAUTION" %}
+    <span class="status-pill status-bad">
+      HIGH CAUTION
+    </span>
+    {% elif decision_safety.state == "CAUTION" %}
+    <span class="status-pill status-warning">
+      CAUTION
+    </span>
+    {% elif decision_safety.state == "NORMAL" %}
+    <span class="status-pill status-good">
+      NORMAL
+    </span>
+    {% else %}
+    <span class="status-pill status-warning">
+      UNKNOWN
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="detail-grid">
+    <div>
+      <span>Model trust</span>
+      <strong>
+        {% if decision_safety.trust_score is not none %}
+        {{ '%.0f'|format(decision_safety.trust_score) }} / 100
+        {% else %}
+        Unavailable
+        {% endif %}
+      </strong>
+    </div>
+
+    <div>
+      <span>Sparse-consensus regime</span>
+      <strong>
+        {{ decision_safety.sparse_consensus_risk_state
+           |replace('_', ' ')
+           |title }}
+      </strong>
+    </div>
+
+    <div>
+      <span>Risk density</span>
+      <strong>
+        {% if decision_safety.density is not none %}
+        {{ '%.2f'|format(decision_safety.density) }}%
+        {% else %}
+        Unavailable
+        {% endif %}
+      </strong>
+    </div>
+
+    <div class="detail-wide">
+      <span>Interpretation</span>
+      <strong>
+        {{ decision_safety.explanation }}
+      </strong>
+    </div>
+  </div>
+
+  <p class="muted">
+    Decision Safety is observational only. It does not alter
+    Decision Score, recommendation, stake, probability, EV,
+    edge or ranking.
+  </p>
+</section>
+
 {% if cards %}
   {% if fixture_scope == 'upcoming' %}
   <div class="prediction-scope-notice">
