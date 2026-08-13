@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Mobile Sign In · DartsEdge AI{% endblock %}
+
+{% block content %}
+
+<style>
+.mobile-login-shell {
+    max-width: 440px;
+    margin: 3rem auto;
+}
+
+.mobile-login-card {
+    padding: 1.25rem;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .9rem;
+    background: rgba(128, 128, 128, .05);
+}
+
+.mobile-login-card h1 {
+    margin-top: 0;
+}
+
+.mobile-login-field {
+    margin: .9rem 0;
+}
+
+.mobile-login-field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: .3rem;
+}
+
+.mobile-login-field input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: .7rem .75rem;
+    border-radius: .55rem;
+    border: 1px solid rgba(128, 128, 128, .35);
+    font-size: 1rem;
+}
+
+.mobile-login-error {
+    padding: .7rem .8rem;
+    margin: .8rem 0;
+    border-radius: .55rem;
+    background: rgba(218, 54, 51, .14);
+}
+
+.mobile-login-button {
+    width: 100%;
+    margin-top: .5rem;
+}
+</style>
+
+<div class="mobile-login-shell">
+    <section class="mobile-login-card">
+        <div class="eyebrow">Read-only mobile access</div>
+        <h1>DartsEdge Sign In</h1>
+
+        <p class="muted">
+            Sign in to view current DartsEdge recommendations.
+        </p>
+
+        {% if error %}
+        <div class="mobile-login-error">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% if configured %}
+        <form method="post" action="/mobile-login">
+            <div class="mobile-login-field">
+                <label for="username">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    required
+                >
+            </div>
+
+            <div class="mobile-login-field">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button
+                class="button mobile-login-button"
+                type="submit"
+            >
+                Sign in
+            </button>
+        </form>
+        {% else %}
+        <div class="mobile-login-error">
+            Mobile access credentials are not configured
+            on the DartsEdge Mac.
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+{% endblock %}
