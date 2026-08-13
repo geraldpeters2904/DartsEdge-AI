@@ -1,128 +1,309 @@
 {% extends "base.html" %}
-{% block title %}Live Operations · DartsEdge AI
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <div class="eyebrow">Forward discovery</div>
-      <h2>Upcoming schedule monitor</h2>
-    </div>
-  </div>
-  <p><strong>Status:</strong> {{ "RUNNING" if forward_monitor.running else "STOPPED" }}</p>
-  <p><strong>Runs:</strong> {{ forward_monitor.runs }}</p>
-  <p><strong>Failures:</strong> {{ forward_monitor.failures }}</p>
-  <p><strong>Latest series/week:</strong>
-    {{ forward_monitor.latest_series or "—" }} /
-    {{ forward_monitor.latest_week or "—" }}
-  </p>
-  <p><strong>Future fixtures:</strong> {{ forward_monitor.future_fixtures }}</p>
-  <p><strong>Last run:</strong> {{ forward_monitor.last_run_at or "—" }}</p>
-  <p><strong>Next run:</strong> {{ forward_monitor.next_run_at or "—" }}</p>
-  <p class="muted">{{ forward_monitor.last_message }}</p>
-</section>
+{% block title %}Live Operations · DartsEdge AI{% endblock %}
 
-{% endblock %}
 {% block content %}
 
-<div class="page-header">
-  <div>
-    <div class="eyebrow">Sprint 2.5</div>
-    <h1>Live Operations Centre</h1>
-    <p class="muted">
-      Generated {{ summary.generated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC.
+<style>
+.live-ops-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0 1.2rem;
+}
+
+.live-ops-card {
+    padding: .85rem 1rem;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .65rem;
+    background: rgba(128, 128, 128, .06);
+}
+
+.live-ops-card .label {
+    display: block;
+    font-size: .78rem;
+    opacity: .72;
+    margin-bottom: .25rem;
+}
+
+.live-ops-card .value {
+    font-size: 1.15rem;
+    font-weight: 750;
+}
+
+.ops-panel {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .7rem;
+}
+
+.ops-panel h2 {
+    margin-top: 0;
+}
+
+.ops-status {
+    display: inline-block;
+    padding: .25rem .5rem;
+    border-radius: .4rem;
+    font-size: .78rem;
+    font-weight: 750;
+    background: rgba(128, 128, 128, .12);
+}
+
+.ops-status-good {
+    background: rgba(46, 160, 67, .14);
+}
+
+.ops-status-warn {
+    background: rgba(210, 153, 34, .16);
+}
+
+.ops-status-bad {
+    background: rgba(218, 54, 51, .16);
+}
+
+.discovery-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: .75rem;
+}
+
+.discovery-table th,
+.discovery-table td {
+    text-align: left;
+    padding: .5rem .45rem;
+    border-bottom: 1px solid rgba(128, 128, 128, .16);
+    vertical-align: top;
+}
+
+.operations-log {
+    font-size: .9rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+    .live-ops-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+}
+</style>
+
+<h1>Live Operations Centre</h1>
+
+<p>
+    Operational view of fixture acquisition, bookmaker capture,
+    pipeline readiness and live market movement.
+</p>
+
+<div class="live-ops-grid">
+    <div class="live-ops-card">
+        <span class="label">Current / future MODUS fixtures</span>
+        <span class="value">
+            {{ forward_monitor.future_fixtures }}
+        </span>
+    </div>
+
+    <div class="live-ops-card">
+        <span class="label">Odds snapshots</span>
+        <span class="value">
+            {{ summary.odds_snapshots }}
+        </span>
+    </div>
+
+    <div class="live-ops-card">
+        <span class="label">Live opportunities</span>
+        <span class="value">
+            {{ live_pipeline.live_opportunity_count }}
+        </span>
+    </div>
+
+    <div class="live-ops-card">
+        <span class="label">Odds movements</span>
+        <span class="value">
+            {{ summary.odds_movements }}
+        </span>
+    </div>
+</div>
+
+<section class="ops-panel">
+    <h2>Fixture acquisition</h2>
+
+    {% if fixture_acquisition.ready %}
+    <span class="ops-status ops-status-good">
+        {{ fixture_acquisition.state }}
+    </span>
+    {% elif fixture_acquisition.error %}
+    <span class="ops-status ops-status-bad">
+        {{ fixture_acquisition.state }}
+    </span>
+    {% else %}
+    <span class="ops-status ops-status-warn">
+        {{ fixture_acquisition.state }}
+    </span>
+    {% endif %}
+
+    <p>{{ fixture_acquisition.explanation }}</p>
+
+    <p>
+        Series:
+        <strong>{{ forward_monitor.latest_series or "Not checked" }}</strong>
+        · Week:
+        <strong>{{ forward_monitor.latest_week or "Not checked" }}</strong>
+        · Last run:
+        <strong>{{ forward_monitor.last_run_at or "Not yet run" }}</strong>
     </p>
-  </div>
-</div>
 
-<div style="display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:.8rem;margin:1rem 0 1.4rem">
-  <article class="prediction-kpi-card">
-    <span class="prediction-kpi-label">Scheduled matches</span>
-    <strong class="prediction-kpi-value">{{ summary.scheduled_matches }}</strong>
-  </article>
-  <article class="prediction-kpi-card">
-    <span class="prediction-kpi-label">Completed matches</span>
-    <strong class="prediction-kpi-value">{{ summary.completed_matches }}</strong>
-  </article>
-  <article class="prediction-kpi-card">
-    <span class="prediction-kpi-label">Odds snapshots</span>
-    <strong class="prediction-kpi-value">{{ summary.odds_snapshots }}</strong>
-  </article>
-  <article class="prediction-kpi-card">
-    <span class="prediction-kpi-label">Odds movements</span>
-    <strong class="prediction-kpi-value">{{ summary.odds_movements }}</strong>
-  </article>
-</div>
+    <h3>MODUS group discovery</h3>
 
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <div class="eyebrow">Capture health</div>
-      <h2>Live market readiness</h2>
-    </div>
-  </div>
-
-  <p><strong>Paddy Power bridge:</strong>
-    {{ "READY" if summary.paddy_power_ready else "NOT READY" }}
-  </p>
-
-  <p><strong>Resolved function:</strong>
-    {{ summary.paddy_power_function or "—" }}
-  </p>
-
-  <p><strong>Last odds snapshot:</strong>
-    {% if summary.latest_odds_at %}
-      {{ summary.latest_odds_at.strftime('%Y-%m-%d %H:%M:%S') }}
+    {% if discovery_targets %}
+    <table class="discovery-table">
+        <thead>
+            <tr>
+                <th>Target</th>
+                <th>State</th>
+                <th>Fixtures</th>
+                <th>Message / error</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in discovery_targets %}
+            <tr>
+                <td>{{ item.group }}</td>
+                <td>
+                    {% if item.state == "IMPORTED" %}
+                    <span class="ops-status ops-status-good">
+                        IMPORTED
+                    </span>
+                    {% elif item.state == "FAILED" %}
+                    <span class="ops-status ops-status-warn">
+                        FAILED
+                    </span>
+                    {% else %}
+                    <span class="ops-status">
+                        {{ item.state }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ item.fixture_count if item.fixture_count is not none else "—" }}
+                </td>
+                <td>
+                    {{ item.error or item.message }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% else %}
-      No live odds captured yet
+    <p>No per-group discovery result has been recorded yet.</p>
     {% endif %}
-  </p>
-
-  <p><strong>Last odds movement:</strong>
-    {% if summary.latest_movement_at %}
-      {{ summary.latest_movement_at.strftime('%Y-%m-%d %H:%M:%S') }}
-    {% else %}
-      No movement recorded yet
-    {% endif %}
-  </p>
 </section>
 
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <div class="eyebrow">Market activity</div>
-      <h2>Recent odds movements</h2>
-    </div>
-  </div>
+<section class="ops-panel">
+    <h2>Capture health</h2>
 
-  {% if movements %}
-    {% for movement in movements %}
-    <div style="padding:.7rem 0;border-bottom:1px solid rgba(127,127,127,.12)">
-      <strong>{{ movement.detected_at.strftime('%H:%M:%S') }}</strong>
-      · {{ movement.bookmaker_code }}
-      · Fixture #{{ movement.fixture_id }}
-      · {{ movement.selection }}
-      · {{ '%.2f'|format(movement.previous_odds) }}
-      → {{ '%.2f'|format(movement.new_odds) }}
-      · {{ movement.direction }}
-    </div>
-    {% endfor %}
-  {% else %}
-    <p class="muted">No live odds movements have been recorded yet.</p>
-  {% endif %}
+    {% if summary.paddy_power_ready %}
+    <span class="ops-status ops-status-good">PADDY POWER READY</span>
+    {% else %}
+    <span class="ops-status ops-status-bad">PADDY POWER NOT READY</span>
+    {% endif %}
+
+    <p>{{ summary.paddy_power_message }}</p>
+
+    <p>
+        Odds acquisition:
+        <strong>{{ odds_acquisition.state }}</strong>
+        · Priced fixtures:
+        <strong>{{ odds_acquisition.priced_fixtures }}</strong>
+        · Current prices:
+        <strong>{{ odds_acquisition.current_prices }}</strong>
+    </p>
+
+    <p>
+        Last automatic capture:
+        <strong>{{ forward_monitor.odds_capture_at or "Not yet triggered" }}</strong>
+        · Extracted:
+        <strong>{{ forward_monitor.odds_prices_extracted }}</strong>
+        · Stored:
+        <strong>{{ forward_monitor.odds_prices_stored }}</strong>
+    </p>
+
+    <p>
+        {{ forward_monitor.odds_capture_message or "No automatic capture result yet." }}
+        {% if forward_monitor.odds_capture_error %}
+        · Error: {{ forward_monitor.odds_capture_error }}
+        {% endif %}
+    </p>
 </section>
 
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <div class="eyebrow">Operations log</div>
-      <h2>Current state</h2>
-    </div>
-  </div>
+<section class="ops-panel">
+    <h2>Live opportunity pipeline</h2>
 
-  <p><strong>System:</strong> {{ summary.paddy_power_message }}</p>
-  <p><strong>Warehouse:</strong>
-    {{ summary.odds_snapshots }} snapshots /
-    {{ summary.odds_movements }} movements
-  </p>
+    {% if live_pipeline.ready %}
+    <span class="ops-status ops-status-good">
+        {{ live_pipeline.state }}
+    </span>
+    {% else %}
+    <span class="ops-status ops-status-warn">
+        {{ live_pipeline.state }}
+    </span>
+    {% endif %}
+
+    <p>{{ live_pipeline.explanation }}</p>
+
+    <p>
+        Fixtures {{ live_pipeline.fixture_count }}
+        · Predictions {{ live_pipeline.opportunity_count }}
+        · Priced {{ live_pipeline.priced_count }}
+        · Assessments {{ live_pipeline.assessment_count }}
+        · Decisions {{ live_pipeline.decision_count }}
+        · Live {{ live_pipeline.live_opportunity_count }}
+    </p>
+</section>
+
+<section class="ops-panel">
+    <h2>Recent odds movements</h2>
+
+    {% if movements %}
+    <div class="operations-log">
+        {% for movement in movements %}
+        <div>
+            {{ movement.detected_at.strftime('%H:%M:%S') }}
+            · {{ movement.bookmaker_code }}
+            · Fixture #{{ movement.fixture_id }}
+            · {{ movement.selection }}
+            · {{ '%.2f'|format(movement.previous_odds) }}
+            → {{ '%.2f'|format(movement.new_odds) }}
+            · {{ movement.direction }}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No live odds movements have been recorded yet.</p>
+    {% endif %}
+</section>
+
+<section class="ops-panel">
+    <h2>Operations log</h2>
+
+    <div class="operations-log">
+        <div>
+            Forward monitor:
+            {{ forward_monitor.last_message }}
+        </div>
+        <div>
+            Fixture acquisition:
+            {{ fixture_acquisition.explanation }}
+        </div>
+        <div>
+            Odds acquisition:
+            {{ odds_acquisition.explanation }}
+        </div>
+        <div>
+            Live pipeline:
+            {{ live_pipeline.explanation }}
+        </div>
+    </div>
 </section>
 
 {% endblock %}
