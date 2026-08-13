@@ -1,26 +1,47 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import secrets
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
-
 
 COOKIE_NAME = "dartsedge_mobile_session"
 COOKIE_SALT = "dartsedge-mobile-session-v1"
+PAIRING_TTL_SECONDS = 600
+
+DEFAULT_PAIRING_STATE_PATH = Path(
+    "/Users/geraldpeters/Library/Logs/"
+    "DartsEdge/mobile-pairing.json"
+)
+
+
+def _pairing_state_path() -> Path:
+    override = os.getenv(
+        "DARTSEDGE_MOBILE_PAIRING_STATE",
+        "",
+    ).strip()
+
+    return (
+        Path(override)
+        if override
+        else DEFAULT_PAIRING_STATE_PATH
+    )
 
 
 def configured_mobile_credentials() -> tuple[str, str]:
-    username = os.getenv(
-        "DARTSEDGE_MOBILE_USERNAME",
-        "",
+    return (
+        os.getenv(
+            "DARTSEDGE_MOBILE_USERNAME",
+            "",
+        ),
+        os.getenv(
+            "DARTSEDGE_MOBILE_PASSWORD",
+            "",
+        ),
     )
-    password = os.getenv(
-        "DARTSEDGE_MOBILE_PASSWORD",
-        "",
-    )
-
-    return username, password
 
 
 def mobile_access_configured() -> bool:
@@ -49,19 +70,15 @@ def validate_mobile_credentials(
     ):
         return False
 
-    username_ok = secrets.compare_digest(
-        str(username),
-        expected_username,
-    )
-
-    password_ok = secrets.compare_digest(
-        str(password),
-        expected_password,
-    )
-
     return bool(
-        username_ok
-        and password_ok
+        secrets.compare_digest(
+            str(username),
+            expected_username,
+        )
+        and secrets.compare_digest(
+            str(password),
+            expected_password,
+        )
     )
 
 
@@ -104,3 +121,179 @@ def valid_mobile_session(
         str(value),
         expected,
     )
+
+
+def _token_digest(
+    token: str,
+) -> str:
+    return hashlib.sha256(
+        str(token).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _write_pairing_state(
+    payload: dict,
+) -> None:
+    path = _pairing_state_path()
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temporary = path.with_suffix(
+        path.suffix + ".tmp"
+    )
+
+    temporary.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+
+    temporary.replace(
+        path
+    )
+
+
+def _read_pairing_state() -> Optional[dict]:
+    path = _pairing_state_path()
+
+    if not path.exists():
+        return None
+
+    try:
+        return json.loads(
+            path.read_text(
+                encoding="utf-8"
+            )
+        )
+    except Exception:
+        return None
+
+
+def clear_mobile_pairing_token() -> None:
+    path = _pairing_state_path()
+
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def create_mobile_pairing_token(
+    *,
+    now: Optional[datetime] = None,
+    ttl_seconds: int = PAIRING_TTL_SECONDS,
+) -> str:
+    current = (
+        now
+        or datetime.utcnow()
+    )
+
+    ttl = max(
+        60,
+        min(
+            int(ttl_seconds),
+            3600,
+        ),
+    )
+
+    token = secrets.token_urlsafe(
+        32
+    )
+
+    expires_at = (
+        current
+        + timedelta(
+            seconds=ttl
+        )
+    )
+
+    _write_pairing_state({
+        "token_sha256": (
+            _token_digest(
+                token
+            )
+        ),
+        "created_at": (
+            current.isoformat()
+        ),
+        "expires_at": (
+            expires_at.isoformat()
+        ),
+    })
+
+    return token
+
+
+def consume_mobile_pairing_token(
+    token: str,
+    *,
+    now: Optional[datetime] = None,
+) -> bool:
+    candidate = str(
+        token
+        or ""
+    )
+
+    if not candidate:
+        return False
+
+    state = _read_pairing_state()
+
+    if not state:
+        return False
+
+    current = (
+        now
+        or datetime.utcnow()
+    )
+
+    try:
+        expires_at = datetime.fromisoformat(
+            str(
+                state[
+                    "expires_at"
+                ]
+            )
+        )
+
+        expected_digest = str(
+            state[
+                "token_sha256"
+            ]
+        )
+
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+    ):
+        clear_mobile_pairing_token()
+        return False
+
+    if current >= expires_at:
+        clear_mobile_pairing_token()
+        return False
+
+    candidate_digest = (
+        _token_digest(
+            candidate
+        )
+    )
+
+    if not secrets.compare_digest(
+        candidate_digest,
+        expected_digest,
+    ):
+        return False
+
+    clear_mobile_pairing_token()
+
+    return True

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Pair Mobile Device · DartsEdge AI{% endblock %}
+
+{% block content %}
+
+<style>
+.pairing-shell {
+    max-width: 620px;
+    margin: 2rem auto;
+}
+
+.pairing-card {
+    padding: 1.4rem;
+    text-align: center;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .9rem;
+    background: rgba(128, 128, 128, .05);
+}
+
+.pairing-card h1 {
+    margin-top: .3rem;
+}
+
+.pairing-qr {
+    width: min(360px, 82vw);
+    height: auto;
+    margin: 1rem auto;
+    padding: .8rem;
+    background: white;
+    border-radius: .8rem;
+}
+
+.pairing-url {
+    overflow-wrap: anywhere;
+    font-size: .78rem;
+    opacity: .72;
+    margin-top: 1rem;
+}
+
+.pairing-note {
+    margin: 1rem 0;
+    padding: .8rem;
+    border-radius: .6rem;
+    background: rgba(128, 128, 128, .08);
+}
+</style>
+
+<div class="pairing-shell">
+    <section class="pairing-card">
+        <div class="eyebrow">Mac-only pairing</div>
+
+        <h1>Pair iPhone / iPad</h1>
+
+        <p>
+            Open the Camera app on the mobile device
+            and scan this QR code.
+        </p>
+
+        <img
+            class="pairing-qr"
+            src="{{ pairing.qr_data_uri }}"
+            alt="DartsEdge mobile pairing QR code"
+        >
+
+        <div class="pairing-note">
+            This code works once and expires in
+            <strong>{{ pairing.expires_minutes }} minutes</strong>.
+            Refresh this page to create a new code.
+        </div>
+
+        <p class="muted">
+            After scanning, the device should open
+            DartsEdge Opportunities automatically.
+        </p>
+
+        <div class="pairing-url">
+            {{ pairing.pairing_url }}
+        </div>
+    </section>
+</div>
+
+{% endblock %}

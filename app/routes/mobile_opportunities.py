@@ -3,7 +3,10 @@ from __future__ import annotations
 from urllib.parse import parse_qs
 
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import (
+    RedirectResponse,
+    Response,
+)
 
 from app.db import SessionLocal
 from app.services.live_opportunity_centre_service import (
@@ -14,15 +17,103 @@ from app.services.live_opportunity_pipeline_readiness_service import (
 )
 from app.services.mobile_access_service import (
     COOKIE_NAME,
+    consume_mobile_pairing_token,
     mobile_access_configured,
     mobile_session_token,
     valid_mobile_session,
     validate_mobile_credentials,
 )
+from app.services.mobile_pairing_display_service import (
+    build_mobile_pairing_display,
+)
 from app.templates_config import templates
 
 
 router = APIRouter()
+
+
+_LOCAL_CLIENTS = {
+    "127.0.0.1",
+    "::1",
+}
+
+
+def _set_mobile_session_cookie(
+    response,
+):
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=(
+            mobile_session_token()
+            or ""
+        ),
+        httponly=True,
+        samesite="strict",
+        secure=False,
+        max_age=60 * 60 * 12,
+        path="/",
+    )
+
+    return response
+
+
+@router.get("/mobile-pairing")
+def mobile_pairing_page(
+    request: Request,
+):
+    client_host = (
+        request.client.host
+        if request.client is not None
+        else ""
+    )
+
+    if client_host not in _LOCAL_CLIENTS:
+        return Response(
+            content=(
+                "Mobile pairing can only be "
+                "generated on the DartsEdge Mac."
+            ),
+            status_code=403,
+            media_type="text/plain",
+        )
+
+    if not mobile_access_configured():
+        return Response(
+            content=(
+                "Mobile access credentials "
+                "are not configured."
+            ),
+            status_code=503,
+            media_type="text/plain",
+        )
+
+    try:
+        pairing = (
+            build_mobile_pairing_display()
+        )
+    except RuntimeError as exc:
+        return Response(
+            content=str(exc),
+            status_code=503,
+            media_type="text/plain",
+        )
+
+    response = templates.TemplateResponse(
+        "mobile_pairing.html",
+        {
+            "request": request,
+            "pairing": pairing,
+        },
+    )
+
+    response.headers[
+        "Cache-Control"
+    ] = (
+        "no-store, no-cache, "
+        "must-revalidate"
+    )
+
+    return response
 
 
 @router.get("/mobile-login")
@@ -101,25 +192,38 @@ async def mobile_login_submit(
             status_code=401,
         )
 
-    response = RedirectResponse(
-        url="/mobile-opportunities",
-        status_code=303,
+    return _set_mobile_session_cookie(
+        RedirectResponse(
+            url="/mobile-opportunities",
+            status_code=303,
+        )
     )
 
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=(
-            mobile_session_token()
-            or ""
-        ),
-        httponly=True,
-        samesite="strict",
-        secure=False,
-        max_age=60 * 60 * 12,
-        path="/",
-    )
 
-    return response
+@router.get("/mobile-pair/{token}")
+def mobile_pair(
+    token: str,
+):
+    if not mobile_access_configured():
+        return RedirectResponse(
+            url="/mobile-login",
+            status_code=303,
+        )
+
+    if not consume_mobile_pairing_token(
+        token
+    ):
+        return RedirectResponse(
+            url="/mobile-login?pairing=invalid",
+            status_code=303,
+        )
+
+    return _set_mobile_session_cookie(
+        RedirectResponse(
+            url="/mobile-opportunities",
+            status_code=303,
+        )
+    )
 
 
 @router.get("/mobile-logout")
@@ -154,10 +258,12 @@ def mobile_opportunities_page(
     db = SessionLocal()
 
     try:
-        payload = build_live_opportunity_centre(
-            db,
-            limit=30,
-            persist=True,
+        payload = (
+            build_live_opportunity_centre(
+                db,
+                limit=30,
+                persist=True,
+            )
         )
 
         readiness = (
