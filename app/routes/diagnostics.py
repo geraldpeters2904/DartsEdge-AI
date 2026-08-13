@@ -24,6 +24,9 @@ from app.services.fixture_acquisition_readiness_service import (
 from app.services.odds_acquisition_readiness_service import (
     build_odds_acquisition_readiness,
 )
+from app.services.live_opportunity_pipeline_readiness_service import (
+    build_live_opportunity_pipeline_readiness,
+)
 from app.services.current_match_enrichment_v33_sparse_consensus_risk_diagnostic_service import (
     CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService,
 )
@@ -32,6 +35,7 @@ from app.services.current_match_enrichment_v33_dual_low_history_risk_flag_servic
 )
 from app.templates_config import templates
 from app.version import version_payload
+
 
 router = APIRouter(tags=["system"])
 
@@ -135,7 +139,9 @@ def _monitor_health(
 
 
 @router.get("/health")
-def health_endpoint(db: Session = Depends(get_db)):
+def health_endpoint(
+    db: Session = Depends(get_db),
+):
     diagnostics = build_diagnostics(db)
 
     forward = _monitor_health(
@@ -187,6 +193,12 @@ def health_endpoint(db: Session = Depends(get_db)):
         )
     )
 
+    live_opportunity_pipeline = (
+        build_live_opportunity_pipeline_readiness(
+            db
+        )
+    )
+
     monitors_healthy = (
         forward["healthy"]
         and live_edge["healthy"]
@@ -204,6 +216,68 @@ def health_endpoint(db: Session = Depends(get_db)):
         "version": diagnostics["release"]["version"],
         "build": diagnostics["release"]["build"],
         "checks": diagnostics["checks"],
+        "live_opportunity_pipeline": {
+            "state": (
+                live_opportunity_pipeline.state
+            ),
+            "ready": (
+                live_opportunity_pipeline.ready
+            ),
+            "fixture_count": (
+                live_opportunity_pipeline.fixture_count
+            ),
+            "opportunity_count": (
+                live_opportunity_pipeline.opportunity_count
+            ),
+            "priced_count": (
+                live_opportunity_pipeline.priced_count
+            ),
+            "assessment_count": (
+                live_opportunity_pipeline.assessment_count
+            ),
+            "decision_count": (
+                live_opportunity_pipeline.decision_count
+            ),
+            "live_opportunity_count": (
+                live_opportunity_pipeline.live_opportunity_count
+            ),
+            "blocked_count": (
+                live_opportunity_pipeline.blocked_count
+            ),
+            "explanation": (
+                live_opportunity_pipeline.explanation
+            ),
+            "fixtures": [
+                {
+                    "fixture_id": item.fixture_id,
+                    "player_a": item.player_a,
+                    "player_b": item.player_b,
+                    "tournament": item.tournament,
+                    "has_opportunity": (
+                        item.has_opportunity
+                    ),
+                    "has_price": (
+                        item.has_price
+                    ),
+                    "has_assessment": (
+                        item.has_assessment
+                    ),
+                    "has_decision_intelligence": (
+                        item.has_decision_intelligence
+                    ),
+                    "has_live_opportunity": (
+                        item.has_live_opportunity
+                    ),
+                    "state": item.state,
+                    "explanation": (
+                        item.explanation
+                    ),
+                }
+                for item in (
+                    live_opportunity_pipeline.fixtures
+                )
+            ],
+        },
         "odds_acquisition": {
             "state": odds_acquisition.state,
             "ready": odds_acquisition.ready,
@@ -304,7 +378,6 @@ def health_endpoint(db: Session = Depends(get_db)):
     }
 
 
-
 @router.get("/diagnostics/sparse-consensus-risk")
 def sparse_consensus_risk_endpoint(
     db: Session = Depends(get_db),
@@ -358,7 +431,10 @@ def sparse_consensus_risk_endpoint(
 
 
 @router.get("/diagnostics")
-def diagnostics_page(request: Request, db: Session = Depends(get_db)):
+def diagnostics_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
     return templates.TemplateResponse(
         "diagnostics.html",
         {
