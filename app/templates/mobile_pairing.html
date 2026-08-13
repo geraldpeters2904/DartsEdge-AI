@@ -1,12 +1,13 @@
-{% extends "base.html" %}
-{% block title %}Pair Mobile Device · DartsEdge AI{% endblock %}
+{% extends "mobile_base.html" %}
+{% block title %}Pair Mobile Device · DartsEdge Mobile{% endblock %}
+
+{% block mobile_actions %}{% endblock %}
 
 {% block content %}
-
 <style>
 .pairing-shell {
     max-width: 620px;
-    margin: 2rem auto;
+    margin: 1rem auto;
 }
 
 .pairing-card {
@@ -48,7 +49,6 @@
 <div class="pairing-shell">
     <section class="pairing-card">
         <div class="eyebrow">Mac-only pairing</div>
-
         <h1>Pair iPhone / iPad</h1>
 
         <p>
@@ -78,5 +78,4 @@
         </div>
     </section>
 </div>
-
 {% endblock %}

@@ -1,12 +1,13 @@
-{% extends "base.html" %}
-{% block title %}Mobile Sign In · DartsEdge AI{% endblock %}
+{% extends "mobile_base.html" %}
+{% block title %}Sign In · DartsEdge Mobile{% endblock %}
+
+{% block mobile_actions %}{% endblock %}
 
 {% block content %}
-
 <style>
 .mobile-login-shell {
     max-width: 440px;
-    margin: 3rem auto;
+    margin: 2rem auto;
 }
 
 .mobile-login-card {
@@ -33,6 +34,7 @@
 .mobile-login-field input {
     width: 100%;
     box-sizing: border-box;
+    min-height: 48px;
     padding: .7rem .75rem;
     border-radius: .55rem;
     border: 1px solid rgba(128, 128, 128, .35);
@@ -48,6 +50,7 @@
 
 .mobile-login-button {
     width: 100%;
+    min-height: 48px;
     margin-top: .5rem;
 }
 </style>
@@ -108,5 +111,4 @@
         {% endif %}
     </section>
 </div>
-
 {% endblock %}

@@ -1,13 +1,11 @@
-{% extends "base.html" %}
-{% block title %}Mobile Opportunities · DartsEdge AI{% endblock %}
+{% extends "mobile_base.html" %}
+{% block title %}Opportunities · DartsEdge Mobile{% endblock %}
 
 {% block content %}
 
 <style>
 .mobile-shell {
-    max-width: 760px;
-    margin: 0 auto;
-    padding-bottom: 2rem;
+    width: 100%;
 }
 
 .mobile-header {
@@ -15,15 +13,21 @@
 }
 
 .mobile-header h1 {
-    margin-bottom: .3rem;
+    margin: .2rem 0 .3rem;
+    font-size: clamp(1.7rem, 5vw, 2.3rem);
 }
 
 .mobile-status {
     margin: 1rem 0;
-    padding: .85rem 1rem;
+    padding: .9rem 1rem;
     border: 1px solid rgba(128, 128, 128, .22);
     border-radius: .8rem;
     background: rgba(128, 128, 128, .06);
+}
+
+.mobile-status strong {
+    display: block;
+    margin-bottom: .25rem;
 }
 
 .mobile-kpis {
@@ -34,11 +38,16 @@
 }
 
 .mobile-kpi {
-    padding: .75rem;
+    padding: .8rem .55rem;
     text-align: center;
     border: 1px solid rgba(128, 128, 128, .18);
     border-radius: .75rem;
     background: rgba(128, 128, 128, .05);
+}
+
+.mobile-kpi strong {
+    display: block;
+    font-size: 1.45rem;
 }
 
 .mobile-kpi small {
@@ -63,14 +72,14 @@
     margin-bottom: .8rem;
 }
 
-.mobile-rec strong {
-    font-size: 1.35rem;
+.mobile-rec > strong {
+    font-size: 1.4rem;
 }
 
 .mobile-badge {
     display: inline-block;
-    padding: .35rem .55rem;
-    border-radius: .45rem;
+    padding: .4rem .6rem;
+    border-radius: .5rem;
     font-size: .78rem;
     font-weight: 800;
     background: rgba(128, 128, 128, .12);
@@ -89,7 +98,7 @@
 }
 
 .mobile-match {
-    font-size: 1.2rem;
+    font-size: 1.22rem;
     font-weight: 750;
     line-height: 1.25;
     margin-bottom: .35rem;
@@ -102,13 +111,13 @@
 
 .mobile-metrics {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: .55rem;
     margin: .8rem 0;
 }
 
 .mobile-metric {
-    padding: .65rem;
+    padding: .7rem;
     border-radius: .65rem;
     background: rgba(128, 128, 128, .07);
 }
@@ -117,6 +126,7 @@
     display: block;
     font-size: .74rem;
     opacity: .68;
+    margin-bottom: .15rem;
 }
 
 .mobile-metric strong {
@@ -134,22 +144,27 @@
 }
 
 .mobile-footer-links {
-    display: flex;
-    gap: .6rem;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .65rem;
     margin-top: 1rem;
 }
 
-@media (max-width: 560px) {
-    .mobile-shell {
-        padding-left: .2rem;
-        padding-right: .2rem;
-    }
+.mobile-footer-links a {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
 
-    .mobile-kpis {
-        grid-template-columns: 1fr 1fr 1fr;
+@media (max-width: 640px) {
+    .mobile-metrics {
+        grid-template-columns: repeat(2, 1fr);
     }
+}
 
+@media (max-width: 420px) {
     .mobile-opportunity {
         padding: .85rem;
     }
@@ -157,11 +172,14 @@
     .mobile-match {
         font-size: 1.12rem;
     }
+
+    .mobile-footer-links {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 
 <div class="mobile-shell">
-
     <header class="mobile-header">
         <div class="eyebrow">Read-only mobile view</div>
         <h1>DartsEdge Opportunities</h1>
@@ -192,11 +210,8 @@
 
     {% for item in opportunities %}
     <article class="mobile-opportunity">
-
         <div class="mobile-rec">
-            <strong>
-                {{ item.recommendation }}
-            </strong>
+            <strong>{{ item.recommendation }}</strong>
 
             {% if item.recommendation == "BET" %}
             <span class="mobile-badge mobile-badge-bet">
@@ -236,7 +251,8 @@
                 <span>Bookmaker price</span>
                 <strong>
                     {% if item.decimal_odds %}
-                    {{ item.bookmaker }} {{ '%.2f'|format(item.decimal_odds) }}
+                    {{ item.bookmaker }}
+                    {{ '%.2f'|format(item.decimal_odds) }}
                     {% else %}
                     —
                     {% endif %}
@@ -266,9 +282,7 @@
 
             <div class="mobile-metric">
                 <span>Lifecycle</span>
-                <strong>
-                    {{ item.lifecycle_state }}
-                </strong>
+                <strong>{{ item.lifecycle_state }}</strong>
             </div>
         </div>
 
@@ -316,7 +330,6 @@
             </span>
             {% endif %}
         </div>
-
     </article>
 
     {% else %}
@@ -341,7 +354,6 @@
             Live Operations
         </a>
     </div>
-
 </div>
 
 {% endblock %}
