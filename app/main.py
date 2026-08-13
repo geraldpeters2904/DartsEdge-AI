@@ -10,6 +10,7 @@ from app.routes.match_intelligence import router as match_intelligence_router
 from app.routes.prediction_centre import router as prediction_centre_router
 from app.routes.live_opportunity_centre import router as live_opportunity_centre_router
 from app.routes.live_operations import router as live_operations_router
+from app.routes.mobile_opportunities import router as mobile_opportunities_router
 from app.routes.upcoming_fixture_intelligence import router as upcoming_fixture_intelligence_router
 from app.routes.forward_fixture_catchup import router as forward_fixture_catchup_router
 from app.routes.fixture_edge import router as fixture_edge_router
@@ -116,6 +117,7 @@ app.include_router(match_intelligence_router)
 app.include_router(prediction_centre_router)
 app.include_router(live_opportunity_centre_router)
 app.include_router(live_operations_router)
+app.include_router(mobile_opportunities_router)
 app.include_router(upcoming_fixture_intelligence_router)
 app.include_router(forward_fixture_catchup_router)
 app.include_router(fixture_edge_router)
@@ -178,53 +180,3 @@ app.include_router(historical_import_queue_router)
 app.include_router(historical_import_engine_router)
 app.include_router(modus_capture_assistant_router)
 app.include_router(import_wizard_router)
-app.include_router(modus_fixture_import_router)
-app.include_router(modus_capture_manager_router)
-app.include_router(capture_library_router)
-app.include_router(historical_capture_batch_router)
-app.include_router(historical_operations_router)
-app.include_router(capture_discovery_router)
-app.include_router(capture_wizard_router)
-
-
-@app.get("/")
-def home():
-    return {"status": "DartsEdge AI running"}
-
-
-@app.get("/match")
-def match(player_a: str, player_b: str):
-    db = SessionLocal()
-
-    try:
-        a = db.query(Player).filter(Player.name == player_a).first()
-        b = db.query(Player).filter(Player.name == player_b).first()
-
-        if not a or not b:
-            return {"error": "Player not found"}
-
-        elo_prob = win_probability(a.elo, b.elo)
-        sim_prob = leg_win_probability(a, b)
-        final_prob_a = (elo_prob * 0.6) + (sim_prob * 0.4)
-
-        form_180_a = weighted_expected_180s(db, player_a)
-        form_180_b = weighted_expected_180s(db, player_b)
-
-        exp_180_a = form_180_a["expected"]
-        exp_180_b = form_180_b["expected"]
-
-        return {
-            "player_a": player_a,
-            "player_b": player_b,
-            "win_prob_a": round(final_prob_a, 3),
-            "win_prob_b": round(1 - final_prob_a, 3),
-            "expected_180s_a": round(exp_180_a, 2),
-            "expected_180s_b": round(exp_180_b, 2),
-            "form_180_a": form_180_a,
-            "form_180_b": form_180_b,
-            "markets_180": one80_markets(exp_180_a, exp_180_b),
-            "value_bet": value_edge(final_prob_a),
-        }
-
-    finally:
-        db.close()

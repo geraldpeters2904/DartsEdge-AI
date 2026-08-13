@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}Mobile Opportunities · DartsEdge AI{% endblock %}
+
+{% block content %}
+
+<style>
+.mobile-shell {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+}
+
+.mobile-header {
+    margin-bottom: 1rem;
+}
+
+.mobile-header h1 {
+    margin-bottom: .3rem;
+}
+
+.mobile-status {
+    margin: 1rem 0;
+    padding: .85rem 1rem;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .8rem;
+    background: rgba(128, 128, 128, .06);
+}
+
+.mobile-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .6rem;
+    margin: 1rem 0 1.2rem;
+}
+
+.mobile-kpi {
+    padding: .75rem;
+    text-align: center;
+    border: 1px solid rgba(128, 128, 128, .18);
+    border-radius: .75rem;
+    background: rgba(128, 128, 128, .05);
+}
+
+.mobile-kpi small {
+    display: block;
+    opacity: .7;
+    margin-top: .2rem;
+}
+
+.mobile-opportunity {
+    margin: 0 0 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .9rem;
+    background: rgba(128, 128, 128, .05);
+}
+
+.mobile-rec {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: .8rem;
+}
+
+.mobile-rec strong {
+    font-size: 1.35rem;
+}
+
+.mobile-badge {
+    display: inline-block;
+    padding: .35rem .55rem;
+    border-radius: .45rem;
+    font-size: .78rem;
+    font-weight: 800;
+    background: rgba(128, 128, 128, .12);
+}
+
+.mobile-badge-bet {
+    background: rgba(46, 160, 67, .16);
+}
+
+.mobile-badge-watch {
+    background: rgba(210, 153, 34, .18);
+}
+
+.mobile-badge-caution {
+    background: rgba(218, 54, 51, .16);
+}
+
+.mobile-match {
+    font-size: 1.2rem;
+    font-weight: 750;
+    line-height: 1.25;
+    margin-bottom: .35rem;
+}
+
+.mobile-selection {
+    font-size: 1.08rem;
+    margin-bottom: .8rem;
+}
+
+.mobile-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .55rem;
+    margin: .8rem 0;
+}
+
+.mobile-metric {
+    padding: .65rem;
+    border-radius: .65rem;
+    background: rgba(128, 128, 128, .07);
+}
+
+.mobile-metric span {
+    display: block;
+    font-size: .74rem;
+    opacity: .68;
+}
+
+.mobile-metric strong {
+    font-size: 1rem;
+}
+
+.mobile-reasoning {
+    margin-top: .85rem;
+    padding-top: .8rem;
+    border-top: 1px solid rgba(128, 128, 128, .14);
+}
+
+.mobile-reasoning p {
+    margin: .35rem 0;
+}
+
+.mobile-footer-links {
+    display: flex;
+    gap: .6rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+@media (max-width: 560px) {
+    .mobile-shell {
+        padding-left: .2rem;
+        padding-right: .2rem;
+    }
+
+    .mobile-kpis {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .mobile-opportunity {
+        padding: .85rem;
+    }
+
+    .mobile-match {
+        font-size: 1.12rem;
+    }
+}
+</style>
+
+<div class="mobile-shell">
+
+    <header class="mobile-header">
+        <div class="eyebrow">Read-only mobile view</div>
+        <h1>DartsEdge Opportunities</h1>
+        <p class="muted">
+            Current recommendations and decision reasoning.
+        </p>
+    </header>
+
+    <section class="mobile-status">
+        <strong>{{ readiness.state }}</strong>
+        <div>{{ readiness.explanation }}</div>
+    </section>
+
+    <div class="mobile-kpis">
+        <div class="mobile-kpi">
+            <strong>{{ opportunity_count }}</strong>
+            <small>Live</small>
+        </div>
+        <div class="mobile-kpi">
+            <strong>{{ bet_count }}</strong>
+            <small>BET</small>
+        </div>
+        <div class="mobile-kpi">
+            <strong>{{ watch_count }}</strong>
+            <small>WATCH</small>
+        </div>
+    </div>
+
+    {% for item in opportunities %}
+    <article class="mobile-opportunity">
+
+        <div class="mobile-rec">
+            <strong>
+                {{ item.recommendation }}
+            </strong>
+
+            {% if item.recommendation == "BET" %}
+            <span class="mobile-badge mobile-badge-bet">
+                Decision {{ item.decision_score }}
+            </span>
+            {% elif item.recommendation == "WATCH" %}
+            <span class="mobile-badge mobile-badge-watch">
+                Decision {{ item.decision_score }}
+            </span>
+            {% else %}
+            <span class="mobile-badge">
+                Decision {{ item.decision_score }}
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="mobile-match">
+            {{ item.player_a }}
+            <span class="muted">v</span>
+            {{ item.player_b }}
+        </div>
+
+        <div class="mobile-selection">
+            Selection:
+            <strong>{{ item.selection }}</strong>
+        </div>
+
+        <div class="mobile-metrics">
+            <div class="mobile-metric">
+                <span>Model probability</span>
+                <strong>
+                    {{ '%.1f'|format(item.model_probability) }}%
+                </strong>
+            </div>
+
+            <div class="mobile-metric">
+                <span>Bookmaker price</span>
+                <strong>
+                    {% if item.decimal_odds %}
+                    {{ item.bookmaker }} {{ '%.2f'|format(item.decimal_odds) }}
+                    {% else %}
+                    —
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="mobile-metric">
+                <span>Expected value</span>
+                <strong>
+                    {{ '%+.2f%%'|format(item.expected_value_percent) }}
+                </strong>
+            </div>
+
+            <div class="mobile-metric">
+                <span>Edge</span>
+                <strong>
+                    {{ '%+.2f%%'|format(item.edge_percent) }}
+                </strong>
+            </div>
+
+            <div class="mobile-metric">
+                <span>Suggested stake</span>
+                <strong>
+                    £{{ '{:,.2f}'.format(item.suggested_stake) }}
+                </strong>
+            </div>
+
+            <div class="mobile-metric">
+                <span>Lifecycle</span>
+                <strong>
+                    {{ item.lifecycle_state }}
+                </strong>
+            </div>
+        </div>
+
+        <div class="mobile-reasoning">
+            <p>
+                <strong>Decision grade:</strong>
+                {{ item.decision_grade }}
+            </p>
+
+            {% if item.consensus_score is not none %}
+            <p>
+                <strong>Market consensus:</strong>
+                {{ '%.0f'|format(item.consensus_score) }}
+            </p>
+            {% endif %}
+
+            {% if item.steam_strength %}
+            <p>
+                <strong>Steam:</strong>
+                {{ item.steam_strength|title }}
+                {% if item.steam_direction %}
+                · {{ item.steam_direction|title }}
+                {% endif %}
+            </p>
+            {% endif %}
+
+            <p>
+                <strong>Safety:</strong>
+                {{ item.decision_safety_state }}
+            </p>
+
+            {% if item.decision_safety_explanation %}
+            <p class="muted">
+                {{ item.decision_safety_explanation }}
+            </p>
+            {% endif %}
+
+            {% if item.decision_safety_high_caution %}
+            <span class="mobile-badge mobile-badge-caution">
+                HIGH CAUTION
+            </span>
+            {% elif item.decision_safety_caution %}
+            <span class="mobile-badge mobile-badge-watch">
+                CAUTION
+            </span>
+            {% endif %}
+        </div>
+
+    </article>
+
+    {% else %}
+    <section class="mobile-opportunity">
+        <div class="mobile-match">
+            No live opportunities yet
+        </div>
+        <p class="muted">
+            This page will populate automatically when DartsEdge has
+            a scheduled fixture, a model opportunity, matched bookmaker
+            odds, and Decision Intelligence.
+        </p>
+    </section>
+    {% endfor %}
+
+    <div class="mobile-footer-links">
+        <a class="button secondary" href="/opportunities">
+            Full Opportunity Centre
+        </a>
+
+        <a class="button secondary" href="/live-operations">
+            Live Operations
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}
