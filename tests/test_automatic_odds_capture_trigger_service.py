@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -7,27 +8,56 @@ from app.services.automatic_odds_capture_trigger_service import (
 )
 
 
+class Clock:
+    def __init__(
+        self,
+        value: datetime,
+    ) -> None:
+        self.value = value
+
+    def now(self):
+        return self.value
+
+    def advance(
+        self,
+        *,
+        minutes: int,
+    ) -> None:
+        self.value = (
+            self.value
+            + timedelta(
+                minutes=minutes
+            )
+        )
+
+
 class AutomaticOddsCaptureTriggerTests(
     unittest.TestCase
 ):
     def setUp(self):
+        self.clock = Clock(
+            datetime(
+                2026,
+                8,
+                13,
+                9,
+                0,
+                0,
+            )
+        )
         self.trigger = (
-            AutomaticOddsCaptureTrigger()
+            AutomaticOddsCaptureTrigger(
+                zero_price_retry_seconds=1800.0,
+                now_provider=self.clock.now,
+            )
         )
 
     def test_zero_fixtures_does_not_capture(self):
         result = self.trigger.consider(
             future_fixtures=0
         )
-
-        self.assertFalse(
-            result.triggered
-        )
-
-        self.assertEqual(
-            result.future_fixtures,
-            0,
-        )
+        self.assertFalse(result.triggered)
+        self.assertEqual(result.future_fixtures, 0)
 
     @patch(
         "app.services."
@@ -44,12 +74,8 @@ class AutomaticOddsCaptureTriggerTests(
         capture,
         session_local,
     ):
-        db = SimpleNamespace(
-            close=lambda: None
-        )
-
+        db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
-
         capture.return_value = SimpleNamespace(
             ready=True,
             report=SimpleNamespace(
@@ -64,22 +90,10 @@ class AutomaticOddsCaptureTriggerTests(
             future_fixtures=2
         )
 
-        self.assertTrue(
-            result.triggered
-        )
-
-        self.assertTrue(
-            result.ready
-        )
-
-        self.assertEqual(
-            result.extracted_prices,
-            4,
-        )
-
-        capture.assert_called_once_with(
-            db
-        )
+        self.assertTrue(result.triggered)
+        self.assertTrue(result.ready)
+        self.assertEqual(result.extracted_prices, 4)
+        capture.assert_called_once_with(db)
 
     @patch(
         "app.services."
@@ -91,17 +105,13 @@ class AutomaticOddsCaptureTriggerTests(
         "automatic_odds_capture_trigger_service."
         "run_existing_paddy_power_capture"
     )
-    def test_unchanged_fixture_count_does_not_repeat(
+    def test_unchanged_fixture_count_does_not_repeat_after_prices(
         self,
         capture,
         session_local,
     ):
-        db = SimpleNamespace(
-            close=lambda: None
-        )
-
+        db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
-
         capture.return_value = SimpleNamespace(
             ready=True,
             report=SimpleNamespace(
@@ -115,22 +125,54 @@ class AutomaticOddsCaptureTriggerTests(
         first = self.trigger.consider(
             future_fixtures=3
         )
-
         second = self.trigger.consider(
             future_fixtures=3
         )
 
-        self.assertTrue(
-            first.triggered
+        self.assertTrue(first.triggered)
+        self.assertFalse(second.triggered)
+        self.assertEqual(capture.call_count, 1)
+
+    @patch(
+        "app.services."
+        "automatic_odds_capture_trigger_service."
+        "SessionLocal"
+    )
+    @patch(
+        "app.services."
+        "automatic_odds_capture_trigger_service."
+        "run_existing_paddy_power_capture"
+    )
+    def test_zero_price_capture_enters_cooldown(
+        self,
+        capture,
+        session_local,
+    ):
+        db = SimpleNamespace(close=lambda: None)
+        session_local.return_value = db
+        capture.return_value = SimpleNamespace(
+            ready=True,
+            report=SimpleNamespace(
+                extracted_prices=0,
+                stored_prices=0,
+            ),
+            message="completed",
+            error=None,
         )
 
-        self.assertFalse(
-            second.triggered
+        first = self.trigger.consider(
+            future_fixtures=2
+        )
+        second = self.trigger.consider(
+            future_fixtures=2
         )
 
-        self.assertEqual(
-            capture.call_count,
-            1,
+        self.assertTrue(first.triggered)
+        self.assertFalse(second.triggered)
+        self.assertEqual(capture.call_count, 1)
+        self.assertIn(
+            "cooling down",
+            second.message,
         )
 
     @patch(
@@ -143,17 +185,13 @@ class AutomaticOddsCaptureTriggerTests(
         "automatic_odds_capture_trigger_service."
         "run_existing_paddy_power_capture"
     )
-    def test_zero_price_capture_retries_next_cycle(
+    def test_zero_price_capture_retries_after_cooldown(
         self,
         capture,
         session_local,
     ):
-        db = SimpleNamespace(
-            close=lambda: None
-        )
-
+        db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
-
         capture.return_value = SimpleNamespace(
             ready=True,
             report=SimpleNamespace(
@@ -168,33 +206,62 @@ class AutomaticOddsCaptureTriggerTests(
             future_fixtures=2
         )
 
-        second = self.trigger.consider(
+        self.clock.advance(
+            minutes=29,
+        )
+        blocked = self.trigger.consider(
             future_fixtures=2
         )
 
-        self.assertTrue(
-            first.triggered
+        self.clock.advance(
+            minutes=1,
+        )
+        retry = self.trigger.consider(
+            future_fixtures=2
         )
 
-        self.assertTrue(
-            second.triggered
+        self.assertTrue(first.triggered)
+        self.assertFalse(blocked.triggered)
+        self.assertTrue(retry.triggered)
+        self.assertEqual(capture.call_count, 2)
+
+    @patch(
+        "app.services."
+        "automatic_odds_capture_trigger_service."
+        "SessionLocal"
+    )
+    @patch(
+        "app.services."
+        "automatic_odds_capture_trigger_service."
+        "run_existing_paddy_power_capture"
+    )
+    def test_fixture_count_change_bypasses_zero_price_cooldown(
+        self,
+        capture,
+        session_local,
+    ):
+        db = SimpleNamespace(close=lambda: None)
+        session_local.return_value = db
+        capture.return_value = SimpleNamespace(
+            ready=True,
+            report=SimpleNamespace(
+                extracted_prices=0,
+                stored_prices=0,
+            ),
+            message="completed",
+            error=None,
         )
 
-        self.assertEqual(
-            capture.call_count,
-            2,
+        first = self.trigger.consider(
+            future_fixtures=2
+        )
+        changed = self.trigger.consider(
+            future_fixtures=3
         )
 
-        self.assertEqual(
-            first.extracted_prices,
-            0,
-        )
-
-        self.assertIn(
-            "retried",
-            first.message,
-        )
-
+        self.assertTrue(first.triggered)
+        self.assertTrue(changed.triggered)
+        self.assertEqual(capture.call_count, 2)
 
     @patch(
         "app.services."
@@ -211,12 +278,8 @@ class AutomaticOddsCaptureTriggerTests(
         capture,
         session_local,
     ):
-        db = SimpleNamespace(
-            close=lambda: None
-        )
-
+        db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
-
         capture.return_value = SimpleNamespace(
             ready=False,
             report=None,
@@ -227,23 +290,13 @@ class AutomaticOddsCaptureTriggerTests(
         first = self.trigger.consider(
             future_fixtures=2
         )
-
         second = self.trigger.consider(
             future_fixtures=2
         )
 
-        self.assertTrue(
-            first.triggered
-        )
-
-        self.assertTrue(
-            second.triggered
-        )
-
-        self.assertEqual(
-            capture.call_count,
-            2,
-        )
+        self.assertTrue(first.triggered)
+        self.assertTrue(second.triggered)
+        self.assertEqual(capture.call_count, 2)
 
 
 if __name__ == "__main__":
