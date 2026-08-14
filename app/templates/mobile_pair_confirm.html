@@ -1,0 +1,61 @@
+{% extends "mobile_base.html" %}
+{% block title %}Pair Device · DartsEdge Mobile{% endblock %}
+
+{% block mobile_actions %}{% endblock %}
+
+{% block content %}
+<style>
+.pair-confirm-shell {
+    max-width: 520px;
+    margin: 2rem auto;
+}
+
+.pair-confirm-card {
+    padding: 1.4rem;
+    text-align: center;
+    border: 1px solid rgba(128, 128, 128, .22);
+    border-radius: .9rem;
+    background: rgba(128, 128, 128, .05);
+}
+
+.pair-confirm-card h1 {
+    margin-top: .3rem;
+}
+
+.pair-confirm-button {
+    width: 100%;
+    min-height: 52px;
+    margin-top: 1rem;
+    font-size: 1rem;
+}
+</style>
+
+<div class="pair-confirm-shell">
+    <section class="pair-confirm-card">
+        <div class="eyebrow">One-time device pairing</div>
+
+        <h1>Pair this device?</h1>
+
+        <p>
+            Tap the button below to trust this iPhone/iPad
+            for DartsEdge mobile access.
+        </p>
+
+        <form
+            method="post"
+            action="/mobile-pair/{{ token }}"
+        >
+            <button
+                class="button pair-confirm-button"
+                type="submit"
+            >
+                Pair this device
+            </button>
+        </form>
+
+        <p class="muted">
+            The pairing link is single-use and expires automatically.
+        </p>
+    </section>
+</div>
+{% endblock %}

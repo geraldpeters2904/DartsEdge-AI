@@ -26,11 +26,17 @@ from app.services.mobile_access_service import (
 from app.services.mobile_pairing_display_service import (
     build_mobile_pairing_display,
 )
+from app.services.trusted_mobile_device_service import (
+    TRUSTED_DEVICE_COOKIE_NAME,
+    TRUSTED_DEVICE_DAYS,
+    create_trusted_device,
+    revoke_trusted_device,
+    valid_trusted_device,
+)
 from app.templates_config import templates
 
 
 router = APIRouter()
-
 
 _LOCAL_CLIENTS = {
     "127.0.0.1",
@@ -55,6 +61,46 @@ def _set_mobile_session_cookie(
     )
 
     return response
+
+
+def _set_trusted_device_cookie(
+    response,
+):
+    token = create_trusted_device()
+
+    response.set_cookie(
+        key=TRUSTED_DEVICE_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="strict",
+        secure=False,
+        max_age=(
+            TRUSTED_DEVICE_DAYS
+            * 24
+            * 60
+            * 60
+        ),
+        path="/",
+    )
+
+    return response
+
+
+def _request_has_mobile_access(
+    request: Request,
+) -> bool:
+    if valid_trusted_device(
+        request.cookies.get(
+            TRUSTED_DEVICE_COOKIE_NAME
+        )
+    ):
+        return True
+
+    return valid_mobile_session(
+        request.cookies.get(
+            COOKIE_NAME
+        )
+    )
 
 
 @router.get("/mobile-pairing")
@@ -114,6 +160,58 @@ def mobile_pairing_page(
     )
 
     return response
+
+
+@router.get("/mobile-pair/{token}")
+def mobile_pair_preview(
+    request: Request,
+    token: str,
+):
+    if not mobile_access_configured():
+        return RedirectResponse(
+            url="/mobile-login",
+            status_code=303,
+        )
+
+    return templates.TemplateResponse(
+        "mobile_pair_confirm.html",
+        {
+            "request": request,
+            "token": token,
+        },
+    )
+
+
+@router.post("/mobile-pair/{token}")
+def mobile_pair_confirm(
+    token: str,
+):
+    if not mobile_access_configured():
+        return RedirectResponse(
+            url="/mobile-login",
+            status_code=303,
+        )
+
+    if not consume_mobile_pairing_token(
+        token
+    ):
+        return RedirectResponse(
+            url="/mobile-login?pairing=invalid",
+            status_code=303,
+        )
+
+    response = RedirectResponse(
+        url="/mobile-opportunities",
+        status_code=303,
+    )
+
+    _set_mobile_session_cookie(
+        response
+    )
+
+    return _set_trusted_device_cookie(
+        response
+    )
 
 
 @router.get("/mobile-login")
@@ -192,42 +290,30 @@ async def mobile_login_submit(
             status_code=401,
         )
 
-    return _set_mobile_session_cookie(
-        RedirectResponse(
-            url="/mobile-opportunities",
-            status_code=303,
-        )
+    response = RedirectResponse(
+        url="/mobile-opportunities",
+        status_code=303,
     )
 
+    _set_mobile_session_cookie(
+        response
+    )
 
-@router.get("/mobile-pair/{token}")
-def mobile_pair(
-    token: str,
-):
-    if not mobile_access_configured():
-        return RedirectResponse(
-            url="/mobile-login",
-            status_code=303,
-        )
-
-    if not consume_mobile_pairing_token(
-        token
-    ):
-        return RedirectResponse(
-            url="/mobile-login?pairing=invalid",
-            status_code=303,
-        )
-
-    return _set_mobile_session_cookie(
-        RedirectResponse(
-            url="/mobile-opportunities",
-            status_code=303,
-        )
+    return _set_trusted_device_cookie(
+        response
     )
 
 
 @router.get("/mobile-logout")
-def mobile_logout():
+def mobile_logout(
+    request: Request,
+):
+    revoke_trusted_device(
+        request.cookies.get(
+            TRUSTED_DEVICE_COOKIE_NAME
+        )
+    )
+
     response = RedirectResponse(
         url="/mobile-login",
         status_code=303,
@@ -238,6 +324,11 @@ def mobile_logout():
         path="/",
     )
 
+    response.delete_cookie(
+        key=TRUSTED_DEVICE_COOKIE_NAME,
+        path="/",
+    )
+
     return response
 
 
@@ -245,10 +336,8 @@ def mobile_logout():
 def mobile_opportunities_page(
     request: Request,
 ):
-    if not valid_mobile_session(
-        request.cookies.get(
-            COOKIE_NAME
-        )
+    if not _request_has_mobile_access(
+        request
     ):
         return RedirectResponse(
             url="/mobile-login",
