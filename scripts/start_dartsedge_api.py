@@ -3,13 +3,15 @@ from __future__ import annotations
 import os
 import subprocess
 
-
 KEYCHAIN_SERVICE = "DartsEdgeMobile"
 MOBILE_USERNAME = os.getenv(
     "DARTSEDGE_MOBILE_USERNAME",
     "gerald",
 )
-
+MOBILE_BASE_URL = os.getenv(
+    "DARTSEDGE_MOBILE_BASE_URL",
+    "https://geralds-imac.tail74e2bd.ts.net",
+)
 
 def keychain_password() -> str:
     result = subprocess.run(
@@ -42,11 +44,11 @@ def keychain_password() -> str:
 
     return password
 
-
 def main() -> None:
     env = os.environ.copy()
     env["DARTSEDGE_MOBILE_USERNAME"] = MOBILE_USERNAME
     env["DARTSEDGE_MOBILE_PASSWORD"] = keychain_password()
+    env["DARTSEDGE_MOBILE_BASE_URL"] = MOBILE_BASE_URL
     env["PYTHONUNBUFFERED"] = "1"
 
     python_path = (
@@ -70,7 +72,6 @@ def main() -> None:
         argv,
         env,
     )
-
 
 if __name__ == "__main__":
     main()

@@ -34,7 +34,7 @@ class MobilePairingDisplayServiceTests(
         self.assertEqual(
             display.pairing_url,
             (
-                "http://192.168.0.37:8000/"
+                "https://geralds-imac.tail74e2bd.ts.net/"
                 "mobile-pair/abc123"
             ),
         )
