@@ -8,6 +8,7 @@ from app.collector.folder_preview import CollectorFolderPreviewService
 from app.models.historical_import import HistoricalImportBatch
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.schemas.canonical import (
+    CanonicalMatchResult,
     CanonicalPlayerMatchStatistics,
     CompetitionCode,
     RecordConfidence,
@@ -50,6 +51,41 @@ def source(player_external_id):
         ),
         competition_code=CompetitionCode.MODUS,
         confidence=RecordConfidence.VERIFIED,
+    )
+
+
+def result_source():
+    return SourceReference(
+        provider="modus-official",
+        external_id="modus:result:19001",
+        retrieved_at=datetime(
+            2026,
+            8,
+            10,
+            7,
+            30,
+        ),
+        competition_code=CompetitionCode.MODUS,
+        confidence=RecordConfidence.VERIFIED,
+    )
+
+
+def canonical_result():
+    return CanonicalMatchResult(
+        match_external_id="modus-match-19001",
+        player_a_external_id="modus-player-player-a",
+        player_b_external_id="modus-player-player-b",
+        winner_external_id="modus-player-player-a",
+        player_a_legs=4,
+        player_b_legs=2,
+        completed_at=datetime(
+            2026,
+            8,
+            1,
+            10,
+            20,
+        ),
+        source=result_source(),
     )
 
 
@@ -103,6 +139,7 @@ def statistics_result(
         ),
         status="canonicalized",
         message="Canonicalized.",
+        result=canonical_result(),
     )
 
 
@@ -151,7 +188,7 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
         )
         self.assertEqual(
             result.received_rows,
-            2,
+            3,
         )
         self.assertEqual(
             result.rejected_rows,
@@ -240,7 +277,7 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
 
         with self.assertRaisesRegex(
             ValueError,
-            "rejected 1 statistics",
+            "rejected 1 canonical record",
         ):
             self.service.persist(
                 self.db,
