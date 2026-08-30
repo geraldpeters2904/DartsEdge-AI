@@ -25,6 +25,23 @@ class ForwardScheduleMonitorTests(unittest.TestCase):
         self.assertFalse(monitor.stop().running)
 
 
+    def test_stop_waits_for_background_thread_to_exit(self):
+        monitor = ForwardScheduleMonitor(
+            interval_seconds=60,
+            initial_delay_seconds=60,
+        )
+
+        monitor.start()
+        thread = monitor._thread
+
+        self.assertIsNotNone(thread)
+        self.assertTrue(thread.is_alive())
+
+        status = monitor.stop()
+
+        self.assertFalse(status.running)
+        self.assertFalse(thread.is_alive())
+
     def test_run_once_skips_when_cycle_already_running(self):
         monitor = ForwardScheduleMonitor(
             interval_seconds=60,

@@ -17,6 +17,23 @@ class SparseConsensusRiskMonitorTests(
             window_size=1000,
         )
 
+    def test_stop_waits_for_background_thread_to_exit(self):
+        monitor = SparseConsensusRiskMonitor(
+            interval_seconds=300,
+            initial_delay_seconds=60,
+        )
+
+        monitor.start()
+        thread = monitor._thread
+
+        self.assertIsNotNone(thread)
+        self.assertTrue(thread.is_alive())
+
+        status = monitor.stop()
+
+        self.assertFalse(status.running)
+        self.assertFalse(thread.is_alive())
+
     @patch(
         "app.services.sparse_consensus_risk_monitor_service."
         "CurrentMatchEnrichmentV33SparseConsensusRiskDiagnosticService"

@@ -37,6 +37,53 @@ class LiveEdgeMonitorTests(unittest.TestCase):
         )
 
 
+    def test_stop_waits_for_background_thread_to_exit(self):
+        monitor = LiveEdgeMonitor(
+            interval_seconds=60,
+            initial_delay_seconds=60,
+        )
+
+        monitor.start()
+        thread = monitor._thread
+
+        self.assertIsNotNone(thread)
+        self.assertTrue(thread.is_alive())
+
+        status = monitor.stop()
+
+        self.assertFalse(status.running)
+        self.assertFalse(thread.is_alive())
+
+    def test_stop_waits_for_active_cycle_to_finish(self):
+        import threading
+
+        monitor = LiveEdgeMonitor(
+            interval_seconds=60,
+            initial_delay_seconds=0,
+        )
+
+        entered = threading.Event()
+        release = threading.Event()
+
+        def controlled_cycle():
+            entered.set()
+            release.wait(timeout=1.0)
+            return monitor.status()
+
+        monitor._run_once_locked = controlled_cycle
+
+        monitor.start()
+        self.assertTrue(entered.wait(timeout=1.0))
+
+        timer = threading.Timer(0.05, release.set)
+        timer.start()
+
+        status = monitor.stop()
+        timer.join()
+
+        self.assertFalse(status.running)
+        self.assertFalse(monitor._thread.is_alive())
+
     def test_run_once_skips_when_cycle_already_running(self):
         monitor = getattr(self, "monitor", None)
         if monitor is None:

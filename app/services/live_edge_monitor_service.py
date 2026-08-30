@@ -109,6 +109,14 @@ class LiveEdgeMonitor:
     def stop(self):
         self._stop_event.set()
 
+        thread = self._thread
+        if (
+            thread is not None
+            and thread.is_alive()
+            and thread is not threading.current_thread()
+        ):
+            thread.join(timeout=5.0)
+
         with self._lock:
             return self._copy(
                 running=False,

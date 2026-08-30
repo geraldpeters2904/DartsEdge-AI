@@ -15,6 +15,23 @@ class ModelTrustMonitorTests(
             initial_delay_seconds=0,
         )
 
+    def test_stop_waits_for_background_thread_to_exit(self):
+        monitor = ModelTrustMonitor(
+            interval_seconds=300,
+            initial_delay_seconds=60,
+        )
+
+        monitor.start()
+        thread = monitor._thread
+
+        self.assertIsNotNone(thread)
+        self.assertTrue(thread.is_alive())
+
+        status = monitor.stop()
+
+        self.assertFalse(status.running)
+        self.assertFalse(thread.is_alive())
+
     @patch(
         "app.services.model_trust_monitor_service."
         "build_model_trust_report"
