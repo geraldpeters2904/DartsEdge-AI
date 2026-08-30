@@ -74,6 +74,8 @@ from app.routes.historical_capture_batch import router as historical_capture_bat
 from app.routes.historical_operations import router as historical_operations_router
 from app.routes.capture_discovery import router as capture_discovery_router
 from app.routes.capture_wizard import router as capture_wizard_router
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.routes.fixtures import router as fixtures_router
@@ -100,7 +102,27 @@ from app.services.match_engine import (
 )
 
 
-app = FastAPI(title=APP_NAME, version=VERSION)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    live_edge_monitor.start()
+    forward_schedule_monitor.start()
+    model_trust_monitor.start()
+    sparse_consensus_risk_monitor.start()
+
+    try:
+        yield
+    finally:
+        sparse_consensus_risk_monitor.stop()
+        model_trust_monitor.stop()
+        forward_schedule_monitor.stop()
+        live_edge_monitor.stop()
+
+
+app = FastAPI(
+    title=APP_NAME,
+    version=VERSION,
+    lifespan=lifespan,
+)
 
 app.mount(
     "/static",
@@ -130,10 +152,6 @@ app.include_router(prediction_adapter_diagnostic_router)
 app.include_router(prediction_adapter_self_test_router)
 app.include_router(current_match_enrichment_discovery_router)
 app.include_router(modus_match_id_diagnostic_router)
-live_edge_monitor.start()
-forward_schedule_monitor.start()
-model_trust_monitor.start()
-sparse_consensus_risk_monitor.start()
 app.include_router(opportunity_replay_router)
 app.include_router(feed_connectors_router)
 app.include_router(strategy_analytics_router)
