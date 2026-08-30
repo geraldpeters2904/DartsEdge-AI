@@ -183,25 +183,33 @@ class TransparentV33SingleWeightOptimiser:
                 "Training and validation match sets overlap."
             )
 
-        training_baseline = self._evaluate(
+        training_snapshots = self._build_snapshots(
             db,
-            engine=baseline_engine,
             match_ids=training_ids,
             competition_code=competition_code,
+        )
+
+        validation_snapshots = self._build_snapshots(
+            db,
+            match_ids=validation_ids,
+            competition_code=competition_code,
+        )
+
+        training_baseline = self._evaluate_cached(
+            engine=baseline_engine,
+            snapshots=training_snapshots,
             weight=current_weight,
         )
 
         training_results = tuple(
-            self._evaluate(
-                db,
+            self._evaluate_cached(
                 engine=(
                     baseline_engine.with_feature_weight(
                         name,
                         weight,
                     )
                 ),
-                match_ids=training_ids,
-                competition_code=competition_code,
+                snapshots=training_snapshots,
                 weight=weight,
             )
             for weight in candidates
@@ -219,24 +227,20 @@ class TransparentV33SingleWeightOptimiser:
             training_winner.weight
         )
 
-        validation_baseline = self._evaluate(
-            db,
+        validation_baseline = self._evaluate_cached(
             engine=baseline_engine,
-            match_ids=validation_ids,
-            competition_code=competition_code,
+            snapshots=validation_snapshots,
             weight=current_weight,
         )
 
-        validation_candidate = self._evaluate(
-            db,
+        validation_candidate = self._evaluate_cached(
             engine=(
                 baseline_engine.with_feature_weight(
                     name,
                     recommended_weight,
                 )
             ),
-            match_ids=validation_ids,
-            competition_code=competition_code,
+            snapshots=validation_snapshots,
             weight=recommended_weight,
         )
 
@@ -295,30 +299,133 @@ class TransparentV33SingleWeightOptimiser:
         )
 
     @staticmethod
-    def _evaluate(
+    def _build_snapshots(
         db: Session,
         *,
-        engine: TransparentPredictionEngineV33,
         match_ids,
         competition_code: Optional[str],
+    ):
+        snapshot_engine = AdvancedHistoricalSnapshotEngine()
+        snapshots = []
+
+        matches = {
+            match.id: match
+            for match in (
+                db.query(Match)
+                .filter(Match.id.in_(tuple(match_ids)))
+                .all()
+            )
+        }
+
+        for match_id in match_ids:
+            match = matches.get(int(match_id))
+
+            if (
+                match is None
+                or not PredictionValidationEngine._has_valid_result(
+                    match
+                )
+            ):
+                continue
+
+            try:
+                snapshot = snapshot_engine.build_match_snapshot(
+                    db,
+                    match.id,
+                    competition_code=competition_code,
+                )
+            except Exception:
+                continue
+
+            snapshots.append((match, snapshot))
+
+        return tuple(snapshots)
+
+    @staticmethod
+    def _evaluate_cached(
+        *,
+        engine: TransparentPredictionEngineV33,
+        snapshots,
         weight: float,
     ) -> V33WeightCandidateResult:
+        records = []
 
-        report = PredictionValidationEngine(
-            snapshot_engine=AdvancedHistoricalSnapshotEngine(),
-            prediction_engine=engine,
-        ).validate_matches(
-            db,
-            match_ids=match_ids,
-            competition_code=competition_code,
-            include_records=False,
+        for match, snapshot in snapshots:
+            try:
+                prediction = engine.predict(snapshot)
+            except Exception:
+                continue
+
+            actual_is_a = (
+                match.winner
+                == prediction.player_a_name
+            )
+
+            probability_a = (
+                float(prediction.player_a_probability)
+                / 100.0
+            )
+
+            actual_value = (
+                1.0
+                if actual_is_a
+                else 0.0
+            )
+
+            brier_score = (
+                probability_a
+                - actual_value
+            ) ** 2
+
+            actual_probability = (
+                probability_a
+                if actual_is_a
+                else 1.0 - probability_a
+            )
+
+            records.append(
+                (
+                    prediction.predicted_winner
+                    == match.winner,
+                    round(brier_score, 6),
+                    round(
+                        PredictionValidationEngine._log_loss(
+                            actual_probability
+                        ),
+                        6,
+                    ),
+                )
+            )
+
+        if not records:
+            return V33WeightCandidateResult(
+                weight=weight,
+                accuracy=None,
+                brier_score=None,
+                log_loss=None,
+            )
+
+        correct = sum(
+            int(record[0])
+            for record in records
         )
 
         return V33WeightCandidateResult(
             weight=weight,
-            accuracy=report.accuracy,
-            brier_score=report.average_brier_score,
-            log_loss=report.average_log_loss,
+            accuracy=round(
+                correct / len(records) * 100,
+                3,
+            ),
+            brier_score=round(
+                sum(record[1] for record in records)
+                / len(records),
+                6,
+            ),
+            log_loss=round(
+                sum(record[2] for record in records)
+                / len(records),
+                6,
+            ),
         )
 
     @staticmethod
