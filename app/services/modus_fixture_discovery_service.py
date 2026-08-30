@@ -155,10 +155,19 @@ class ModusFixtureDiscoveryService:
             )
 
         enrichment_results: List[object] = []
+        quarantined_completed_cards: List[ModusFixtureCard] = []
+        already_completed_cards: List[ModusFixtureCard] = []
+
         for card in completed_cards:
-            enrichment_results.append(
-                self._enrich_completed_card(db, card)
+            disposition, enrichment_result = (
+                self._process_completed_card(db, card)
             )
+            if disposition == "enriched":
+                enrichment_results.append(enrichment_result)
+            elif disposition == "quarantined":
+                quarantined_completed_cards.append(card)
+            elif disposition == "already_completed":
+                already_completed_cards.append(card)
 
         # Do not suppress a retry unless all required work above succeeded.
         self._last_checksums[source_url] = checksum
@@ -176,8 +185,12 @@ class ModusFixtureDiscoveryService:
             changed=True,
             action="imported",
             message=(
-                f"Processed {fixture_count} scheduled MODUS fixture(s) "
-                f"and {len(enrichment_results)} completed match(es)."
+                f"Processed {fixture_count} scheduled MODUS fixture(s), "
+                f"enriched {len(enrichment_results)} completed match(es), "
+                f"skipped {len(already_completed_cards)} already-canonical "
+                f"completed match(es), and quarantined "
+                f"{len(quarantined_completed_cards)} legacy incomplete "
+                f"completed match(es)."
             ),
             import_result=import_result,
             enrichment_results=tuple(enrichment_results),
@@ -186,23 +199,70 @@ class ModusFixtureDiscoveryService:
     def close(self) -> None:
         self.browser_session.close()
 
-    def _enrich_completed_card(
+    def _process_completed_card(
         self,
         db: Session,
         card: ModusFixtureCard,
     ):
+        """
+        Route a completed official card according to warehouse lifecycle state.
+
+        Only a mapped match that is still scheduled may automatically enter
+        result-aware enrichment. Existing completed matches are never repaired
+        automatically here; legacy incomplete records require explicit backfill.
+        """
         match_external_id = modus_match_external_id(card.match_id)
         match = find_match_by_external_id(
             db=db,
             provider="modus-official",
             match_external_id=match_external_id,
         )
+
         if match is None:
             raise ValueError(
                 "No existing fixture mapping was found for "
                 f"{match_external_id}; completed MODUS card "
                 "cannot enter enrichment."
             )
+
+        if match.status == "scheduled":
+            return "enriched", self._enrich_completed_card(
+                db,
+                card,
+                match=match,
+            )
+
+        if match.status == "completed":
+            if match.winner is not None and match.score is not None:
+                return "already_completed", None
+            return "quarantined", None
+
+        raise ValueError(
+            f"Mapped match {match.id} has unsupported lifecycle status "
+            f"{match.status!r}; completed MODUS card cannot enter enrichment."
+        )
+
+    def _enrich_completed_card(
+        self,
+        db: Session,
+        card: ModusFixtureCard,
+        *,
+        match=None,
+    ):
+        if match is None:
+            match_external_id = modus_match_external_id(card.match_id)
+            match = find_match_by_external_id(
+                db=db,
+                provider="modus-official",
+                match_external_id=match_external_id,
+            )
+
+            if match is None:
+                raise ValueError(
+                    "No existing fixture mapping was found for "
+                    f"{match_external_id}; completed MODUS card "
+                    "cannot enter enrichment."
+                )
 
         from app.services.current_match_enrichment_discovery_service import (
             EnrichmentCandidate,

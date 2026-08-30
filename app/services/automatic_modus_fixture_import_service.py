@@ -97,6 +97,13 @@ class AutomaticModusFixtureImportService:
             html_text
         )
 
+        if payload.completed_count:
+            raise ValueError(
+                "Automatic MODUS fixture-only import cannot commit "
+                "completed fixture cards. Completed matches must use "
+                "the result-aware enrichment workflow."
+            )
+
         preview = self.preview_service.create_preview(
             db=db,
             provider="modus-official",

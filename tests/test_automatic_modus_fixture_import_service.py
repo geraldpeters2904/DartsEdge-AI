@@ -64,7 +64,7 @@ class AutomaticModusFixtureImportServiceTests(
         self.assertEqual(second.duplicate_matches, 1)
         self.assertEqual(self.db.query(Match).count(), 1)
 
-    def test_completed_page_updates_existing_fixture(self):
+    def test_completed_page_is_rejected_before_fixture_commit(self):
         self.service.import_html(
             self.db,
             html_text=UPCOMING.read_text(
@@ -72,18 +72,32 @@ class AutomaticModusFixtureImportServiceTests(
             ),
         )
 
-        result = self.service.import_html(
-            self.db,
-            html_text=COMPLETED.read_text(
-                encoding="utf-8"
-            ),
+        match = self.db.query(Match).one()
+        self.assertEqual(match.status, "scheduled")
+
+        preview_count_before = (
+            self.db.query(HistoricalImportPreview).count()
         )
 
-        self.assertEqual(result.created_matches, 0)
+        with self.assertRaisesRegex(
+            ValueError,
+            "fixture-only import cannot commit completed fixture cards",
+        ):
+            self.service.import_html(
+                self.db,
+                html_text=COMPLETED.read_text(
+                    encoding="utf-8"
+                ),
+            )
+
         self.assertEqual(self.db.query(Match).count(), 1)
         self.assertEqual(
             self.db.query(Match).one().status,
-            "completed",
+            "scheduled",
+        )
+        self.assertEqual(
+            self.db.query(HistoricalImportPreview).count(),
+            preview_count_before,
         )
 
     def test_marks_preview_committed(self):

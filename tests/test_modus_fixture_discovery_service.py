@@ -310,6 +310,94 @@ class ModusFixtureDiscoveryServiceTests(unittest.TestCase):
             2,
         )
 
+    def test_completed_card_with_existing_canonical_result_is_skipped(self):
+        completed = card(19001, MatchStatus.COMPLETED)
+        self.service.lifecycle_service = FakeLifecycleService([completed])
+        existing = FakeMatch(status="completed")
+        existing.winner = "Player A"
+        existing.score = "4-2"
+
+        with patch(
+            "app.services.modus_fixture_discovery_service."
+            "find_match_by_external_id",
+            return_value=existing,
+        ):
+            result = self.service.discover(
+                object(),
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            )
+
+        self.assertEqual(self.importer.calls, [])
+        self.assertEqual(self.workflow.calls, [])
+        self.assertEqual(result.enrichment_results, ())
+        self.assertIn(
+            "skipped 1 already-canonical completed match(es)",
+            result.message,
+        )
+        self.assertIn(
+            "quarantined 0 legacy incomplete completed match(es)",
+            result.message,
+        )
+
+    def test_legacy_completed_card_without_result_is_quarantined(self):
+        completed = card(19001, MatchStatus.COMPLETED)
+        self.service.lifecycle_service = FakeLifecycleService([completed])
+        existing = FakeMatch(status="completed")
+        existing.winner = None
+        existing.score = None
+
+        with patch(
+            "app.services.modus_fixture_discovery_service."
+            "find_match_by_external_id",
+            return_value=existing,
+        ):
+            result = self.service.discover(
+                object(),
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            )
+
+        self.assertEqual(self.importer.calls, [])
+        self.assertEqual(self.workflow.calls, [])
+        self.assertEqual(result.enrichment_results, ())
+        self.assertIn(
+            "skipped 0 already-canonical completed match(es)",
+            result.message,
+        )
+        self.assertIn(
+            "quarantined 1 legacy incomplete completed match(es)",
+            result.message,
+        )
+
+    def test_completed_card_with_partial_result_is_quarantined(self):
+        completed = card(19001, MatchStatus.COMPLETED)
+        self.service.lifecycle_service = FakeLifecycleService([completed])
+        existing = FakeMatch(status="completed")
+        existing.winner = "Player A"
+        existing.score = None
+
+        with patch(
+            "app.services.modus_fixture_discovery_service."
+            "find_match_by_external_id",
+            return_value=existing,
+        ):
+            result = self.service.discover(
+                object(),
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            )
+
+        self.assertEqual(self.workflow.calls, [])
+        self.assertEqual(result.enrichment_results, ())
+        self.assertIn(
+            "quarantined 1 legacy incomplete completed match(es)",
+            result.message,
+        )
+
     def test_completed_card_without_fixture_mapping_is_rejected(self):
         completed = card(19001, MatchStatus.COMPLETED)
         self.service.lifecycle_service = FakeLifecycleService([completed])
