@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Optional, Tuple
 
-from sqlalchemy.orm import Session
-
 from app.services.current_match_enrichment_v33_validation_service import (
     CurrentMatchEnrichmentV33ValidationService,
 )
@@ -17,19 +15,15 @@ from app.services.transparent_prediction_engine_v33 import (
 class V33FeatureAblationScore:
     feature_name: str
     feature_weight: float
-
     baseline_accuracy: Optional[float]
     disabled_accuracy: Optional[float]
     accuracy_drop: Optional[float]
-
     baseline_brier_score: Optional[float]
     disabled_brier_score: Optional[float]
     brier_increase: Optional[float]
-
     baseline_log_loss: Optional[float]
     disabled_log_loss: Optional[float]
     log_loss_increase: Optional[float]
-
     importance_score: float
 
     @property
@@ -48,11 +42,9 @@ class V33FeatureAblationReport:
     offset: int
     limit: int
     matches_evaluated: int
-
     baseline_accuracy: Optional[float]
     baseline_brier_score: Optional[float]
     baseline_log_loss: Optional[float]
-
     features: Tuple[V33FeatureAblationScore, ...]
 
 
@@ -60,31 +52,72 @@ class CurrentMatchEnrichmentV33FeatureAblationService:
     """
     Read-only feature ablation for transparent-v3.3.
 
-    Every candidate is evaluated against the same deterministic
-    historical match window. Removing an active feature re-normalises
-    the remaining positive feature weights to preserve total model
-    weight.
+    Historical snapshots are built once and then reused for every
+    feature-ablation candidate. This avoids rebuilding the expensive
+    no-look-ahead historical snapshot for every candidate model.
 
-    Zero-weight features are reported but are not meaningfully
-    ablated because they make no contribution to the baseline model.
+    Every candidate is evaluated against exactly the same snapshots.
+    Removing an active feature re-normalises the remaining positive
+    feature weights to preserve total model weight.
+
+    Zero-weight features are omitted because they do not contribute
+    to the baseline model.
     """
 
     def analyse(
         self,
-        db: Session,
+        db,
         *,
         offset: int = 0,
         limit: int = 100,
         competition_code: Optional[str] = "MODUS",
     ) -> V33FeatureAblationReport:
+
+        if offset < 0:
+            raise ValueError("offset cannot be negative.")
+
+        if limit <= 0:
+            raise ValueError(
+                "limit must be greater than zero."
+            )
+
         baseline_engine = TransparentPredictionEngineV33()
 
-        baseline = self._validate(
+        # Select the historical match IDs once.
+        match_ids = (
+            CurrentMatchEnrichmentV33ValidationService
+            ._select_match_ids(
+                db,
+                offset=offset,
+                limit=limit,
+            )
+        )
+
+        # Build each no-look-ahead snapshot once.
+        snapshots = []
+
+        for match_id in match_ids:
+            try:
+                snapshot = (
+                    self._build_snapshot(
+                        db,
+                        match_id,
+                        competition_code,
+                    )
+                )
+
+                if snapshot is not None:
+                    snapshots.append(snapshot)
+
+            except (ValueError, LookupError):
+                continue
+
+        # Baseline and all candidate models now operate entirely
+        # against the same in-memory snapshots.
+        baseline_metrics = self._evaluate_engine(
             db,
             engine=baseline_engine,
-            offset=offset,
-            limit=limit,
-            competition_code=competition_code,
+            snapshots=snapshots,
         )
 
         scores = []
@@ -100,47 +133,39 @@ class CurrentMatchEnrichmentV33FeatureAblationService:
                 )
             )
 
-            candidate = self._validate(
+            candidate_metrics = self._evaluate_engine(
                 db,
                 engine=candidate_engine,
-                offset=offset,
-                limit=limit,
-                competition_code=competition_code,
+                snapshots=snapshots,
             )
 
             accuracy_drop = self._difference(
-                baseline.accuracy,
-                candidate.accuracy,
+                baseline_metrics["accuracy"],
+                candidate_metrics["accuracy"],
             )
+
             brier_increase = self._difference(
-                candidate.average_brier_score,
-                baseline.average_brier_score,
+                candidate_metrics["brier"],
+                baseline_metrics["brier"],
             )
+
             log_loss_increase = self._difference(
-                candidate.average_log_loss,
-                baseline.average_log_loss,
+                candidate_metrics["log_loss"],
+                baseline_metrics["log_loss"],
             )
 
             scores.append(
                 V33FeatureAblationScore(
                     feature_name=feature.name,
                     feature_weight=float(feature.weight),
-                    baseline_accuracy=baseline.accuracy,
-                    disabled_accuracy=candidate.accuracy,
+                    baseline_accuracy=baseline_metrics["accuracy"],
+                    disabled_accuracy=candidate_metrics["accuracy"],
                     accuracy_drop=accuracy_drop,
-                    baseline_brier_score=(
-                        baseline.average_brier_score
-                    ),
-                    disabled_brier_score=(
-                        candidate.average_brier_score
-                    ),
+                    baseline_brier_score=baseline_metrics["brier"],
+                    disabled_brier_score=candidate_metrics["brier"],
                     brier_increase=brier_increase,
-                    baseline_log_loss=(
-                        baseline.average_log_loss
-                    ),
-                    disabled_log_loss=(
-                        candidate.average_log_loss
-                    ),
+                    baseline_log_loss=baseline_metrics["log_loss"],
+                    disabled_log_loss=candidate_metrics["log_loss"],
                     log_loss_increase=log_loss_increase,
                     importance_score=self._importance_score(
                         accuracy_drop=accuracy_drop,
@@ -161,48 +186,150 @@ class CurrentMatchEnrichmentV33FeatureAblationService:
         )
 
         return V33FeatureAblationReport(
-            model_version=baseline.model_version,
+            model_version=baseline_engine.MODEL_VERSION,
             competition_code=competition_code,
             offset=offset,
             limit=limit,
-            matches_evaluated=baseline.matches_evaluated,
-            baseline_accuracy=baseline.accuracy,
-            baseline_brier_score=(
-                baseline.average_brier_score
-            ),
-            baseline_log_loss=(
-                baseline.average_log_loss
-            ),
+            matches_evaluated=len(snapshots),
+            baseline_accuracy=baseline_metrics["accuracy"],
+            baseline_brier_score=baseline_metrics["brier"],
+            baseline_log_loss=baseline_metrics["log_loss"],
             features=tuple(scores),
         )
 
     @staticmethod
-    def _validate(
+    def _build_snapshot(
+        db,
+        match_id,
+        competition_code,
+    ):
+        from app.services.advanced_historical_snapshot_engine import (
+            AdvancedHistoricalSnapshotEngine,
+        )
+
+        engine = AdvancedHistoricalSnapshotEngine()
+
+        return engine.build_match_snapshot(
+            db,
+            match_id,
+            competition_code=competition_code,
+        )
+
+    @staticmethod
+    def _evaluate_engine(
         db,
         *,
         engine,
-        offset,
-        limit,
-        competition_code,
+        snapshots,
     ):
-        service = (
-            CurrentMatchEnrichmentV33ValidationService(
-                prediction_engine=engine,
-            )
+        records = []
+
+        for snapshot in snapshots:
+            try:
+                prediction = engine.predict(snapshot)
+
+                match = (
+                    db.query(
+                        __import__(
+                            "app.models.match",
+                            fromlist=["Match"],
+                        ).Match
+                    )
+                    .filter(
+                        __import__(
+                            "app.models.match",
+                            fromlist=["Match"],
+                        ).Match.id
+                        == snapshot.match_id
+                    )
+                    .first()
+                )
+
+                if match is None:
+                    continue
+
+                actual_is_a = (
+                    match.winner
+                    == prediction.player_a_name
+                )
+
+                probability_a = (
+                    float(
+                        prediction.player_a_probability
+                    )
+                    / 100.0
+                )
+
+                actual_probability = (
+                    probability_a
+                    if actual_is_a
+                    else 1.0 - probability_a
+                )
+
+                records.append(
+                    {
+                        "correct": (
+                            prediction.predicted_winner
+                            == match.winner
+                        ),
+                        "brier": round(
+                            (
+                                probability_a
+                                - float(actual_is_a)
+                            ) ** 2,
+                            6,
+                        ),
+                        "log_loss": (
+                            CurrentMatchEnrichmentV33FeatureAblationService
+                            ._log_loss(
+                                actual_probability
+                            )
+                        ),
+                    }
+                )
+
+            except (ValueError, LookupError):
+                continue
+
+        if not records:
+            return {
+                "accuracy": None,
+                "brier": None,
+                "log_loss": None,
+            }
+
+        correct = sum(
+            int(record["correct"])
+            for record in records
         )
 
-        return service.validate(
-            db,
-            offset=offset,
-            limit=limit,
-            competition_code=competition_code,
-        )
+        return {
+            "accuracy": round(
+                100.0 * correct / len(records),
+                6,
+            ),
+            "brier": round(
+                sum(
+                    record["brier"]
+                    for record in records
+                ) / len(records),
+                6,
+            ),
+            "log_loss": round(
+                sum(
+                    record["log_loss"]
+                    for record in records
+                ) / len(records),
+                6,
+            ),
+        }
 
     @staticmethod
     def _without_feature_normalised(
         engine: TransparentPredictionEngineV33,
         feature_name: str,
     ) -> TransparentPredictionEngineV33:
+
         original_total = sum(
             float(feature.weight)
             for feature in engine.features
@@ -272,16 +399,23 @@ class CurrentMatchEnrichmentV33FeatureAblationService:
         brier_increase,
         log_loss_increase,
     ) -> float:
+
         values = []
 
         if accuracy_drop is not None:
-            values.append(float(accuracy_drop) / 100.0)
+            values.append(
+                float(accuracy_drop) / 100.0
+            )
 
         if brier_increase is not None:
-            values.append(float(brier_increase))
+            values.append(
+                float(brier_increase)
+            )
 
         if log_loss_increase is not None:
-            values.append(float(log_loss_increase))
+            values.append(
+                float(log_loss_increase)
+            )
 
         if not values:
             return 0.0
@@ -290,3 +424,14 @@ class CurrentMatchEnrichmentV33FeatureAblationService:
             sum(values) / len(values),
             6,
         )
+
+    @staticmethod
+    def _log_loss(probability: float) -> float:
+        from math import log
+
+        clipped = min(
+            max(float(probability), 1e-15),
+            1.0 - 1e-15,
+        )
+
+        return round(-log(clipped), 6)
