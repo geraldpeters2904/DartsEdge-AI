@@ -25,6 +25,55 @@ class ForwardScheduleMonitorTests(unittest.TestCase):
         self.assertFalse(monitor.stop().running)
 
 
+    def test_run_once_skips_when_cycle_already_running(self):
+        monitor = ForwardScheduleMonitor(
+            interval_seconds=60,
+            initial_delay_seconds=0,
+        )
+
+        module = __import__(
+            "app.services.forward_schedule_monitor_service",
+            fromlist=["run_forward_schedule_discovery"],
+        )
+        original = module.run_forward_schedule_discovery
+        calls = []
+
+        def discovery():
+            calls.append(True)
+            raise AssertionError(
+                "Overlapping cycle should not execute."
+            )
+
+        module.run_forward_schedule_discovery = discovery
+
+        acquired = monitor._run_lock.acquire(
+            blocking=False
+        )
+        self.assertTrue(acquired)
+
+        try:
+            before = monitor.status()
+            status = monitor.run_once()
+        finally:
+            monitor._run_lock.release()
+            module.run_forward_schedule_discovery = original
+
+        self.assertEqual(calls, [])
+        self.assertEqual(status.runs, before.runs)
+        self.assertEqual(
+            status.failures,
+            before.failures,
+        )
+        self.assertEqual(
+            status.last_message,
+            before.last_message,
+        )
+        self.assertEqual(
+            status.last_error,
+            before.last_error,
+        )
+
+
     def test_next_run_is_after_last_run_by_interval(self):
         monitor = ForwardScheduleMonitor(
             interval_seconds=900,

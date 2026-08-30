@@ -43,6 +43,7 @@ class LiveEdgeMonitor:
             float(initial_delay_seconds),
         )
         self._lock = threading.RLock()
+        self._run_lock = threading.Lock()
         self._thread = None
         self._stop_event = threading.Event()
         self._status = LiveEdgeMonitorStatus(
@@ -116,6 +117,15 @@ class LiveEdgeMonitor:
             )
 
     def run_once(self):
+        if not self._run_lock.acquire(blocking=False):
+            return self.status()
+
+        try:
+            return self._run_once_locked()
+        finally:
+            self._run_lock.release()
+
+    def _run_once_locked(self):
         db = SessionLocal()
 
         try:
