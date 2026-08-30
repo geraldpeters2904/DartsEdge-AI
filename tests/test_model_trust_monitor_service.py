@@ -15,6 +15,28 @@ class ModelTrustMonitorTests(
             initial_delay_seconds=0,
         )
 
+    def test_session_creation_failure_is_recorded(self):
+        with patch(
+            "app.services.model_trust_monitor_service.SessionLocal",
+            side_effect=RuntimeError("database unavailable"),
+        ):
+            monitor = ModelTrustMonitor(
+                interval_seconds=60,
+                initial_delay_seconds=0,
+            )
+            status = monitor.run_once()
+
+        self.assertEqual(status.runs, 1)
+        self.assertEqual(status.failures, 1)
+        self.assertEqual(
+            status.last_message,
+            "Model trust refresh failed.",
+        )
+        self.assertEqual(
+            status.last_error,
+            "database unavailable",
+        )
+
     def test_stop_waits_for_background_thread_to_exit(self):
         monitor = ModelTrustMonitor(
             interval_seconds=300,

@@ -166,9 +166,10 @@ class ModelTrustMonitor:
             self._run_lock.release()
 
     def _run_once_locked(self):
-        db = SessionLocal()
+        db = None
 
         try:
+            db = SessionLocal()
             report = build_model_trust_report(
                 db,
                 model_name="transparent-v3.3",
@@ -232,7 +233,8 @@ class ModelTrustMonitor:
                 )
 
         finally:
-            db.close()
+            if db is not None:
+                db.close()
 
         return self.status()
 

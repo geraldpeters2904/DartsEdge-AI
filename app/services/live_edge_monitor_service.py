@@ -134,9 +134,10 @@ class LiveEdgeMonitor:
             self._run_lock.release()
 
     def _run_once_locked(self):
-        db = SessionLocal()
+        db = None
 
         try:
+            db = SessionLocal()
             report = run_live_fixture_edge_capture(
                 db
             )
@@ -189,7 +190,8 @@ class LiveEdgeMonitor:
                 )
 
         finally:
-            db.close()
+            if db is not None:
+                db.close()
 
         return self.status()
 

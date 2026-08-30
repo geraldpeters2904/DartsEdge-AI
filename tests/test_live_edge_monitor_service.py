@@ -37,6 +37,31 @@ class LiveEdgeMonitorTests(unittest.TestCase):
         )
 
 
+    def test_session_creation_failure_is_recorded(self):
+        from unittest.mock import patch
+
+        monitor = LiveEdgeMonitor(
+            interval_seconds=60,
+            initial_delay_seconds=0,
+        )
+
+        with patch(
+            "app.services.live_edge_monitor_service.SessionLocal",
+            side_effect=RuntimeError("database unavailable"),
+        ):
+            status = monitor.run_once()
+
+        self.assertEqual(status.runs, 1)
+        self.assertEqual(status.failures, 1)
+        self.assertEqual(
+            status.last_message,
+            "Live Edge monitor cycle failed.",
+        )
+        self.assertEqual(
+            status.last_error,
+            "database unavailable",
+        )
+
     def test_stop_waits_for_background_thread_to_exit(self):
         monitor = LiveEdgeMonitor(
             interval_seconds=60,

@@ -183,9 +183,10 @@ class SparseConsensusRiskMonitor:
             self._run_lock.release()
 
     def _run_once_locked(self):
-        db = SessionLocal()
+        db = None
 
         try:
+            db = SessionLocal()
             match_ids = (
                 CurrentMatchEnrichmentV33DualLowHistoryRiskFlagService
                 ._select_match_ids(
@@ -284,7 +285,8 @@ class SparseConsensusRiskMonitor:
                 )
 
         finally:
-            db.close()
+            if db is not None:
+                db.close()
 
         return self.status()
 
