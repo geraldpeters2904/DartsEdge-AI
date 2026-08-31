@@ -12,6 +12,9 @@ from app.services.model_trust_service import (
 from app.services.portfolio_health_service import (
     build_portfolio_health,
 )
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 from app.services.strategy_analytics_service import (
     analytics as build_strategy_analytics,
 )
@@ -264,7 +267,7 @@ def _top_strategy_metric(
 def build_model_health(
     db,
     *,
-    model_name: str = "transparent-v3.3",
+    model_name: str = ACTIVE_PREDICTION_MODEL_NAME,
     trust_offset: int = 500,
     trust_limit: int = 3000,
     performance_builder: Callable = (

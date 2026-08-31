@@ -17,6 +17,9 @@ from app.services.prediction_model_registry import (
     PredictionModelRegistry,
     prediction_model_registry,
 )
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 
 
 @dataclass(frozen=True)
@@ -301,7 +304,7 @@ def _trust_grade(
 def build_model_trust_report(
     db: Session,
     *,
-    model_name: str = "transparent-v3.3",
+    model_name: str = ACTIVE_PREDICTION_MODEL_NAME,
     offset: int = 0,
     limit: int = 3000,
     competition_code: Optional[str] = None,

@@ -1,6 +1,10 @@
 
 from __future__ import annotations
 
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -239,9 +243,9 @@ def predict_fixture(
             model_name=str(
                 opportunity.get(
                     "model_name",
-                    "transparent-v3.3",
+                    ACTIVE_PREDICTION_MODEL_NAME,
                 )
-                or "transparent-v3.3"
+                or ACTIVE_PREDICTION_MODEL_NAME
             ),
             ready=False,
             reason=(
@@ -303,9 +307,9 @@ def predict_fixture(
         model_name=str(
             opportunity.get(
                 "model_name",
-                "transparent-v3.3",
+                ACTIVE_PREDICTION_MODEL_NAME,
             )
-            or "transparent-v3.3"
+            or ACTIVE_PREDICTION_MODEL_NAME
         ),
         ready=True,
         reason="Prediction probability resolved.",

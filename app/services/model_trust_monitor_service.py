@@ -6,6 +6,9 @@ import threading
 from typing import Optional
 
 from app.db import SessionLocal
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 from app.services.model_trust_service import (
     build_model_trust_report,
 )
@@ -172,7 +175,7 @@ class ModelTrustMonitor:
             db = SessionLocal()
             report = build_model_trust_report(
                 db,
-                model_name="transparent-v3.3",
+                model_name=ACTIVE_PREDICTION_MODEL_NAME,
                 offset=500,
                 limit=3000,
             )

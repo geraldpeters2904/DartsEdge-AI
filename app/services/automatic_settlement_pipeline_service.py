@@ -5,6 +5,9 @@ from typing import Callable, Optional
 
 from sqlalchemy.orm import Session
 
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 from app.services.prediction_settlement_service import (
     settle_completed_prediction_audits,
 )
@@ -98,7 +101,7 @@ def run_automatic_settlement(
     *,
     source: str = "unified-sync",
     model_version: str = (
-        "transparent-v3.3"
+        ACTIVE_PREDICTION_MODEL_NAME
     ),
     limit: int = 1000,
     clv_refresh: Optional[

@@ -10,9 +10,12 @@ from app.services.prediction_model_registry import (
     PredictionModelRegistry,
     prediction_model_registry,
 )
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 
 
-DEFAULT_MODEL_NAME = "transparent-v3.3"
+DEFAULT_MODEL_NAME = ACTIVE_PREDICTION_MODEL_NAME
 
 
 @dataclass(frozen=True)

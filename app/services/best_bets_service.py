@@ -15,9 +15,12 @@ from app.services.prediction_model_registry import (
     PredictionModelRegistry,
     prediction_model_registry,
 )
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 
 
-RESEARCH_MODEL_NAME = "transparent-v3.3"
+RESEARCH_MODEL_NAME = ACTIVE_PREDICTION_MODEL_NAME
 MINIMUM_HISTORY_MATCHES = 5
 
 
