@@ -24,6 +24,9 @@ from app.services.transparent_prediction_model_v33_adapter import (
 from app.services.transparent_prediction_model_v34_adapter import (
     TransparentPredictionModelV34Adapter,
 )
+from app.services.transparent_prediction_model_v35_adapter import (
+    TransparentPredictionModelV35Adapter,
+)
 
 
 class PredictionModel(Protocol):
@@ -87,6 +90,10 @@ class PredictionModelRegistry:
                 (
                     "transparent-v3.4",
                     TransparentPredictionModelV34Adapter(),
+                ),
+                (
+                    "transparent-v3.5",
+                    TransparentPredictionModelV35Adapter(),
                 ),
             ]
         )
