@@ -1,113 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Live Opportunities · DartsEdge AI
 
-<script>
-async function loadSparseConsensusRisk() {
-  const badges = Array.from(
-    document.querySelectorAll(
-      ".sparse-consensus-risk-badge"
-    )
-  );
 
-  const button = document.getElementById(
-    "load-sparse-consensus-risk"
-  );
-
-  if (!badges.length) {
-    return;
-  }
-
-  if (button) {
-    button.disabled = true;
-    button.textContent = "Calculating risk…";
-  }
-
-  for (const badge of badges) {
-    badge.textContent = "CALCULATING";
-  }
-
-  try {
-    const response = await fetch(
-      "/diagnostics/sparse-consensus-risk"
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `HTTP ${response.status}`
-      );
-    }
-
-    const data = await response.json();
-
-    let label = "UNKNOWN";
-    let cssClass = (
-      "opportunity-risk-unknown"
-    );
-
-    if (data.high) {
-      label = "HIGH RISK";
-      cssClass = (
-        "opportunity-risk-high"
-      );
-    } else if (data.elevated) {
-      label = "ELEVATED";
-      cssClass = (
-        "opportunity-risk-elevated"
-      );
-    } else if (
-      data.risk_state === "NORMAL"
-    ) {
-      label = "NORMAL";
-      cssClass = (
-        "opportunity-risk-normal"
-      );
-    }
-
-    const density = (
-      data.density === null
-      ? ""
-      : ` · ${data.density.toFixed(2)}%`
-    );
-
-    for (const badge of badges) {
-      badge.className = (
-        "opportunity-risk "
-        + cssClass
-        + " sparse-consensus-risk-badge"
-      );
-
-      badge.textContent = (
-        label + density
-      );
-
-      badge.title = (
-        data.explanation || ""
-      );
-    }
-
-    if (button) {
-      button.textContent = "Risk loaded";
-    }
-  } catch (error) {
-    for (const badge of badges) {
-      badge.className = (
-        "opportunity-risk "
-        + "opportunity-risk-unknown "
-        + "sparse-consensus-risk-badge"
-      );
-
-      badge.textContent = (
-        "RISK UNAVAILABLE"
-      );
-    }
-
-    if (button) {
-      button.disabled = false;
-      button.textContent = "Retry risk check";
-    }
-  }
-}
-</script>
 
 
 {% endblock %}
@@ -201,6 +95,30 @@ async function loadSparseConsensusRisk() {
   </div>
 
   <div class="button-row">
+
+    <span
+      id="opportunity-refresh-status"
+      class="muted"
+      style="align-self:center"
+    >
+      Next refresh in 3:00
+    </span>
+
+    <button
+      id="opportunity-refresh-now"
+      class="button secondary"
+      type="button"
+    >
+      Refresh now
+    </button>
+
+    <button
+      id="opportunity-refresh-toggle"
+      class="button secondary"
+      type="button"
+    >
+      Pause auto-refresh
+    </button>
     <a class="button secondary" href="/prediction-centre">
       Prediction Centre
     </a>
@@ -390,4 +308,257 @@ async function loadSparseConsensusRisk() {
 {% endfor %}
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+const OPPORTUNITY_REFRESH_SECONDS = 180;
+const OPPORTUNITY_REFRESH_MS = (
+  OPPORTUNITY_REFRESH_SECONDS * 1000
+);
+
+let opportunityRefreshPaused = false;
+let opportunityRefreshDeadline = (
+  Date.now() + OPPORTUNITY_REFRESH_MS
+);
+let opportunityPausedRemainingMs = null;
+
+function formatOpportunityRefreshTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function opportunityRemainingSeconds() {
+  return Math.max(
+    0,
+    Math.ceil(
+      (opportunityRefreshDeadline - Date.now()) / 1000
+    )
+  );
+}
+
+function updateOpportunityRefreshStatus() {
+  const status = document.getElementById(
+    "opportunity-refresh-status"
+  );
+
+  if (!status) {
+    return;
+  }
+
+  if (opportunityRefreshPaused) {
+    status.textContent = "Auto-refresh paused";
+    return;
+  }
+
+  status.textContent = (
+    "Next refresh in "
+    + formatOpportunityRefreshTime(
+      opportunityRemainingSeconds()
+    )
+  );
+}
+
+function refreshOpportunitiesNow() {
+  window.location.reload();
+}
+
+function toggleOpportunityAutoRefresh() {
+  const button = document.getElementById(
+    "opportunity-refresh-toggle"
+  );
+
+  if (opportunityRefreshPaused) {
+    opportunityRefreshPaused = false;
+    opportunityRefreshDeadline = (
+      Date.now()
+      + (
+        opportunityPausedRemainingMs
+        ?? OPPORTUNITY_REFRESH_MS
+      )
+    );
+    opportunityPausedRemainingMs = null;
+  } else {
+    opportunityPausedRemainingMs = Math.max(
+      0,
+      opportunityRefreshDeadline - Date.now()
+    );
+    opportunityRefreshPaused = true;
+  }
+
+  if (button) {
+    button.textContent = opportunityRefreshPaused
+      ? "Resume auto-refresh"
+      : "Pause auto-refresh";
+  }
+
+  updateOpportunityRefreshStatus();
+}
+
+function opportunityRefreshTick() {
+  if (opportunityRefreshPaused) {
+    return;
+  }
+
+  if (opportunityRemainingSeconds() <= 0) {
+    if (!document.hidden) {
+      refreshOpportunitiesNow();
+    }
+    return;
+  }
+
+  updateOpportunityRefreshStatus();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const refreshNow = document.getElementById(
+    "opportunity-refresh-now"
+  );
+  const refreshToggle = document.getElementById(
+    "opportunity-refresh-toggle"
+  );
+
+  if (refreshNow) {
+    refreshNow.addEventListener(
+      "click",
+      refreshOpportunitiesNow
+    );
+  }
+
+  if (refreshToggle) {
+    refreshToggle.addEventListener(
+      "click",
+      toggleOpportunityAutoRefresh
+    );
+  }
+
+  updateOpportunityRefreshStatus();
+
+  window.setInterval(
+    opportunityRefreshTick,
+    1000
+  );
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (
+    !document.hidden
+    && !opportunityRefreshPaused
+  ) {
+    if (opportunityRemainingSeconds() <= 0) {
+      refreshOpportunitiesNow();
+      return;
+    }
+
+    updateOpportunityRefreshStatus();
+  }
+});
+
+async function loadSparseConsensusRisk() {
+  const badges = Array.from(
+    document.querySelectorAll(
+      ".sparse-consensus-risk-badge"
+    )
+  );
+
+  const button = document.getElementById(
+    "load-sparse-consensus-risk"
+  );
+
+  if (!badges.length) {
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Calculating risk…";
+  }
+
+  for (const badge of badges) {
+    badge.textContent = "CALCULATING";
+  }
+
+  try {
+    const response = await fetch(
+      "/diagnostics/sparse-consensus-risk"
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+
+    let label = "UNKNOWN";
+    let cssClass = (
+      "opportunity-risk-unknown"
+    );
+
+    if (data.high) {
+      label = "HIGH RISK";
+      cssClass = (
+        "opportunity-risk-high"
+      );
+    } else if (data.elevated) {
+      label = "ELEVATED";
+      cssClass = (
+        "opportunity-risk-elevated"
+      );
+    } else if (
+      data.risk_state === "NORMAL"
+    ) {
+      label = "NORMAL";
+      cssClass = (
+        "opportunity-risk-normal"
+      );
+    }
+
+    const density = (
+      data.density === null
+      ? ""
+      : ` · ${data.density.toFixed(2)}%`
+    );
+
+    for (const badge of badges) {
+      badge.className = (
+        "opportunity-risk "
+        + cssClass
+        + " sparse-consensus-risk-badge"
+      );
+
+      badge.textContent = (
+        label + density
+      );
+
+      badge.title = (
+        data.explanation || ""
+      );
+    }
+
+    if (button) {
+      button.textContent = "Risk loaded";
+    }
+  } catch (error) {
+    for (const badge of badges) {
+      badge.className = (
+        "opportunity-risk "
+        + "opportunity-risk-unknown "
+        + "sparse-consensus-risk-badge"
+      );
+
+      badge.textContent = (
+        "RISK UNAVAILABLE"
+      );
+    }
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Retry risk check";
+    }
+  }
+}
+</script>
 {% endblock %}
