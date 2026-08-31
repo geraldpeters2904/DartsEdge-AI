@@ -15,23 +15,22 @@ promotion decisions.
 
 ### Production / research baseline
 
-**transparent-v3.3**
-
-Transparent v3.3 remains the current production/research baseline.
-
-### Registered challengers
-
-- transparent-v3.4
-- transparent-v3.5
-
-Neither challenger should be treated as the production model until an
-explicit promotion decision is made.
-
-### Current leading challenger
-
 **transparent-v3.5**
 
-v3.5 has produced the strongest out-of-sample evidence so far.
+Transparent v3.5 is the current production/research baseline.
+
+It was explicitly promoted after multi-window out-of-sample validation
+and operational verification.
+
+### Registered challenger
+
+- transparent-v3.4
+
+### Previous production baseline
+
+- transparent-v3.3
+
+v3.3 remains available as the immediate rollback model.
 
 ---
 
@@ -350,16 +349,25 @@ out-of-sample evidence.
 
 ## Current Decision
 
-**transparent-v3.5 is the leading challenger.**
+**transparent-v3.5 is the production/research default.**
 
-Evidence is sufficiently strong to stop further feature tuning on the
-data already examined.
+Evidence was sufficiently strong to stop further feature tuning on the
+data already examined and proceed with an explicit production promotion.
 
-However:
+The promotion was committed in:
 
-**v3.5 has not yet been promoted to the production/research default.**
+**d1a1833 - Promote transparent v3.5 to active prediction model**
 
-Promotion should be an explicit decision with a defined rollback point.
+The application was restarted after promotion and operationally verified.
+
+The health endpoint returned HTTP 200, an application-path prediction
+reported `transparent-v3.5`, and the model-trust monitor completed a
+post-restart run with zero failures.
+
+The immediate rollback point remains the preceding central-selector
+checkpoint:
+
+**1944385 - Centralize active prediction model selection**
 
 ---
 
@@ -425,6 +433,8 @@ A promotion decision should consider:
 - rollback capability
 
 As of this record, v3.5 has passed the multi-window accuracy and
-probability-quality tests and is the strongest transparent-model
-candidate, but production remains on v3.3 pending an explicit promotion
-decision.
+probability-quality tests and has been explicitly promoted to the
+production/research default following operational compatibility checks.
+
+Further model tuning must continue to preserve the untouched reserve and
+the validation discipline documented above.
