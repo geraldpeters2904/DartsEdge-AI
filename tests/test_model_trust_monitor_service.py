@@ -1,4 +1,8 @@
 import unittest
+
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
 from unittest.mock import MagicMock, patch
 
 from app.services.model_trust_monitor_service import (
@@ -106,7 +110,7 @@ class ModelTrustMonitorTests(
 
         build_report.assert_called_once_with(
             db,
-            model_name="transparent-v3.3",
+            model_name=ACTIVE_PREDICTION_MODEL_NAME,
             offset=500,
             limit=3000,
         )

@@ -2,6 +2,10 @@ import unittest
 from datetime import date
 from types import SimpleNamespace
 
+from app.prediction_config import (
+    ACTIVE_PREDICTION_MODEL_NAME,
+)
+
 from app.services.best_bets_service import (
     _confidence_label,
     _minimum_odds,
@@ -91,7 +95,7 @@ class FakeRegistry:
     def get_registered(self, name):
         return SimpleNamespace(
             name=name,
-            version="transparent-v3.3",
+            version=ACTIVE_PREDICTION_MODEL_NAME,
             model=FakeModel(),
         )
 
@@ -173,11 +177,11 @@ class BestBetsServiceV33Tests(
         )
         self.assertEqual(
             item["model_name"],
-            "transparent-v3.3",
+            ACTIVE_PREDICTION_MODEL_NAME,
         )
         self.assertEqual(
             item["model_version"],
-            "transparent-v3.3",
+            ACTIVE_PREDICTION_MODEL_NAME,
         )
         self.assertEqual(
             item["player_b_probability"],

@@ -7,4 +7,4 @@ Changing ACTIVE_PREDICTION_MODEL_NAME is a production model promotion
 or rollback decision and should only be done after validation.
 """
 
-ACTIVE_PREDICTION_MODEL_NAME = "transparent-v3.3"
+ACTIVE_PREDICTION_MODEL_NAME = "transparent-v3.5"
