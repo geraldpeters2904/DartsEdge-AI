@@ -287,7 +287,45 @@
     <small>
       Age {{ item.age_minutes if item.age_minutes is not none else 0 }} min
     </small>
-    <div style="margin-top:.7rem">
+    <div class="button-row" style="margin-top:.7rem">
+      {% if item.decimal_odds %}
+      <form method="post" action="/bet-slip/add">
+        <input type="hidden" name="fixture_id" value="{{ item.fixture_id }}">
+        <input type="hidden" name="market" value="Match Winner">
+        <input type="hidden" name="selection" value="{{ item.selection }}">
+        <input type="hidden" name="bookmaker" value="{{ item.bookmaker }}">
+        <input type="hidden" name="odds" value="{{ item.decimal_odds }}">
+        <input
+          type="hidden"
+          name="stake"
+          value="{{ item.suggested_stake if item.suggested_stake > 0 else 1.00 }}"
+        >
+        <input
+          type="hidden"
+          name="model_probability"
+          value="{{ item.model_probability }}"
+        >
+        <input
+          type="hidden"
+          name="expected_value"
+          value="{{ item.expected_value_percent }}"
+        >
+        <input
+          type="hidden"
+          name="kelly_stake"
+          value="{{ item.suggested_stake }}"
+        >
+        <input
+          type="hidden"
+          name="strategy_name"
+          value="{{ active_strategy.name }} v{{ active_strategy.version }}"
+        >
+        <button class="button secondary" type="submit">
+          Add to Bet Slip
+        </button>
+      </form>
+      {% endif %}
+
       <a
         class="button secondary"
         href="/opportunities/{{ item.fixture_id }}/replay"
