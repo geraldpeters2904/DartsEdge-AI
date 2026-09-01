@@ -9,7 +9,7 @@
   <article class="prediction-kpi-card"><span class="prediction-kpi-label">Average odds</span><strong class="prediction-kpi-value">{{ '%.2f'|format(summary.average_odds) }}</strong><small>Decimal odds</small></article>
 </div>
 {% if items %}
-<div class="table-wrap"><table><thead><tr><th>Fixture</th><th>Market</th><th>Selection</th><th>Odds</th><th>EV</th><th>Stake</th><th>Strategy</th><th>Actions</th></tr></thead><tbody>
+<div class="table-wrap"><table><thead><tr><th>Fixture</th><th>Market</th><th>Selection</th><th>Bookmaker</th><th>Odds</th><th>Model %</th><th>EV</th><th>Suggested Stake</th><th>Stake</th><th>Strategy</th><th>Actions</th></tr></thead><tbody>
 {% for item, fixture in items %}
 <tr>
   <td>
@@ -20,8 +20,23 @@
   </td>
   <td>{{ item.market }}</td>
   <td>{{ item.selection }}</td>
+  <td>{{ item.bookmaker }}</td>
   <td>{{ '%.2f'|format(item.odds) }}</td>
+  <td>
+    {% if item.model_probability is not none %}
+      {{ '%.1f'|format(item.model_probability) }}%
+    {% else %}
+      —
+    {% endif %}
+  </td>
   <td>{{ '%+.2f%%'|format(item.expected_value or 0) }}</td>
+  <td>
+    {% if item.kelly_stake is not none %}
+      £{{ '{:,.2f}'.format(item.kelly_stake) }}
+    {% else %}
+      —
+    {% endif %}
+  </td>
   <td>
     <form method="post" action="/bet-slip/{{ item.id }}/stake">
       <div class="button-row">

@@ -88,14 +88,26 @@ class BetSlipTests(unittest.TestCase):
             fixture_id=self.fixture.id,
             market="Match Winner",
             selection="Slip Alpha",
-            bookmaker="A",
+            bookmaker="Paddy Power",
             odds=2.0,
             stake=4,
+            model_probability=61.5,
+            expected_value=8.25,
+            kelly_stake=6.5,
+            strategy_name="transparent-v3.5",
         )
 
         response = self.client.get("/bet-slip")
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn("Bookmaker", response.text)
+        self.assertIn("Model %", response.text)
+        self.assertIn("Suggested Stake", response.text)
+        self.assertIn("Paddy Power", response.text)
+        self.assertIn("61.5%", response.text)
+        self.assertIn("+8.25%", response.text)
+        self.assertIn("£6.50", response.text)
+        self.assertIn("transparent-v3.5", response.text)
         self.assertIn(
             f'/bet-slip/{item.id}/stake',
             response.text,
