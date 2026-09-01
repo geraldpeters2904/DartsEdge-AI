@@ -44,7 +44,11 @@
                 <th>Selection</th>
                 <th>Bookmaker</th>
                 <th>Odds</th>
+                <th>Model %</th>
+                <th>EV</th>
+                <th>Suggested Stake</th>
                 <th>Stake</th>
+                <th>Strategy</th>
                 <th>Status</th>
                 <th>Profit / Loss</th>
                 <th>Settled</th>
@@ -69,7 +73,39 @@
             </td>
 
             <td>
+                {% if trade.model_probability is not none %}
+                    {{ "%.1f"|format(trade.model_probability) }}%
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if trade.expected_value is not none %}
+                    {{ "%+.2f%%"|format(trade.expected_value) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {% if trade.suggested_stake is not none %}
+                    £{{ "%.2f"|format(trade.suggested_stake) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
                 £{{ "%.2f"|format(trade.stake) }}
+            </td>
+
+            <td>
+                {% if trade.strategy_name %}
+                    {{ trade.strategy_name }}
+                {% else %}
+                    —
+                {% endif %}
             </td>
 
             <td>
