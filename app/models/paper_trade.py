@@ -31,6 +31,12 @@ class PaperTrade(Base):
     odds = Column(Float, nullable=False)
     stake = Column(Float, nullable=False, default=1.0)
 
+    # Decision-time snapshot retained for later trade analysis.
+    model_probability = Column(Float, nullable=True)
+    expected_value = Column(Float, nullable=True)
+    suggested_stake = Column(Float, nullable=True)
+    strategy_name = Column(String, nullable=True)
+
     status = Column(String, nullable=False, default="OPEN")
     profit_loss = Column(Float, nullable=True)
 

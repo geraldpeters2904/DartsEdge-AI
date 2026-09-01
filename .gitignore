@@ -65,3 +65,6 @@ apply_*.sh
 repair_*.sh
 switch_*.sh
 dartsedge_cleanup.sh
+
+# Timestamped database backups
+*.db.backup-*

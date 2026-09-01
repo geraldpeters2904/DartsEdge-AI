@@ -142,11 +142,32 @@ class BetSlipTests(unittest.TestCase):
             add_bet_slip_item(self.db, fixture_id=self.fixture.id, market='Match Winner', selection='Other', bookmaker='A', odds=2, stake=1)
 
     def test_confirm_creates_open_paper_trade(self):
-        item, _ = add_bet_slip_item(self.db, fixture_id=self.fixture.id, market='Match Winner', selection='Slip Alpha', bookmaker='A', odds=2, stake=3, model_probability=60)
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection="Slip Alpha",
+            bookmaker="A",
+            odds=2,
+            stake=3,
+            model_probability=60,
+            expected_value=8.25,
+            kelly_stake=6.5,
+            strategy_name="transparent-v3.5",
+        )
         trade = confirm_as_paper_trade(self.db, item.id)
-        self.assertEqual(trade.status, 'OPEN')
+
+        self.assertEqual(trade.status, "OPEN")
         self.assertEqual(trade.stake, 3)
-        self.db.query(PaperTrade).filter(PaperTrade.id == trade.id).delete(); self.db.commit()
+        self.assertEqual(trade.model_probability, 60)
+        self.assertEqual(trade.expected_value, 8.25)
+        self.assertEqual(trade.suggested_stake, 6.5)
+        self.assertEqual(trade.strategy_name, "transparent-v3.5")
+
+        self.db.query(PaperTrade).filter(
+            PaperTrade.id == trade.id
+        ).delete()
+        self.db.commit()
 
     def test_page_loads(self):
         self.assertEqual(self.client.get('/bet-slip').status_code, 200)

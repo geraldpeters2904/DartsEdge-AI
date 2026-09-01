@@ -158,6 +158,10 @@ def confirm_as_paper_trade(db, item_id: int) -> PaperTrade:
         bookmaker=item.bookmaker,
         odds=item.odds,
         stake=item.stake,
+        model_probability=item.model_probability,
+        expected_value=item.expected_value,
+        suggested_stake=item.kelly_stake,
+        strategy_name=item.strategy_name,
         status="OPEN",
     )
     db.add(trade)

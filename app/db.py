@@ -1,8 +1,13 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///./dartsedge.db"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./dartsedge.db",
+)
 
 engine = create_engine(
     DATABASE_URL,
