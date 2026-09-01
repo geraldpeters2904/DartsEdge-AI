@@ -8,7 +8,11 @@ from app.main import app
 from app.models.bet_slip_item import BetSlipItem
 from app.models.match import Match
 from app.models.paper_trade import PaperTrade
-from app.services.bet_slip_service import add_bet_slip_item, confirm_as_paper_trade
+from app.services.bet_slip_service import (
+    add_bet_slip_item,
+    confirm_as_paper_trade,
+    update_bet_slip_stake,
+)
 
 
 class BetSlipTests(unittest.TestCase):
@@ -40,6 +44,86 @@ class BetSlipTests(unittest.TestCase):
         add_bet_slip_item(self.db, fixture_id=self.fixture.id, market='Match Winner', selection='Slip Alpha', bookmaker='B', odds=2.2, stake=6)
         self.assertEqual(self.db.query(BetSlipItem).count(), 1)
         self.assertEqual(self.db.query(BetSlipItem).first().stake, 6)
+
+    def test_update_stake(self):
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection="Slip Alpha",
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+        )
+
+        updated = update_bet_slip_stake(
+            self.db,
+            item.id,
+            7.5,
+        )
+
+        self.assertEqual(updated.stake, 7.5)
+
+    def test_update_stake_rejects_non_positive_value(self):
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection="Slip Alpha",
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+        )
+
+        with self.assertRaises(ValueError):
+            update_bet_slip_stake(
+                self.db,
+                item.id,
+                0,
+            )
+
+    def test_page_contains_editable_stake_form(self):
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection="Slip Alpha",
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+        )
+
+        response = self.client.get("/bet-slip")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            f'/bet-slip/{item.id}/stake',
+            response.text,
+        )
+        self.assertIn('name="stake"', response.text)
+        self.assertIn('value="4.00"', response.text)
+        self.assertIn("Update", response.text)
+
+    def test_update_stake_route(self):
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection="Slip Alpha",
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+        )
+
+        response = self.client.post(
+            f"/bet-slip/{item.id}/stake",
+            data={"stake": 8.5},
+            follow_redirects=False,
+        )
+
+        self.assertEqual(response.status_code, 303)
+        self.db.refresh(item)
+        self.assertEqual(item.stake, 8.5)
 
     def test_invalid_selection_rejected(self):
         with self.assertRaises(ValueError):

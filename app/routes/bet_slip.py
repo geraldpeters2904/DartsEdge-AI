@@ -8,6 +8,7 @@ from app.services.bet_slip_service import (
     confirm_as_paper_trade,
     list_bet_slip_items,
     remove_bet_slip_item,
+    update_bet_slip_stake,
 )
 from app.templates_config import templates
 
@@ -64,6 +65,32 @@ def add_to_bet_slip(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc))
+    finally:
+        db.close()
+
+
+@router.post("/bet-slip/{item_id}/stake")
+def update_stake(
+    item_id: int,
+    stake: float = Form(...),
+):
+    db = SessionLocal()
+    try:
+        update_bet_slip_stake(
+            db,
+            item_id,
+            stake,
+        )
+        return RedirectResponse(
+            "/bet-slip?message=Stake updated",
+            status_code=303,
+        )
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        )
     finally:
         db.close()
 

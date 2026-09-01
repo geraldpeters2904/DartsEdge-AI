@@ -78,6 +78,28 @@ def add_bet_slip_item(
     return item, True
 
 
+def update_bet_slip_stake(
+    db,
+    item_id: int,
+    stake: float,
+) -> BetSlipItem:
+    if stake <= 0:
+        raise ValueError("Stake must be greater than zero")
+
+    item = (
+        db.query(BetSlipItem)
+        .filter(BetSlipItem.id == item_id)
+        .first()
+    )
+    if item is None:
+        raise ValueError("Bet slip item not found")
+
+    item.stake = stake
+    db.commit()
+    db.refresh(item)
+    return item
+
+
 def remove_bet_slip_item(db, item_id: int) -> bool:
     item = db.query(BetSlipItem).filter(BetSlipItem.id == item_id).first()
     if item is None:
