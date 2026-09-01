@@ -7,6 +7,7 @@ from app.services.equity_service import get_equity_curve
 from app.services.value_board_service import build_value_board
 from app.services.data_quality_service import get_data_quality
 from app.services.paper_trade_service import get_portfolio_summary
+from app.services.settings_service import get_settings
 
 
 def _confidence_label(probability):
@@ -257,10 +258,16 @@ def build_dashboard_data(db):
         if won_paper_trades + lost_paper_trades
         else 0
     )
-    equity_curve = get_equity_curve(db)
+    settings = get_settings(db)
+    starting_bankroll = float(settings.bankroll or 0)
+
+    equity_curve = get_equity_curve(
+        db,
+        starting_bankroll=starting_bankroll,
+    )
     portfolio_summary = get_portfolio_summary(
         db,
-        starting_bankroll=5000.00,
+        starting_bankroll=starting_bankroll,
     )
 
     best_bet = best_bets[0] if best_bets else None
