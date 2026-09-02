@@ -14,6 +14,8 @@ from app.models.historical_import import (
     HistoricalImportItem,
 )
 from app.models.match import Match
+from app.models.paper_trade import PaperTrade
+from app.models.prediction import Prediction
 from tests.helpers.database import create_test_session
 
 
@@ -99,6 +101,119 @@ class CollectorResultCommitTests(unittest.TestCase):
         self.assertEqual(match.score, "4-2")
         self.assertEqual(match.first_leg_winner, "Player A")
         self.assertEqual(match.first_180_player, "Player B")
+
+    def test_result_settles_linked_match_winner_trade(self):
+        with tempfile.TemporaryDirectory() as fixture_directory:
+            self.write_file(
+                fixture_directory,
+                "fixtures.csv",
+                FIXTURES,
+            )
+            fixture_preview = self.preview_service.preview(
+                folder=Path(fixture_directory),
+                provider="manual-research",
+            )
+            self.bridge.commit(
+                db=self.db,
+                preview=fixture_preview,
+            )
+
+        match = self.db.query(Match).one()
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="Match Winner",
+            selection="Player A",
+            odds=2.5,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        with tempfile.TemporaryDirectory() as result_directory:
+            result_preview = self.build_preview(
+                result_directory,
+                include_fixtures=False,
+            )
+            self.bridge.commit(
+                db=self.db,
+                preview=result_preview,
+            )
+
+        self.db.expire_all()
+        settled = self.db.get(PaperTrade, trade_id)
+
+        self.assertEqual(settled.fixture_id, match.id)
+        self.assertEqual(settled.status, "WON")
+        self.assertEqual(settled.profit_loss, 15.0)
+        self.assertIsNotNone(settled.settled_at)
+
+    def test_result_leaves_unsupported_linked_market_open(self):
+        with tempfile.TemporaryDirectory() as fixture_directory:
+            self.write_file(
+                fixture_directory,
+                "fixtures.csv",
+                FIXTURES,
+            )
+            fixture_preview = self.preview_service.preview(
+                folder=Path(fixture_directory),
+                provider="manual-research",
+            )
+            self.bridge.commit(
+                db=self.db,
+                preview=fixture_preview,
+            )
+
+        match = self.db.query(Match).one()
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="Most 180s",
+            selection="Player A",
+            odds=2.0,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        with tempfile.TemporaryDirectory() as result_directory:
+            result_preview = self.build_preview(
+                result_directory,
+                include_fixtures=False,
+            )
+            self.bridge.commit(
+                db=self.db,
+                preview=result_preview,
+            )
+
+        self.db.expire_all()
+        unchanged = self.db.get(PaperTrade, trade_id)
+
+        self.assertEqual(unchanged.fixture_id, match.id)
+        self.assertEqual(unchanged.status, "OPEN")
+        self.assertIsNone(unchanged.profit_loss)
+        self.assertIsNone(unchanged.settled_at)
+
 
     def test_result_does_not_create_duplicate_match(self):
         with tempfile.TemporaryDirectory() as directory:

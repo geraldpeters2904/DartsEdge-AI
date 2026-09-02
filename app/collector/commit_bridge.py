@@ -20,6 +20,9 @@ from app.models.historical_import import (
 from app.models.match import Match
 from app.models.player import Player
 from app.services.player_name_service import resolve_player_by_name
+from app.services.paper_trade_service import (
+    settle_open_match_winner_trades_for_fixture,
+)
 from app.schemas.canonical import (
     CanonicalFixture,
     CanonicalMatchResult,
@@ -133,6 +136,20 @@ class CollectorCommitBridge:
                 results=results,
                 batch=batch,
             )
+
+            for result in results:
+                match = self._find_match(
+                    db=db,
+                    provider=preview.provider,
+                    match_external_id=result.match_external_id,
+                )
+                if match is None:
+                    continue
+
+                settle_open_match_winner_trades_for_fixture(
+                    db,
+                    match.id,
+                )
 
         if statistics:
             StatisticsCommitter().commit(
