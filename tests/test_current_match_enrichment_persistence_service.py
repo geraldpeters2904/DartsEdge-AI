@@ -73,7 +73,10 @@ def result_source():
     )
 
 
-def canonical_result():
+def canonical_result(
+    *,
+    first_180_player_external_id=None,
+):
     return CanonicalMatchResult(
         match_external_id="modus-match-19001",
         player_a_external_id="modus-player-player-a",
@@ -88,6 +91,9 @@ def canonical_result():
             10,
             20,
         ),
+        first_180_player_external_id=(
+            first_180_player_external_id
+        ),
         source=result_source(),
     )
 
@@ -95,6 +101,7 @@ def canonical_result():
 def statistics_result(
     *,
     player_a_average=92.5,
+    first_180_player_external_id=None,
 ):
     first = CanonicalPlayerMatchStatistics(
         match_external_id="modus-match-19001",
@@ -142,7 +149,11 @@ def statistics_result(
         ),
         status="canonicalized",
         message="Canonicalized.",
-        result=canonical_result(),
+        result=canonical_result(
+            first_180_player_external_id=(
+                first_180_player_external_id
+            ),
+        ),
     )
 
 
@@ -287,6 +298,61 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
         self.service.persist(
             self.db,
             statistics_result(),
+        )
+
+        self.db.expire_all()
+        settled = self.db.get(PaperTrade, trade_id)
+
+        self.assertEqual(settled.fixture_id, match.id)
+        self.assertEqual(settled.status, "WON")
+        self.assertEqual(settled.profit_loss, 15.0)
+        self.assertIsNotNone(settled.settled_at)
+
+    def test_persist_settles_linked_first_180_trade(self):
+        match = find_match_by_external_id(
+            db=self.db,
+            provider="modus-official",
+            match_external_id="modus-match-19001",
+        )
+        self.assertIsNotNone(match)
+        self.assertNotEqual(match.id, 101)
+
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+            win_prob_a=0.60,
+            win_prob_b=0.40,
+            confidence=2,
+            rating_a=0,
+            rating_b=0,
+            first_180_a=0,
+            first_180_b=0,
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="First 180",
+            selection="Player B",
+            bookmaker="Test",
+            odds=2.5,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        self.service.persist(
+            self.db,
+            statistics_result(
+                first_180_player_external_id=(
+                    "modus-player-player-b"
+                ),
+            ),
         )
 
         self.db.expire_all()

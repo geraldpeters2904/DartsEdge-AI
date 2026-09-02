@@ -6,7 +6,9 @@ from app.models.match import Match
 from app.models.paper_trade import PaperTrade
 from app.models.prediction import Prediction
 from app.services.paper_trade_service import (
+    settle_open_first_180_trades_for_fixture,
     settle_open_match_winner_trades_for_fixture,
+    settle_open_trades_for_fixture,
 )
 from tests.helpers.database import create_test_session
 
@@ -214,6 +216,160 @@ class PaperTradeAutoSettlementTests(unittest.TestCase):
 
         self.assertEqual(settled, [])
         self.assertEqual(trade.status, "OPEN")
+
+
+    def test_winning_first_180_trade_is_settled(self):
+        self.match.first_180_player = "Player B"
+        trade = self.add_trade(
+            market="First 180",
+            selection="Player B",
+            stake=10,
+            odds=2.5,
+        )
+        self.db.flush()
+
+        settled = settle_open_first_180_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual([row.id for row in settled], [trade.id])
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 15.0)
+        self.assertIsNotNone(trade.settled_at)
+
+    def test_losing_first_180_trade_is_settled(self):
+        self.match.first_180_player = "Player B"
+        trade = self.add_trade(
+            market="First 180",
+            selection="Player A",
+            stake=10,
+            odds=2.5,
+        )
+        self.db.flush()
+
+        settle_open_first_180_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(trade.status, "LOST")
+        self.assertEqual(trade.profit_loss, -10.0)
+
+    def test_first_180_trade_without_result_data_stays_open(self):
+        trade = self.add_trade(
+            market="First 180",
+            selection="Player A",
+        )
+
+        settled = settle_open_first_180_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_invalid_first_180_result_player_stays_open(self):
+        self.match.first_180_player = "Unknown Player"
+        trade = self.add_trade(
+            market="First 180",
+            selection="Player A",
+        )
+        self.db.flush()
+
+        settled = settle_open_first_180_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_invalid_first_180_selection_stays_open(self):
+        self.match.first_180_player = "Player B"
+        trade = self.add_trade(
+            market="First 180",
+            selection="Unknown Player",
+        )
+        self.db.flush()
+
+        settled = settle_open_first_180_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_fixture_settlement_handles_match_winner_and_first_180(self):
+        self.match.first_180_player = "Player B"
+        match_winner = self.add_trade(
+            market="Match Winner",
+            selection="Player A",
+            stake=10,
+            odds=2.5,
+        )
+        first_180 = self.add_trade(
+            market="First 180",
+            selection="Player B",
+            stake=10,
+            odds=2.0,
+        )
+        unsupported = self.add_trade(
+            market="Most 180s",
+            selection="Player A",
+        )
+        self.db.flush()
+
+        settled = settle_open_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(
+            {row.id for row in settled},
+            {match_winner.id, first_180.id},
+        )
+        self.assertEqual(match_winner.status, "WON")
+        self.assertEqual(match_winner.profit_loss, 15.0)
+        self.assertEqual(first_180.status, "WON")
+        self.assertEqual(first_180.profit_loss, 10.0)
+        self.assertEqual(unsupported.status, "OPEN")
+        self.assertIsNone(unsupported.profit_loss)
+
+    def test_first_180_settlement_participates_in_caller_transaction(self):
+        self.match.first_180_player = "Player B"
+        trade = self.add_trade(
+            market="First 180",
+            selection="Player B",
+            stake=10,
+            odds=2.5,
+        )
+        trade_id = trade.id
+        self.db.commit()
+
+        settle_open_first_180_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 15.0)
+
+        self.db.rollback()
+        self.db.expire_all()
+
+        restored = self.db.get(PaperTrade, trade_id)
+        self.assertEqual(restored.status, "OPEN")
+        self.assertIsNone(restored.profit_loss)
+        self.assertIsNone(restored.settled_at)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from app.collector.commit_helpers import find_match_by_external_id
 from app.collector.statistics_committer import StatisticsCommitter
 from app.models.historical_import import HistoricalImportBatch
 from app.services.paper_trade_service import (
-    settle_open_match_winner_trades_for_fixture,
+    settle_open_trades_for_fixture,
 )
 from app.services.current_match_enrichment_statistics_service import (
     CurrentMatchEnrichmentStatisticsResult,
@@ -145,7 +145,7 @@ class CurrentMatchEnrichmentPersistenceService:
                     "paper-trade settlement."
                 )
 
-            settle_open_match_winner_trades_for_fixture(
+            settle_open_trades_for_fixture(
                 db,
                 match.id,
             )

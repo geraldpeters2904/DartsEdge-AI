@@ -204,6 +204,31 @@ def settle_paper_trade(
 
     return trade
 
+
+def _settle_trade_as_win_or_loss(
+    trade,
+    *,
+    winning_selection,
+):
+    stake = float(trade.stake or 0)
+    odds = float(trade.odds or 0)
+
+    if trade.selection == winning_selection:
+        trade.status = "WON"
+        trade.profit_loss = round(
+            stake * (odds - 1),
+            2,
+        )
+    else:
+        trade.status = "LOST"
+        trade.profit_loss = round(
+            -stake,
+            2,
+        )
+
+    trade.settled_at = datetime.utcnow()
+
+
 def settle_open_match_winner_trades_for_fixture(
     db,
     fixture_id,
@@ -249,26 +274,98 @@ def settle_open_match_winner_trades_for_fixture(
         }:
             continue
 
-        stake = float(trade.stake or 0)
-        odds = float(trade.odds or 0)
-
-        if trade.selection == match.winner:
-            trade.status = "WON"
-            trade.profit_loss = round(
-                stake * (odds - 1),
-                2,
-            )
-        else:
-            trade.status = "LOST"
-            trade.profit_loss = round(
-                -stake,
-                2,
-            )
-
-        trade.settled_at = datetime.utcnow()
+        _settle_trade_as_win_or_loss(
+            trade,
+            winning_selection=match.winner,
+        )
         settled.append(trade)
 
     if settled:
         db.flush()
 
+    return settled
+
+
+def settle_open_first_180_trades_for_fixture(
+    db,
+    fixture_id,
+):
+    """
+    Settle eligible OPEN First 180 paper trades for one completed fixture.
+
+    Missing First 180 result data is not inferred. Such trades remain OPEN.
+    This function deliberately does not commit.
+    """
+    from app.models.match import Match
+
+    match = (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+    if (
+        match is None
+        or match.status != "completed"
+        or not match.first_180_player
+        or match.first_180_player not in {
+            match.player_a,
+            match.player_b,
+        }
+    ):
+        return []
+
+    trades = (
+        db.query(PaperTrade)
+        .filter(
+            PaperTrade.fixture_id == fixture_id,
+            PaperTrade.status == "OPEN",
+            PaperTrade.market == "First 180",
+        )
+        .all()
+    )
+
+    settled = []
+
+    for trade in trades:
+        if trade.selection not in {
+            match.player_a,
+            match.player_b,
+        }:
+            continue
+
+        _settle_trade_as_win_or_loss(
+            trade,
+            winning_selection=match.first_180_player,
+        )
+        settled.append(trade)
+
+    if settled:
+        db.flush()
+
+    return settled
+
+
+def settle_open_trades_for_fixture(
+    db,
+    fixture_id,
+):
+    """
+    Settle all currently supported OPEN markets for one exact fixture.
+
+    Transaction ownership remains with the caller.
+    """
+    settled = []
+    settled.extend(
+        settle_open_match_winner_trades_for_fixture(
+            db,
+            fixture_id,
+        )
+    )
+    settled.extend(
+        settle_open_first_180_trades_for_fixture(
+            db,
+            fixture_id,
+        )
+    )
     return settled
