@@ -158,6 +158,7 @@ class BetSlipTests(unittest.TestCase):
         trade = confirm_as_paper_trade(self.db, item.id)
 
         self.assertEqual(trade.status, "OPEN")
+        self.assertEqual(trade.fixture_id, self.fixture.id)
         self.assertEqual(trade.stake, 3)
         self.assertEqual(trade.model_probability, 60)
         self.assertEqual(trade.expected_value, 8.25)

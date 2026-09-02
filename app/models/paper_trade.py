@@ -24,6 +24,14 @@ class PaperTrade(Base):
         index=True,
     )
 
+    # Exact canonical fixture retained for result settlement.
+    fixture_id = Column(
+        Integer,
+        ForeignKey("matches.id"),
+        nullable=True,
+        index=True,
+    )
+
     market = Column(String, nullable=False)
     selection = Column(String, nullable=False)
     bookmaker = Column(String, default="Paper Trade")

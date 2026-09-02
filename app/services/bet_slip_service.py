@@ -153,6 +153,7 @@ def confirm_as_paper_trade(db, item_id: int) -> PaperTrade:
     prediction = _prediction_for_fixture(db, fixture, item)
     trade = PaperTrade(
         prediction_id=prediction.id,
+        fixture_id=item.fixture_id,
         market=item.market,
         selection=item.selection,
         bookmaker=item.bookmaker,
