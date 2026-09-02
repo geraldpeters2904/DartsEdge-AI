@@ -25,6 +25,23 @@ class PaperTradesUITests(unittest.TestCase):
         self.assertIn("trade.suggested_stake", text)
         self.assertIn("trade.strategy_name", text)
 
+    def test_template_exposes_fixture_context(self):
+        with open(
+            "app/templates/paper_trades.html",
+            encoding="utf-8",
+        ) as handle:
+            text = handle.read()
+
+        self.assertIn("<th>Fixture</th>", text)
+        self.assertIn(
+            "predictions_by_id.get(trade.prediction_id)",
+            text,
+        )
+        self.assertIn("prediction.player_a", text)
+        self.assertIn("prediction.player_b", text)
+        self.assertIn("{% if prediction %}", text)
+        self.assertIn("—", text)
+
     def test_historical_snapshot_values_have_fallback(self):
         with open(
             "app/templates/paper_trades.html",

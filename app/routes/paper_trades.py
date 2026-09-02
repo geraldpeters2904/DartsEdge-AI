@@ -35,11 +35,29 @@ def paper_trades_page(request: Request, saved: int = 0):
     try:
         trades = get_all_paper_trades(db)
 
+        prediction_ids = {
+            trade.prediction_id
+            for trade in trades
+            if trade.prediction_id is not None
+        }
+        predictions = (
+            db.query(Prediction)
+            .filter(Prediction.id.in_(prediction_ids))
+            .all()
+            if prediction_ids
+            else []
+        )
+        predictions_by_id = {
+            prediction.id: prediction
+            for prediction in predictions
+        }
+
         return templates.TemplateResponse(
             "paper_trades.html",
             {
                 "request": request,
                 "trades": trades,
+                "predictions_by_id": predictions_by_id,
                 "saved": saved,
             },
         )

@@ -40,6 +40,8 @@
 
         <thead>
             <tr>
+                <th>Fixture</th>
+
                 <th>Market</th>
                 <th>Selection</th>
                 <th>Bookmaker</th>
@@ -61,6 +63,16 @@
         {% for trade in trades %}
 
         <tr id="paper-trade-row-{{ trade.id }}">
+
+            {% set prediction = predictions_by_id.get(trade.prediction_id) %}
+
+            <td>
+                {% if prediction %}
+                    <strong>{{ prediction.player_a }} v {{ prediction.player_b }}</strong>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
 
             <td>{{ trade.market }}</td>
 
