@@ -4,8 +4,12 @@ import uuid
 from dataclasses import dataclass
 
 from app.collector.result_committer import ResultCommitter
+from app.collector.commit_helpers import find_match_by_external_id
 from app.collector.statistics_committer import StatisticsCommitter
 from app.models.historical_import import HistoricalImportBatch
+from app.services.paper_trade_service import (
+    settle_open_match_winner_trades_for_fixture,
+)
 from app.services.current_match_enrichment_statistics_service import (
     CurrentMatchEnrichmentStatisticsResult,
 )
@@ -128,6 +132,22 @@ class CurrentMatchEnrichmentPersistenceService:
                 provider=PROVIDER,
                 statistics=statistics,
                 batch=batch,
+            )
+
+            match = find_match_by_external_id(
+                db=db,
+                provider=PROVIDER,
+                match_external_id=expected_match_external_id,
+            )
+            if match is None:
+                raise ValueError(
+                    "Canonical fixture mapping disappeared before "
+                    "paper-trade settlement."
+                )
+
+            settle_open_match_winner_trades_for_fixture(
+                db,
+                match.id,
             )
 
             batch.received_rows = received_rows

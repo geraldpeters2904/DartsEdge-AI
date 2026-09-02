@@ -6,6 +6,9 @@ from pathlib import Path
 from app.collector.commit_bridge import CollectorCommitBridge
 from app.collector.folder_preview import CollectorFolderPreviewService
 from app.models.historical_import import HistoricalImportBatch
+from app.models.paper_trade import PaperTrade
+from app.models.prediction import Prediction
+from app.collector.commit_helpers import find_match_by_external_id
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.schemas.canonical import (
     CanonicalMatchResult,
@@ -243,6 +246,57 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
             "imported",
         )
 
+    def test_persist_settles_linked_match_winner_trade(self):
+        match = find_match_by_external_id(
+            db=self.db,
+            provider="modus-official",
+            match_external_id="modus-match-19001",
+        )
+        self.assertIsNotNone(match)
+        self.assertNotEqual(match.id, 101)
+
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+            win_prob_a=0.60,
+            win_prob_b=0.40,
+            confidence=2,
+            rating_a=0,
+            rating_b=0,
+            first_180_a=0,
+            first_180_b=0,
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="Match Winner",
+            selection="Player A",
+            bookmaker="Test",
+            odds=2.5,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        self.service.persist(
+            self.db,
+            statistics_result(),
+        )
+
+        self.db.expire_all()
+        settled = self.db.get(PaperTrade, trade_id)
+
+        self.assertEqual(settled.fixture_id, match.id)
+        self.assertEqual(settled.status, "WON")
+        self.assertEqual(settled.profit_loss, 15.0)
+        self.assertIsNotNone(settled.settled_at)
+
     def test_identical_rerun_is_duplicate_safe(self):
         self.service.persist(
             self.db,
@@ -305,6 +359,69 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
             rows[0].three_dart_average,
             92.5,
         )
+
+    def test_failed_persist_rolls_back_paper_trade_settlement(self):
+        self.service.persist(
+            self.db,
+            statistics_result(),
+        )
+
+        match = find_match_by_external_id(
+            db=self.db,
+            provider="modus-official",
+            match_external_id="modus-match-19001",
+        )
+        self.assertIsNotNone(match)
+
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+            win_prob_a=0.60,
+            win_prob_b=0.40,
+            confidence=2,
+            rating_a=0,
+            rating_b=0,
+            first_180_a=0,
+            first_180_b=0,
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="Match Winner",
+            selection="Player A",
+            bookmaker="Test",
+            odds=2.5,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "rejected 1 canonical record",
+        ):
+            self.service.persist(
+                self.db,
+                statistics_result(
+                    player_a_average=99.9,
+                ),
+            )
+
+        self.db.expire_all()
+        restored = self.db.get(
+            PaperTrade,
+            trade_id,
+        )
+
+        self.assertEqual(restored.status, "OPEN")
+        self.assertIsNone(restored.profit_loss)
+        self.assertIsNone(restored.settled_at)
 
     def test_noncanonical_result_is_rejected(self):
         result = statistics_result()

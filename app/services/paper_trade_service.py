@@ -203,3 +203,72 @@ def settle_paper_trade(
     db.refresh(trade)
 
     return trade
+
+def settle_open_match_winner_trades_for_fixture(
+    db,
+    fixture_id,
+):
+    """
+    Settle eligible OPEN Match Winner paper trades for one completed fixture.
+
+    This function deliberately does not commit. Transaction ownership belongs
+    to the caller so settlement can participate atomically in canonical result
+    persistence.
+    """
+    from app.models.match import Match
+
+    match = (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+    if (
+        match is None
+        or match.status != "completed"
+        or not match.winner
+    ):
+        return []
+
+    trades = (
+        db.query(PaperTrade)
+        .filter(
+            PaperTrade.fixture_id == fixture_id,
+            PaperTrade.status == "OPEN",
+            PaperTrade.market == "Match Winner",
+        )
+        .all()
+    )
+
+    settled = []
+
+    for trade in trades:
+        if trade.selection not in {
+            match.player_a,
+            match.player_b,
+        }:
+            continue
+
+        stake = float(trade.stake or 0)
+        odds = float(trade.odds or 0)
+
+        if trade.selection == match.winner:
+            trade.status = "WON"
+            trade.profit_loss = round(
+                stake * (odds - 1),
+                2,
+            )
+        else:
+            trade.status = "LOST"
+            trade.profit_loss = round(
+                -stake,
+                2,
+            )
+
+        trade.settled_at = datetime.utcnow()
+        settled.append(trade)
+
+    if settled:
+        db.flush()
+
+    return settled
