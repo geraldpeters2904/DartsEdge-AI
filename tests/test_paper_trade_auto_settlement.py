@@ -10,6 +10,7 @@ from app.models.prediction import Prediction
 from app.services.paper_trade_service import (
     settle_open_correct_score_trades_for_fixture,
     settle_open_first_180_trades_for_fixture,
+    settle_open_handicap_trades_for_fixture,
     settle_open_match_winner_trades_for_fixture,
     settle_open_most_180s_trades_for_fixture,
     settle_open_trades_for_fixture,
@@ -735,6 +736,217 @@ class PaperTradeAutoSettlementTests(unittest.TestCase):
         self.assertIsNone(restored.profit_loss)
         self.assertIsNone(restored.settled_at)
 
+    def test_handicap_settlement_uses_final_leg_margin(self):
+        a_minus_1_5 = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+            stake=10,
+            odds=2.0,
+        )
+        a_minus_2_5 = self.add_trade(
+            market="Handicap",
+            selection="Player A -2.5",
+            stake=10,
+            odds=2.0,
+        )
+        b_plus_2_5 = self.add_trade(
+            market="Handicap",
+            selection="Player B +2.5",
+            stake=10,
+            odds=2.0,
+        )
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(
+            {row.id for row in settled},
+            {a_minus_1_5.id, a_minus_2_5.id, b_plus_2_5.id},
+        )
+        self.assertEqual(a_minus_1_5.status, "WON")
+        self.assertEqual(a_minus_1_5.profit_loss, 10.0)
+        self.assertEqual(a_minus_2_5.status, "LOST")
+        self.assertEqual(a_minus_2_5.profit_loss, -10.0)
+        self.assertEqual(b_plus_2_5.status, "WON")
+        self.assertEqual(b_plus_2_5.profit_loss, 10.0)
+
+    def test_invalid_handicap_selection_stays_open(self):
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A",
+        )
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_handicap_trade_for_other_fixture_stays_open(self):
+        other_match = Match(
+            date=date(2026, 9, 2),
+            tournament="MODUS",
+            status="completed",
+            player_a="Player A",
+            player_b="Player B",
+            winner="Player A",
+            score="4-2",
+        )
+        self.db.add(other_match)
+        self.db.flush()
+
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+            fixture_id=other_match.id,
+        )
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_handicap_without_result_data_stays_open(self):
+        self.match.score = None
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+        )
+        self.db.flush()
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_invalid_handicap_result_stays_open(self):
+        self.match.score = "not-a-score"
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+        )
+        self.db.flush()
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_handicap_inconsistent_with_winner_stays_open(self):
+        self.match.winner = "Player B"
+        self.db.flush()
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+        )
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_incomplete_fixture_does_not_settle_handicap(self):
+        self.match.status = "scheduled"
+        self.db.flush()
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+        )
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+
+    def test_noncanonical_handicap_line_stays_open(self):
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -01.5",
+        )
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_already_settled_handicap_trade_is_untouched(self):
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+            status="WON",
+        )
+        trade.profit_loss = 10.0
+        self.db.flush()
+
+        settled = settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 10.0)
+
+    def test_handicap_settlement_participates_in_caller_transaction(self):
+        trade = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
+            stake=10,
+            odds=2.0,
+        )
+        trade_id = trade.id
+        self.db.commit()
+
+        settle_open_handicap_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 10.0)
+
+        self.db.rollback()
+        self.db.expire_all()
+
+        restored = self.db.get(PaperTrade, trade_id)
+        self.assertEqual(restored.status, "OPEN")
+        self.assertIsNone(restored.profit_loss)
+        self.assertIsNone(restored.settled_at)
+
     def test_fixture_settlement_handles_match_winner_and_first_180(self):
         self.match.first_180_player = "Player B"
         match_winner = self.add_trade(
@@ -746,6 +958,12 @@ class PaperTradeAutoSettlementTests(unittest.TestCase):
         first_180 = self.add_trade(
             market="First 180",
             selection="Player B",
+            stake=10,
+            odds=2.0,
+        )
+        handicap = self.add_trade(
+            market="Handicap",
+            selection="Player A -1.5",
             stake=10,
             odds=2.0,
         )
@@ -762,12 +980,14 @@ class PaperTradeAutoSettlementTests(unittest.TestCase):
 
         self.assertEqual(
             {row.id for row in settled},
-            {match_winner.id, first_180.id},
+            {match_winner.id, first_180.id, handicap.id},
         )
         self.assertEqual(match_winner.status, "WON")
         self.assertEqual(match_winner.profit_loss, 15.0)
         self.assertEqual(first_180.status, "WON")
         self.assertEqual(first_180.profit_loss, 10.0)
+        self.assertEqual(handicap.status, "WON")
+        self.assertEqual(handicap.profit_loss, 10.0)
         self.assertEqual(unsupported.status, "OPEN")
         self.assertIsNone(unsupported.profit_loss)
 

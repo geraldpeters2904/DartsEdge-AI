@@ -346,6 +346,139 @@ def settle_open_first_180_trades_for_fixture(
     return settled
 
 
+def settle_open_handicap_trades_for_fixture(
+    db,
+    fixture_id,
+):
+    """
+    Settle eligible OPEN Handicap paper trades for one completed fixture.
+
+    Match.score is canonical player A legs-player B legs. Handicap selections
+    are canonical fixture player names followed by a signed half-leg line.
+    Missing or malformed result data is not inferred. Such trades remain OPEN.
+
+    This function deliberately does not commit.
+    """
+    from app.models.match import Match
+
+    match = (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+    if (
+        match is None
+        or match.status != "completed"
+        or not match.score
+        or match.player_a == match.player_b
+        or match.winner not in {
+            match.player_a,
+            match.player_b,
+        }
+    ):
+        return []
+
+    score_parts = match.score.split("-")
+    if (
+        len(score_parts) != 2
+        or not all(part.isdigit() for part in score_parts)
+    ):
+        return []
+
+    player_a_legs = int(score_parts[0])
+    player_b_legs = int(score_parts[1])
+
+    if player_a_legs == player_b_legs:
+        return []
+
+    expected_winner = (
+        match.player_a
+        if player_a_legs > player_b_legs
+        else match.player_b
+    )
+    if match.winner != expected_winner:
+        return []
+
+    trades = (
+        db.query(PaperTrade)
+        .filter(
+            PaperTrade.fixture_id == fixture_id,
+            PaperTrade.status == "OPEN",
+            PaperTrade.market == "Handicap",
+        )
+        .all()
+    )
+
+    settled = []
+    for trade in trades:
+        if not trade.selection:
+            continue
+
+        selected_player = None
+        handicap = None
+
+        for player in (match.player_a, match.player_b):
+            prefix = f"{player} "
+            if not trade.selection.startswith(prefix):
+                continue
+
+            line_text = trade.selection[len(prefix):]
+            if len(line_text) < 4 or line_text[0] not in {"+", "-"}:
+                continue
+
+            try:
+                parsed_line = float(line_text)
+            except ValueError:
+                continue
+
+            if (
+                parsed_line == 0
+                or abs(parsed_line) % 1 != 0.5
+                or line_text != f"{parsed_line:+.1f}"
+            ):
+                continue
+
+            selected_player = player
+            handicap = parsed_line
+            break
+
+        if selected_player is None or handicap is None:
+            continue
+
+        if selected_player == match.player_a:
+            selected_margin = player_a_legs - player_b_legs
+        else:
+            selected_margin = player_b_legs - player_a_legs
+
+        adjusted_margin = selected_margin + handicap
+        stake = float(trade.stake or 0)
+        odds = float(trade.odds or 0)
+
+        if adjusted_margin > 0:
+            trade.status = "WON"
+            trade.profit_loss = round(
+                stake * (odds - 1),
+                2,
+            )
+        elif adjusted_margin < 0:
+            trade.status = "LOST"
+            trade.profit_loss = round(
+                -stake,
+                2,
+            )
+        else:
+            continue
+
+        trade.settled_at = datetime.utcnow()
+        settled.append(trade)
+
+    if settled:
+        db.flush()
+
+    return settled
+
+
 def settle_open_correct_score_trades_for_fixture(
     db,
     fixture_id,
@@ -598,6 +731,12 @@ def settle_open_trades_for_fixture(
     )
     settled.extend(
         settle_open_first_180_trades_for_fixture(
+            db,
+            fixture_id,
+        )
+    )
+    settled.extend(
+        settle_open_handicap_trades_for_fixture(
             db,
             fixture_id,
         )
