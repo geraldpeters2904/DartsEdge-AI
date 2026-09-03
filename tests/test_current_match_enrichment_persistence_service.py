@@ -363,6 +363,57 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
         self.assertEqual(settled.profit_loss, 15.0)
         self.assertIsNotNone(settled.settled_at)
 
+    def test_persist_settles_linked_correct_score_trade(self):
+        match = find_match_by_external_id(
+            db=self.db,
+            provider="modus-official",
+            match_external_id="modus-match-19001",
+        )
+        self.assertIsNotNone(match)
+        self.assertNotEqual(match.id, 101)
+
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+            win_prob_a=0.60,
+            win_prob_b=0.40,
+            confidence=2,
+            rating_a=0,
+            rating_b=0,
+            first_180_a=0,
+            first_180_b=0,
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="Correct Score",
+            selection="4-2",
+            bookmaker="Test",
+            odds=2.5,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        self.service.persist(
+            self.db,
+            statistics_result(),
+        )
+
+        self.db.expire_all()
+        settled = self.db.get(PaperTrade, trade_id)
+
+        self.assertEqual(settled.fixture_id, match.id)
+        self.assertEqual(settled.status, "WON")
+        self.assertEqual(settled.profit_loss, 15.0)
+        self.assertIsNotNone(settled.settled_at)
+
     def test_persist_settles_linked_most_180s_trade(self):
         match = find_match_by_external_id(
             db=self.db,

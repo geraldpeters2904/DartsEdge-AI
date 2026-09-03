@@ -8,6 +8,7 @@ from app.models.player import Player
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.models.prediction import Prediction
 from app.services.paper_trade_service import (
+    settle_open_correct_score_trades_for_fixture,
     settle_open_first_180_trades_for_fixture,
     settle_open_match_winner_trades_for_fixture,
     settle_open_most_180s_trades_for_fixture,
@@ -522,6 +523,209 @@ class PaperTradeAutoSettlementTests(unittest.TestCase):
 
         self.assertEqual(trade.status, "WON")
         self.assertEqual(trade.profit_loss, 15.0)
+
+        self.db.rollback()
+        self.db.expire_all()
+
+        restored = self.db.get(PaperTrade, trade_id)
+        self.assertEqual(restored.status, "OPEN")
+        self.assertIsNone(restored.profit_loss)
+        self.assertIsNone(restored.settled_at)
+
+    def test_winning_correct_score_trade_is_settled(self):
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+            stake=10,
+            odds=4.0,
+        )
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual([row.id for row in settled], [trade.id])
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 30.0)
+        self.assertIsNotNone(trade.settled_at)
+
+    def test_losing_correct_score_trade_is_settled(self):
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-1",
+            stake=10,
+            odds=4.0,
+        )
+
+        settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(trade.status, "LOST")
+        self.assertEqual(trade.profit_loss, -10.0)
+
+    def test_correct_score_without_result_data_stays_open(self):
+        self.match.score = None
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+        )
+        self.db.flush()
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_invalid_correct_score_result_stays_open(self):
+        self.match.score = "not-a-score"
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+        )
+        self.db.flush()
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_invalid_correct_score_selection_stays_open(self):
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="Player A",
+        )
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_incomplete_fixture_does_not_settle_correct_score(self):
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+        )
+        self.match.status = "scheduled"
+        self.db.flush()
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+
+    def test_already_settled_correct_score_trade_is_untouched(self):
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+            status="WON",
+        )
+        trade.profit_loss = 30.0
+        self.db.flush()
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 30.0)
+
+    def test_correct_score_with_missing_winner_stays_open(self):
+        self.match.winner = None
+        self.db.commit()
+
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+        )
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_correct_score_inconsistent_with_winner_stays_open(self):
+        self.match.winner = "Player B"
+        self.db.commit()
+
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+        )
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_correct_score_same_participant_fixture_stays_open(self):
+        self.match.player_b = self.match.player_a
+        self.db.commit()
+
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+        )
+
+        settled = settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(settled, [])
+        self.assertEqual(trade.status, "OPEN")
+        self.assertIsNone(trade.profit_loss)
+        self.assertIsNone(trade.settled_at)
+
+    def test_correct_score_settlement_participates_in_caller_transaction(self):
+        trade = self.add_trade(
+            market="Correct Score",
+            selection="4-2",
+            stake=10,
+            odds=4.0,
+        )
+        trade_id = trade.id
+        self.db.commit()
+
+        settle_open_correct_score_trades_for_fixture(
+            self.db,
+            self.match.id,
+        )
+
+        self.assertEqual(trade.status, "WON")
+        self.assertEqual(trade.profit_loss, 30.0)
 
         self.db.rollback()
         self.db.expire_all()

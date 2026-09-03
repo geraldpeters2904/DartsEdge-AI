@@ -346,6 +346,105 @@ def settle_open_first_180_trades_for_fixture(
     return settled
 
 
+def settle_open_correct_score_trades_for_fixture(
+    db,
+    fixture_id,
+):
+    """
+    Settle eligible OPEN Correct Score paper trades for one completed fixture.
+
+    Match.score is canonical player A legs-player B legs. Missing or malformed
+    result data is not inferred. Such trades remain OPEN.
+
+    This function deliberately does not commit.
+    """
+    from app.models.match import Match
+
+    match = (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+    if (
+        match is None
+        or match.status != "completed"
+        or not match.score
+        or match.player_a == match.player_b
+        or match.winner not in {
+            match.player_a,
+            match.player_b,
+        }
+    ):
+        return []
+
+    score_parts = match.score.split("-")
+    if (
+        len(score_parts) != 2
+        or not all(part.isdigit() for part in score_parts)
+    ):
+        return []
+
+    player_a_legs = int(score_parts[0])
+    player_b_legs = int(score_parts[1])
+
+    if player_a_legs == player_b_legs:
+        return []
+
+    expected_winner = (
+        match.player_a
+        if player_a_legs > player_b_legs
+        else match.player_b
+    )
+    if match.winner != expected_winner:
+        return []
+
+    winning_selection = f"{player_a_legs}-{player_b_legs}"
+
+    trades = (
+        db.query(PaperTrade)
+        .filter(
+            PaperTrade.fixture_id == fixture_id,
+            PaperTrade.status == "OPEN",
+            PaperTrade.market == "Correct Score",
+        )
+        .all()
+    )
+
+    settled = []
+    for trade in trades:
+        if not trade.selection:
+            continue
+
+        selection_parts = trade.selection.split("-")
+        if (
+            len(selection_parts) != 2
+            or not all(part.isdigit() for part in selection_parts)
+        ):
+            continue
+
+        selection_a = int(selection_parts[0])
+        selection_b = int(selection_parts[1])
+
+        if selection_a == selection_b:
+            continue
+
+        canonical_selection = f"{selection_a}-{selection_b}"
+        if trade.selection != canonical_selection:
+            continue
+
+        _settle_trade_as_win_or_loss(
+            trade,
+            winning_selection=winning_selection,
+        )
+        settled.append(trade)
+
+    if settled:
+        db.flush()
+
+    return settled
+
+
 def settle_open_most_180s_trades_for_fixture(
     db,
     fixture_id,
@@ -499,6 +598,12 @@ def settle_open_trades_for_fixture(
     )
     settled.extend(
         settle_open_first_180_trades_for_fixture(
+            db,
+            fixture_id,
+        )
+    )
+    settled.extend(
+        settle_open_correct_score_trades_for_fixture(
             db,
             fixture_id,
         )
