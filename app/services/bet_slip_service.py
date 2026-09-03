@@ -32,7 +32,36 @@ def add_bet_slip_item(
     fixture = db.query(Match).filter(Match.id == fixture_id).first()
     if fixture is None:
         raise ValueError("Fixture not found")
-    if selection not in {fixture.player_a, fixture.player_b}:
+    if market == "Handicap":
+        valid_selection = False
+
+        for player in (fixture.player_a, fixture.player_b):
+            prefix = f"{player} "
+            if not selection.startswith(prefix):
+                continue
+
+            line_text = selection[len(prefix):]
+            if len(line_text) >= 4 and line_text[0] in {"+", "-"}:
+                try:
+                    line = float(line_text)
+                except ValueError:
+                    line = None
+
+                if (
+                    line is not None
+                    and line != 0
+                    and abs(line) % 1 == 0.5
+                    and line_text == f"{line:+.1f}"
+                ):
+                    valid_selection = True
+                    break
+
+        if not valid_selection:
+            raise ValueError(
+                "Handicap selection must be a fixture player "
+                "followed by a signed half-leg line"
+            )
+    elif selection not in {fixture.player_a, fixture.player_b}:
         raise ValueError("Selection must be one of the fixture players")
     if odds <= 1:
         raise ValueError("Decimal odds must be greater than 1.00")
@@ -119,6 +148,13 @@ def _prediction_for_fixture(db, fixture: Match, item: BetSlipItem) -> Prediction
     if prediction:
         return prediction
 
+    prediction_selection = item.selection
+    if item.market == "Handicap":
+        for player in (fixture.player_a, fixture.player_b):
+            if item.selection.startswith(f"{player} "):
+                prediction_selection = player
+                break
+
     probability = float(item.model_probability or 50.0)
     if probability > 1:
         probability /= 100.0
@@ -126,9 +162,9 @@ def _prediction_for_fixture(db, fixture: Match, item: BetSlipItem) -> Prediction
     prediction = Prediction(
         player_a=fixture.player_a,
         player_b=fixture.player_b,
-        predicted_winner=item.selection,
-        win_prob_a=probability if item.selection == fixture.player_a else 1 - probability,
-        win_prob_b=probability if item.selection == fixture.player_b else 1 - probability,
+        predicted_winner=prediction_selection,
+        win_prob_a=probability if prediction_selection == fixture.player_a else 1 - probability,
+        win_prob_b=probability if prediction_selection == fixture.player_b else 1 - probability,
         confidence=int(round(abs(probability - 0.5) * 20)),
         rating_a=0,
         rating_b=0,

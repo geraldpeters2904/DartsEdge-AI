@@ -170,6 +170,112 @@ class BetSlipTests(unittest.TestCase):
         ).delete()
         self.db.commit()
 
+    def test_add_accepts_canonical_handicap_selection(self):
+        item, created = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Handicap",
+            selection="Slip Alpha -1.5",
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(item.fixture_id, self.fixture.id)
+        self.assertEqual(item.market, "Handicap")
+        self.assertEqual(item.selection, "Slip Alpha -1.5")
+
+    def test_confirm_preserves_handicap_selection_and_fixture(self):
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Handicap",
+            selection="Slip Beta +2.5",
+            bookmaker="A",
+            odds=1.9,
+            stake=3,
+            model_probability=58,
+        )
+
+        trade = confirm_as_paper_trade(self.db, item.id)
+
+        self.assertEqual(trade.status, "OPEN")
+        self.assertEqual(trade.fixture_id, self.fixture.id)
+        self.assertEqual(trade.market, "Handicap")
+        self.assertEqual(trade.selection, "Slip Beta +2.5")
+
+        self.db.query(PaperTrade).filter(
+            PaperTrade.id == trade.id
+        ).delete()
+        self.db.commit()
+
+    def test_handicap_confirmation_fallback_prediction_uses_fixture_player(self):
+        from app.models.prediction import Prediction
+
+        self.db.query(Prediction).filter(
+            Prediction.player_a == self.fixture.player_a,
+            Prediction.player_b == self.fixture.player_b,
+        ).delete()
+        self.db.commit()
+
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Handicap",
+            selection="Slip Beta +2.5",
+            bookmaker="A",
+            odds=1.9,
+            stake=3,
+            model_probability=58,
+        )
+
+        trade = confirm_as_paper_trade(self.db, item.id)
+        prediction = self.db.query(Prediction).filter(
+            Prediction.id == trade.prediction_id
+        ).first()
+
+        self.assertIn(
+            prediction.predicted_winner,
+            {self.fixture.player_a, self.fixture.player_b},
+        )
+        self.assertNotEqual(
+            prediction.predicted_winner,
+            "Slip Beta +2.5",
+        )
+
+        self.db.query(PaperTrade).filter(
+            PaperTrade.id == trade.id
+        ).delete()
+        self.db.query(Prediction).filter(
+            Prediction.id == prediction.id
+        ).delete()
+        self.db.commit()
+
+    def test_handicap_selection_without_line_rejected(self):
+        with self.assertRaises(ValueError):
+            add_bet_slip_item(
+                self.db,
+                fixture_id=self.fixture.id,
+                market="Handicap",
+                selection="Slip Alpha",
+                bookmaker="A",
+                odds=2.0,
+                stake=1,
+            )
+
+    def test_handicap_selection_for_non_participant_rejected(self):
+        with self.assertRaises(ValueError):
+            add_bet_slip_item(
+                self.db,
+                fixture_id=self.fixture.id,
+                market="Handicap",
+                selection="Other -1.5",
+                bookmaker="A",
+                odds=2.0,
+                stake=1,
+            )
+
     def test_page_loads(self):
         self.assertEqual(self.client.get('/bet-slip').status_code, 200)
 
