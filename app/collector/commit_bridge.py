@@ -21,6 +21,7 @@ from app.models.match import Match
 from app.models.player import Player
 from app.services.player_name_service import resolve_player_by_name
 from app.services.paper_trade_service import (
+    settle_open_most_180s_trades_for_fixture,
     settle_open_trades_for_fixture,
 )
 from app.schemas.canonical import (
@@ -158,6 +159,23 @@ class CollectorCommitBridge:
                 statistics=statistics,
                 batch=batch,
             )
+
+            most_180s_fixture_ids = set()
+            for statistic in statistics:
+                match = self._find_match(
+                    db=db,
+                    provider=preview.provider,
+                    match_external_id=statistic.match_external_id,
+                )
+                if match is None:
+                    continue
+                most_180s_fixture_ids.add(match.id)
+
+            for fixture_id in most_180s_fixture_ids:
+                settle_open_most_180s_trades_for_fixture(
+                    db,
+                    fixture_id,
+                )
 
         if odds:
             OddsCommitter().commit(

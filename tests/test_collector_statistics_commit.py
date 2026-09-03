@@ -11,6 +11,9 @@ from app.collector.folder_preview import (
 from app.models.historical_import import (
     HistoricalImportItem,
 )
+from app.models.match import Match
+from app.models.paper_trade import PaperTrade
+from app.models.prediction import Prediction
 from app.models.player_match_performance import (
     PlayerMatchPerformance,
 )
@@ -104,6 +107,63 @@ class CollectorStatisticsCommitTests(unittest.TestCase):
             folder=Path(directory),
             provider="manual-research",
         )
+
+    def test_statistics_settle_linked_most_180s_trade(self):
+        with tempfile.TemporaryDirectory() as fixture_directory:
+            self.write_file(
+                fixture_directory,
+                "fixtures.csv",
+                FIXTURES,
+            )
+            fixture_preview = self.preview_service.preview(
+                folder=Path(fixture_directory),
+                provider="manual-research",
+            )
+            self.bridge.commit(
+                db=self.db,
+                preview=fixture_preview,
+            )
+
+        match = self.db.query(Match).one()
+
+        prediction = Prediction(
+            player_a="Player A",
+            player_b="Player B",
+            predicted_winner="Player A",
+        )
+        self.db.add(prediction)
+        self.db.flush()
+
+        trade = PaperTrade(
+            prediction_id=prediction.id,
+            fixture_id=match.id,
+            market="Most 180s",
+            selection="Player A",
+            bookmaker="Test",
+            odds=2.5,
+            stake=10.0,
+            status="OPEN",
+        )
+        self.db.add(trade)
+        self.db.commit()
+        trade_id = trade.id
+
+        with tempfile.TemporaryDirectory() as directory:
+            self.bridge.commit(
+                db=self.db,
+                preview=self.build_preview(
+                    directory,
+                    include_fixtures=False,
+                ),
+            )
+
+        self.db.expire_all()
+        settled = self.db.get(PaperTrade, trade_id)
+
+        self.assertEqual(settled.fixture_id, match.id)
+        self.assertEqual(settled.status, "WON")
+        self.assertEqual(settled.profit_loss, 15.0)
+        self.assertIsNotNone(settled.settled_at)
 
     def test_statistics_create_two_performances(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -346,6 +346,141 @@ def settle_open_first_180_trades_for_fixture(
     return settled
 
 
+def settle_open_most_180s_trades_for_fixture(
+    db,
+    fixture_id,
+):
+    """
+    Settle eligible OPEN Most 180s paper trades for one completed fixture.
+
+    Settlement requires an exact canonical performance for both fixture
+    participants and a non-null scores_180 value for each. Missing statistics
+    are never inferred as zero. Equal counts settle the three-way market as
+    Draw.
+
+    This function deliberately does not commit.
+    """
+    from app.models.match import Match
+    from app.models.player import Player
+    from app.models.player_match_performance import PlayerMatchPerformance
+
+    match = (
+        db.query(Match)
+        .filter(Match.id == fixture_id)
+        .first()
+    )
+
+    if match is None or match.status != "completed":
+        return []
+
+    if match.player_a == match.player_b:
+        return []
+
+    players = (
+        db.query(Player)
+        .filter(
+            Player.name.in_(
+                {
+                    match.player_a,
+                    match.player_b,
+                }
+            )
+        )
+        .all()
+    )
+    players_by_name = {
+        player.name: player
+        for player in players
+    }
+
+    if set(players_by_name) != {
+        match.player_a,
+        match.player_b,
+    }:
+        return []
+
+    player_a = players_by_name[match.player_a]
+    player_b = players_by_name[match.player_b]
+
+    performances = (
+        db.query(PlayerMatchPerformance)
+        .filter(
+            PlayerMatchPerformance.match_id == fixture_id,
+            PlayerMatchPerformance.player_id.in_(
+                {
+                    player_a.id,
+                    player_b.id,
+                }
+            ),
+        )
+        .all()
+    )
+    performances_by_player_id = {
+        performance.player_id: performance
+        for performance in performances
+    }
+
+    if set(performances_by_player_id) != {
+        player_a.id,
+        player_b.id,
+    }:
+        return []
+
+    player_a_performance = performances_by_player_id[player_a.id]
+    player_b_performance = performances_by_player_id[player_b.id]
+
+    if (
+        player_a_performance.scores_180 is None
+        or player_b_performance.scores_180 is None
+    ):
+        return []
+
+    if (
+        player_a_performance.scores_180
+        > player_b_performance.scores_180
+    ):
+        winning_selection = match.player_a
+    elif (
+        player_b_performance.scores_180
+        > player_a_performance.scores_180
+    ):
+        winning_selection = match.player_b
+    else:
+        winning_selection = "Draw"
+
+    trades = (
+        db.query(PaperTrade)
+        .filter(
+            PaperTrade.fixture_id == fixture_id,
+            PaperTrade.status == "OPEN",
+            PaperTrade.market == "Most 180s",
+        )
+        .all()
+    )
+
+    valid_selections = {
+        match.player_a,
+        match.player_b,
+        "Draw",
+    }
+
+    settled = []
+    for trade in trades:
+        if trade.selection not in valid_selections:
+            continue
+
+        _settle_trade_as_win_or_loss(
+            trade,
+            winning_selection=winning_selection,
+        )
+        settled.append(trade)
+
+    if settled:
+        db.flush()
+
+    return settled
+
+
 def settle_open_trades_for_fixture(
     db,
     fixture_id,
