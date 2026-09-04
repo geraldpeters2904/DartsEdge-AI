@@ -29,6 +29,76 @@ class ModusFixtureLifecycleServiceTests(unittest.TestCase):
         self.assertIsNone(card.player_a_legs)
         self.assertIsNone(card.player_b_legs)
 
+    def test_parses_live_upcoming_card_using_source_game_number(self):
+        html = """
+        <select id="seriesSelect">
+          <option value="26" selected>Series 15</option>
+        </select>
+
+        <select id="weekSelect">
+          <option value="195" selected>Week 5</option>
+        </select>
+
+        <button class="active">Group B</button>
+
+        <article
+            class="fixture-card cache-fixture-card fixture-card-upcoming"
+            data-source-game-number="74298014"
+            data-cache-group="Group B"
+        >
+          <div class="match-label">22:10</div>
+          <div class="player-row">
+            <span class="score">0</span>
+            <span>Ziggy Schenk</span>
+          </div>
+          <div class="player-row">
+            <span class="score">0</span>
+            <span>Richard McKee</span>
+          </div>
+        </article>
+        """
+
+        cards = self.service.parse_cards(html)
+
+        self.assertEqual(len(cards), 1)
+
+        card = cards[0]
+
+        self.assertEqual(
+            card.match_id,
+            74298014,
+        )
+        self.assertEqual(
+            card.status,
+            MatchStatus.SCHEDULED,
+        )
+        self.assertEqual(
+            card.player_a_name,
+            "Ziggy Schenk",
+        )
+        self.assertEqual(
+            card.player_b_name,
+            "Richard McKee",
+        )
+        self.assertIsNone(
+            card.player_a_legs
+        )
+        self.assertIsNone(
+            card.player_b_legs
+        )
+        self.assertEqual(
+            card.series_id,
+            26,
+        )
+        self.assertEqual(
+            card.week_id,
+            195,
+        )
+        self.assertEqual(
+            card.group,
+            "Group B",
+        )
+
     def test_parses_completed_fixture_with_score(self):
         card = self.service.parse_cards(
             COMPLETED.read_text(encoding="utf-8")

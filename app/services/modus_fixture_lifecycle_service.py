@@ -106,7 +106,17 @@ class ModusFixtureLifecycleService:
                 attrs + body,
                 flags=re.IGNORECASE,
             )
-            if not match_id_match:
+            upcoming = "fixture-card-upcoming" in attrs.lower()
+            source_game_match = re.search(
+                r'data-source-game-number="(\d+)"',
+                attrs,
+                flags=re.IGNORECASE,
+            )
+            if match_id_match:
+                match_id = int(match_id_match.group(1))
+            elif upcoming and source_game_match:
+                match_id = int(source_game_match.group(1))
+            else:
                 continue
 
             rows = re.findall(
@@ -119,7 +129,7 @@ class ModusFixtureLifecycleService:
             if len(rows) != 2:
                 raise ValueError(
                     f"Unable to parse two players for match "
-                    f"{match_id_match.group(1)}."
+                    f"{match_id}."
                 )
 
             match_number_match = re.search(
@@ -129,7 +139,6 @@ class ModusFixtureLifecycleService:
                 flags=re.IGNORECASE | re.DOTALL,
             )
 
-            upcoming = "fixture-card-upcoming" in attrs.lower()
             score_a = self._optional_score(rows[0][0], upcoming=upcoming)
             score_b = self._optional_score(rows[1][0], upcoming=upcoming)
 
@@ -141,7 +150,7 @@ class ModusFixtureLifecycleService:
 
             cards.append(
                 ModusFixtureCard(
-                    match_id=int(match_id_match.group(1)),
+                    match_id=match_id,
                     match_number=(
                         int(match_number_match.group(1))
                         if match_number_match else None
