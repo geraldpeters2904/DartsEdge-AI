@@ -1,5 +1,5 @@
 import unittest
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import MagicMock, patch
 
 from app.services.paddy_power_modus_extractor import (
@@ -180,6 +180,86 @@ class PaddyPowerDiscoveredCaptureOnceTests(
             fixtures=[fixture],
             category_html=category_html,
         )
+
+
+class PaddyPowerDiscoveredAggregateCaptureTests(
+    unittest.TestCase
+):
+
+    def test_aggregates_discovered_event_reports(self):
+        from app.services.bookmaker_capture_types import (
+            BookmakerCaptureReport,
+        )
+        from app.services.paddy_power_live_capture import (
+            capture_paddy_power_discovered_events_report_once,
+        )
+
+        first_report = BookmakerCaptureReport(
+            bookmaker="Paddy Power",
+            source_url="event-one",
+            captured_at=datetime(2026, 9, 4, 10, 0),
+            extracted_prices=13,
+            stored_prices=10,
+            unchanged_prices=3,
+            skipped_prices=0,
+            challenge_detected=False,
+            message="first",
+        )
+
+        second_report = BookmakerCaptureReport(
+            bookmaker="Paddy Power",
+            source_url="event-two",
+            captured_at=datetime(2026, 9, 4, 10, 1),
+            extracted_prices=13,
+            stored_prices=8,
+            unchanged_prices=4,
+            skipped_prices=1,
+            challenge_detected=True,
+            message="second",
+        )
+
+        db = object()
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "capture_paddy_power_discovered_events_once",
+            return_value=[
+                first_report,
+                second_report,
+            ],
+        ) as capture_events:
+            report = (
+                capture_paddy_power_discovered_events_report_once(
+                    db
+                )
+            )
+
+        capture_events.assert_called_once_with(db)
+
+        self.assertEqual(
+            report.bookmaker,
+            "Paddy Power",
+        )
+        self.assertEqual(
+            report.extracted_prices,
+            26,
+        )
+        self.assertEqual(
+            report.stored_prices,
+            18,
+        )
+        self.assertEqual(
+            report.unchanged_prices,
+            7,
+        )
+        self.assertEqual(
+            report.skipped_prices,
+            1,
+        )
+        self.assertTrue(
+            report.challenge_detected
+        )
+
 
 
 class PaddyPowerEventCaptureTests(unittest.TestCase):

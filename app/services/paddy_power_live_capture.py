@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 from app.db import SessionLocal
 from app.models.match import Match
+
+from app.services.bookmaker_capture_types import (
+    BookmakerCaptureReport,
+)
+
 from app.services.bookmaker_capture_manager_service import (
     BookmakerCaptureManager,
 )
@@ -248,6 +253,54 @@ def capture_discovered_paddy_power_events(
             service.close()
 
     return reports
+
+
+def capture_paddy_power_discovered_events_report_once(
+    db,
+):
+    reports = (
+        capture_paddy_power_discovered_events_once(
+            db
+        )
+    )
+
+    captured_at = datetime.utcnow()
+
+    if reports:
+        captured_at = max(
+            report.captured_at
+            for report in reports
+        )
+
+    return BookmakerCaptureReport(
+        bookmaker="Paddy Power",
+        source_url=PADDY_POWER_MODUS_URL,
+        captured_at=captured_at,
+        extracted_prices=sum(
+            report.extracted_prices
+            for report in reports
+        ),
+        stored_prices=sum(
+            report.stored_prices
+            for report in reports
+        ),
+        unchanged_prices=sum(
+            report.unchanged_prices
+            for report in reports
+        ),
+        skipped_prices=sum(
+            report.skipped_prices
+            for report in reports
+        ),
+        challenge_detected=any(
+            report.challenge_detected
+            for report in reports
+        ),
+        message=(
+            "Paddy Power discovered event capture completed."
+        ),
+    )
+
 
 
 def run_paddy_power_live_capture(
