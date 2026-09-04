@@ -243,6 +243,39 @@ class PaddyPowerEventExtractor:
                 continue
 
             for selection, raw_odds in runners:
+                if market == "handicap":
+                    for player in (
+                        self.fixture.player_a,
+                        self.fixture.player_b,
+                    ):
+                        prefix = f"{player} ("
+                        if (
+                            selection.startswith(prefix)
+                            and selection.endswith(")")
+                        ):
+                            line_text = selection[
+                                len(prefix):-1
+                            ]
+                            try:
+                                line = float(
+                                    line_text
+                                )
+                            except ValueError:
+                                line = None
+
+                            if (
+                                line is not None
+                                and line != 0
+                                and abs(line) % 1 == 0.5
+                                and line_text
+                                == f"{line:+.1f}"
+                            ):
+                                selection = (
+                                    f"{player} "
+                                    f"{line:+.1f}"
+                                )
+                            break
+
                 try:
                     odds = decimal_odds(
                         raw_odds

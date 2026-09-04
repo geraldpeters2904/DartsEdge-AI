@@ -299,12 +299,12 @@ class PaddyPowerEventExtractorIsolationTests(
             [
                 (
                     "handicap",
-                    "Ryan Joyce (+1.5)",
+                    "Ryan Joyce +1.5",
                     1.666667,
                 ),
                 (
                     "handicap",
-                    "Kim Huybrechts (-1.5)",
+                    "Kim Huybrechts -1.5",
                     2.1,
                 ),
                 (
@@ -404,12 +404,12 @@ class PaddyPowerEventHandicapExtractorTests(
             [
                 (
                     "handicap",
-                    "Ryan Joyce (+1.5)",
+                    "Ryan Joyce +1.5",
                     1.666667,
                 ),
                 (
                     "handicap",
-                    "Kim Huybrechts (-1.5)",
+                    "Kim Huybrechts -1.5",
                     2.1,
                 ),
             ],
