@@ -60,8 +60,13 @@ class FakeBrowser:
     def __init__(
         self,
         html,
+        *,
+        pages=None,
     ):
         self.page = html
+        self.pages = list(
+            pages or []
+        )
         self.urls = []
 
     def goto(
@@ -79,10 +84,18 @@ class FakeBrowser:
         timeout_seconds,
         description,
     ):
-        if not predicate():
-            raise RuntimeError(
-                description
-            )
+        if predicate():
+            return
+
+        for page in self.pages:
+            self.page = page
+
+            if predicate():
+                return
+
+        raise RuntimeError(
+            description
+        )
 
     def html(self):
         return self.page
@@ -218,6 +231,44 @@ class BookmakerCaptureTests(
 
         self.assertFalse(
             report.challenge_detected
+        )
+
+    def test_capture_waits_for_custom_page_ready_condition(self):
+        db = FakeDb()
+
+        browser = FakeBrowser(
+            "<html>Sports Login Sign Up</html>",
+            pages=[
+                "<html>Sports Darts</html>",
+                (
+                    "<html>"
+                    "MODUS Super Series "
+                    "Justin Smith "
+                    "Danny Goddard"
+                    "</html>"
+                ),
+            ],
+        )
+
+        service = PaddyPowerCaptureService(
+            browser_session=browser
+        )
+
+        report = service.capture(
+            db,
+            source_url=(
+                "https://example.test/darts"
+            ),
+            extractor=FakeExtractor(),
+            page_ready=lambda html: (
+                "MODUS Super Series"
+                in html
+            ),
+        )
+
+        self.assertEqual(
+            report.stored_prices,
+            1,
         )
 
     def test_challenge_stops_capture(self):

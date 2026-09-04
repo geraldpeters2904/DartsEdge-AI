@@ -62,6 +62,9 @@ class PaddyPowerCaptureService:
         *,
         source_url: str,
         extractor: PaddyPowerExtractor,
+        page_ready: Optional[
+            Callable[[str], bool]
+        ] = None,
     ) -> BookmakerCaptureReport:
         captured_at = datetime.utcnow()
 
@@ -73,10 +76,17 @@ class PaddyPowerCaptureService:
         )
 
         self.browser_session.wait_for(
-            lambda: bool(
-                self.browser_session
-                .html()
-                .strip()
+            lambda: (
+                page_ready(
+                    self.browser_session
+                    .html()
+                )
+                if page_ready
+                else bool(
+                    self.browser_session
+                    .html()
+                    .strip()
+                )
             ),
             timeout_seconds=(
                 self.timeout_seconds

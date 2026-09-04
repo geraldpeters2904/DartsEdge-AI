@@ -10,6 +10,9 @@ from app.services.bookmaker_capture_manager_service import (
 from app.services.paddy_power_capture_service import (
     PaddyPowerCaptureService,
 )
+from app.services.chrome_browser_session import (
+    ChromeBrowserSession,
+)
 from app.services.paddy_power_modus_extractor import (
     KnownBookmakerFixture,
     PaddyPowerModusExtractor,
@@ -24,6 +27,52 @@ PADDY_POWER_MODUS_URL = (
     "https://www.paddypower.com/darts/"
     "modus-super-series"
 )
+
+
+def paddy_power_modus_category_ready(
+    html: str,
+) -> bool:
+    lowered = (
+        html
+        or ""
+    ).casefold()
+
+    return (
+        "/darts/modus-super-series/"
+        in lowered
+        and "-v-"
+        in lowered
+    )
+
+
+def load_paddy_power_modus_category_html(
+    *,
+    timeout_seconds: float = 30.0,
+) -> str:
+    browser = ChromeBrowserSession()
+
+    try:
+        browser.goto(
+            PADDY_POWER_MODUS_URL,
+            timeout_seconds=timeout_seconds,
+        )
+
+        browser.wait_for(
+            lambda: (
+                paddy_power_modus_category_ready(
+                    browser.html()
+                )
+            ),
+            timeout_seconds=timeout_seconds,
+            description=(
+                "rendered Paddy Power MODUS fixtures"
+            ),
+        )
+
+        return browser.html()
+
+    finally:
+        browser.close()
 
 
 def _scheduled_modus_fixtures(
@@ -121,6 +170,28 @@ def build_paddy_power_event_capture_once(
     return (
         capture_once,
         service,
+    )
+
+
+def capture_paddy_power_discovered_events_once(
+    db,
+):
+    fixtures = (
+        _scheduled_modus_fixtures(
+            db
+        )
+    )
+
+    category_html = (
+        load_paddy_power_modus_category_html()
+    )
+
+    return (
+        capture_discovered_paddy_power_events(
+            db,
+            fixtures=fixtures,
+            category_html=category_html,
+        )
     )
 
 

@@ -7,6 +7,181 @@ from app.services.paddy_power_modus_extractor import (
 )
 
 
+class PaddyPowerCategoryReadyTests(
+    unittest.TestCase
+):
+    def test_requires_rendered_modus_fixture_link(self):
+        from app.services.paddy_power_live_capture import (
+            paddy_power_modus_category_ready,
+        )
+
+        shell_html = (
+            "<html>"
+            "Sports Darts Login Sign Up"
+            "</html>"
+        )
+
+        rendered_html = (
+            "<html>"
+            "<a href=\"/darts/modus-super-series/"
+            "justin-smith-v-danny-goddard-36029048\">"
+            "<span>Justin Smith</span>"
+            "<span>Danny Goddard</span>"
+            "</a>"
+            "</html>"
+        )
+
+        self.assertFalse(
+            paddy_power_modus_category_ready(
+                shell_html
+            )
+        )
+
+        self.assertTrue(
+            paddy_power_modus_category_ready(
+                rendered_html
+            )
+        )
+
+
+class PaddyPowerCategoryLoadTests(
+    unittest.TestCase
+):
+    def test_loads_rendered_modus_category_html(self):
+        from app.services.paddy_power_live_capture import (
+            PADDY_POWER_MODUS_URL,
+            load_paddy_power_modus_category_html,
+            paddy_power_modus_category_ready,
+        )
+
+        rendered_html = (
+            "<html>"
+            "<a href=\"/darts/modus-super-series/"
+            "justin-smith-v-danny-goddard-36029048\">"
+            "<span>Justin Smith</span>"
+            "<span>Danny Goddard</span>"
+            "</a>"
+            "</html>"
+        )
+
+        browser = MagicMock()
+        browser.html.return_value = rendered_html
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "ChromeBrowserSession",
+            return_value=browser,
+        ):
+            result = (
+                load_paddy_power_modus_category_html()
+            )
+
+        browser.goto.assert_called_once_with(
+            PADDY_POWER_MODUS_URL,
+            timeout_seconds=30.0,
+        )
+
+        browser.wait_for.assert_called_once()
+
+        args, kwargs = browser.wait_for.call_args
+        predicate = args[0]
+
+        self.assertTrue(
+            predicate()
+        )
+        self.assertTrue(
+            paddy_power_modus_category_ready(
+                rendered_html
+            )
+        )
+
+        self.assertEqual(
+            kwargs["timeout_seconds"],
+            30.0,
+        )
+        self.assertEqual(
+            kwargs["description"],
+            "rendered Paddy Power MODUS fixtures",
+        )
+
+        self.assertEqual(
+            result,
+            rendered_html,
+        )
+
+        browser.close.assert_called_once()
+
+
+class PaddyPowerDiscoveredCaptureOnceTests(
+    unittest.TestCase
+):
+    def test_loads_category_and_captures_discovered_events(self):
+        from app.services.paddy_power_live_capture import (
+            capture_paddy_power_discovered_events_once,
+        )
+
+        fixture = KnownBookmakerFixture(
+            fixture_date=date(2026, 9, 4),
+            tournament="MODUS",
+            player_a="Justin Smith",
+            player_b="Danny Goddard",
+        )
+
+        category_html = (
+            "<html>"
+            "<a href=\"/darts/modus-super-series/"
+            "justin-smith-v-danny-goddard-36029048\">"
+            "<span>Justin Smith</span>"
+            "<span>Danny Goddard</span>"
+            "</a>"
+            "</html>"
+        )
+
+        reports = [
+            object(),
+        ]
+
+        db = object()
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "_scheduled_modus_fixtures",
+            return_value=[fixture],
+        ) as scheduled:
+            with patch(
+                "app.services.paddy_power_live_capture."
+                "load_paddy_power_modus_category_html",
+                return_value=category_html,
+            ) as loader:
+                with patch(
+                    "app.services.paddy_power_live_capture."
+                    "capture_discovered_paddy_power_events",
+                    return_value=reports,
+                ) as capture_events:
+                    result = (
+                        capture_paddy_power_discovered_events_once(
+                            db
+                        )
+                    )
+
+        self.assertEqual(
+            result,
+            reports,
+        )
+
+        scheduled.assert_called_once_with(
+            db
+        )
+
+        loader.assert_called_once_with()
+
+        capture_events.assert_called_once_with(
+            db,
+            fixtures=[fixture],
+            category_html=category_html,
+        )
+
+
 class PaddyPowerEventCaptureTests(unittest.TestCase):
 
     def test_builder_captures_event_url_with_event_extractor(self):
