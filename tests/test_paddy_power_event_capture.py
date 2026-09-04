@@ -262,6 +262,53 @@ class PaddyPowerDiscoveredAggregateCaptureTests(
 
 
 
+class PaddyPowerLiveRunnerTests(
+    unittest.TestCase
+):
+
+    def test_live_runner_uses_discovered_event_aggregate_capture(self):
+        from app.services.paddy_power_live_capture import (
+            run_paddy_power_live_capture,
+        )
+
+        manager = MagicMock()
+        manager.run_forever.return_value = (
+            "manager-status"
+        )
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "BookmakerCaptureManager",
+            return_value=manager,
+        ) as manager_class:
+            result = (
+                run_paddy_power_live_capture(
+                    max_cycles=1,
+                )
+            )
+
+        self.assertEqual(
+            result,
+            "manager-status",
+        )
+
+        _, manager_kwargs = (
+            manager_class.call_args
+        )
+
+        from app.services.paddy_power_live_capture import (
+            capture_paddy_power_discovered_events_report_once,
+        )
+
+        self.assertIs(
+            manager_kwargs["capture_once"],
+            capture_paddy_power_discovered_events_report_once,
+        )
+
+        manager.run_forever.assert_called_once()
+
+
+
 class PaddyPowerEventCaptureTests(unittest.TestCase):
 
     def test_builder_captures_event_url_with_event_extractor(self):

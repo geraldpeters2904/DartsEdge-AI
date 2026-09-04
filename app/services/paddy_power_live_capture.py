@@ -310,14 +310,10 @@ def run_paddy_power_live_capture(
     max_consecutive_failures: int = 5,
     max_cycles=None,
 ):
-    capture_once, service = (
-        build_paddy_power_capture_once()
-    )
-
     manager = (
         BookmakerCaptureManager(
             capture_once=(
-                capture_once
+                capture_paddy_power_discovered_events_report_once
             ),
             poll_seconds=(
                 poll_seconds
@@ -332,14 +328,11 @@ def run_paddy_power_live_capture(
         )
     )
 
-    try:
-        return manager.run_forever(
-            session_factory=(
-                SessionLocal
-            ),
-            max_cycles=(
-                max_cycles
-            ),
-        )
-    finally:
-        service.close()
+    return manager.run_forever(
+        session_factory=(
+            SessionLocal
+        ),
+        max_cycles=(
+            max_cycles
+        ),
+    )
