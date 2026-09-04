@@ -36,14 +36,18 @@ class _EventMarketParser(
         self._card_depth = 0
         self._capture_title_depth = 0
         self._capture_runner_depth = 0
+        self._capture_subtitle_depth = 0
         self._capture_odds_depth = 0
 
         self._title_parts: list[str] = []
         self._runner_parts: list[str] = []
+        self._subtitle_parts: list[str] = []
         self._odds_parts: list[str] = []
 
         self._current_title = ""
         self._current_runner = ""
+        self._subtitles: list[str] = []
+        self._subtitle_index = 0
 
         self.markets: list[
             tuple[
@@ -83,6 +87,8 @@ class _EventMarketParser(
             self._card_depth = 1
             self._current_title = ""
             self._current_runner = ""
+            self._subtitles = []
+            self._subtitle_index = 0
             self._current_prices = []
 
         if not self._card_depth:
@@ -102,6 +108,12 @@ class _EventMarketParser(
             self._runner_parts = []
         elif self._capture_runner_depth:
             self._capture_runner_depth += 1
+
+        if "subheader__text--subtitle" in classes:
+            self._capture_subtitle_depth = 1
+            self._subtitle_parts = []
+        elif self._capture_subtitle_depth:
+            self._capture_subtitle_depth += 1
 
         if "btn-odds__label" in classes:
             self._capture_odds_depth = 1
@@ -134,6 +146,17 @@ class _EventMarketParser(
                     ).split()
                 )
 
+        if self._capture_subtitle_depth:
+            self._capture_subtitle_depth -= 1
+            if not self._capture_subtitle_depth:
+                subtitle = " ".join(
+                    " ".join(
+                        self._subtitle_parts
+                    ).split()
+                )
+                if subtitle:
+                    self._subtitles.append(subtitle)
+
         if self._capture_odds_depth:
             self._capture_odds_depth -= 1
             if not self._capture_odds_depth:
@@ -142,13 +165,20 @@ class _EventMarketParser(
                         self._odds_parts
                     ).split()
                 )
+                runner = self._current_runner
                 if (
-                    self._current_runner
-                    and odds
+                    not runner
+                    and self._subtitle_index < len(self._subtitles)
                 ):
+                    runner = self._subtitles[
+                        self._subtitle_index
+                    ]
+                    self._subtitle_index += 1
+
+                if runner and odds:
                     self._current_prices.append(
                         (
-                            self._current_runner,
+                            runner,
                             odds,
                         )
                     )
@@ -169,6 +199,8 @@ class _EventMarketParser(
 
             self._current_title = ""
             self._current_runner = ""
+            self._subtitles = []
+            self._subtitle_index = 0
             self._current_prices = []
 
     def handle_data(
@@ -182,6 +214,11 @@ class _EventMarketParser(
 
         if self._capture_runner_depth:
             self._runner_parts.append(
+                data
+            )
+
+        if self._capture_subtitle_depth:
+            self._subtitle_parts.append(
                 data
             )
 

@@ -233,6 +233,89 @@ class PaddyPowerEventExtractorTests(
         )
 
 
+    def test_extracts_live_horizontal_match_odds_prices(self):
+        html = """
+        <html>
+          <body>
+            <abc-card class="event-card--item">
+              <abc-card-content>
+                <abc-accordion>
+                  <div class="accordion__header">
+                    <span class="accordion__title">
+                      Match Odds
+                    </span>
+                  </div>
+                  <section class="accordion__body">
+                    <abc-sub-header>
+                      <div class="subheader">
+                        <div class="subheader__text--subtitle">
+                          Ryan Joyce
+                        </div>
+                        <div class="subheader__text--subtitle">
+                          Kim Huybrechts
+                        </div>
+                      </div>
+                    </abc-sub-header>
+                    <horizontal-buttons>
+                      <div class="horizontal-buttons">
+                        <abc-btn-odds>
+                          <span class="btn-odds__label">
+                            4/5
+                          </span>
+                        </abc-btn-odds>
+                        <abc-btn-odds>
+                          <span class="btn-odds__label">
+                            11/10
+                          </span>
+                        </abc-btn-odds>
+                      </div>
+                    </horizontal-buttons>
+                  </section>
+                </abc-accordion>
+              </abc-card-content>
+            </abc-card>
+          </body>
+        </html>
+        """
+
+        prices = list(
+            PaddyPowerEventExtractor(
+                self.fixture()
+            ).extract(
+                html,
+                captured_at=datetime(
+                    2026, 9, 4, 12, 0
+                ),
+            )
+        )
+
+        self.assertEqual(
+            [
+                (
+                    price.market,
+                    price.selection,
+                    round(
+                        price.decimal_odds,
+                        6,
+                    ),
+                )
+                for price in prices
+            ],
+            [
+                (
+                    "match_winner",
+                    "Ryan Joyce",
+                    1.8,
+                ),
+                (
+                    "match_winner",
+                    "Kim Huybrechts",
+                    2.1,
+                ),
+            ],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
 
