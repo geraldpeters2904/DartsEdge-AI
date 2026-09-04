@@ -14,6 +14,9 @@ from app.services.paddy_power_modus_extractor import (
     KnownBookmakerFixture,
     PaddyPowerModusExtractor,
 )
+from app.services.paddy_power_event_extractor import (
+    PaddyPowerEventExtractor,
+)
 
 
 PADDY_POWER_MODUS_URL = (
@@ -86,6 +89,31 @@ def build_paddy_power_capture_once():
             source_url=(
                 PADDY_POWER_MODUS_URL
             ),
+            extractor=extractor,
+        )
+
+    return (
+        capture_once,
+        service,
+    )
+
+
+def build_paddy_power_event_capture_once(
+    *,
+    fixture: KnownBookmakerFixture,
+    source_url: str,
+):
+    service = PaddyPowerCaptureService()
+
+    def capture_once(
+        db,
+    ):
+        extractor = PaddyPowerEventExtractor(
+            fixture
+        )
+        return service.capture(
+            db,
+            source_url=source_url,
             extractor=extractor,
         )
 
