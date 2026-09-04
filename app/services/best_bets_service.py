@@ -3,7 +3,10 @@ from __future__ import annotations
 from math import ceil
 from typing import Optional
 
+from sqlalchemy.orm import Session
+
 from app.models.match import Match
+from app.models.odds_snapshot import OddsSnapshot
 from app.services.advanced_historical_snapshot_engine import (
     AdvancedHistoricalSnapshotEngine,
 )
@@ -61,6 +64,37 @@ def _minimum_odds(
         )
         / 100.0
     )
+
+
+
+def _latest_paddy_power_match_winner_price(
+    db,
+    *,
+    fixture_id: int,
+    selection: str,
+):
+    if not isinstance(db, Session):
+        return None
+
+    return (
+        db.query(OddsSnapshot)
+        .filter(
+            OddsSnapshot.fixture_id
+            == int(fixture_id),
+            OddsSnapshot.bookmaker_code
+            == "paddypower",
+            OddsSnapshot.market
+            == "match_winner",
+            OddsSnapshot.selection
+            == selection,
+        )
+        .order_by(
+            OddsSnapshot.captured_at.desc(),
+            OddsSnapshot.id.desc(),
+        )
+        .first()
+    )
+
 
 
 def build_best_bets(
@@ -163,6 +197,13 @@ def build_best_bets(
             )
         )
 
+        price = (
+            _latest_paddy_power_match_winner_price(
+                db,
+                fixture_id=match.id,
+                selection=opportunity["selection"],
+            )
+        )
         opportunity.update({
             "confidence": confidence,
             "stars": stars,
@@ -170,6 +211,16 @@ def build_best_bets(
                 _minimum_odds(
                     fair_odds
                 )
+            ),
+            "market_odds": (
+                float(price.decimal_odds)
+                if price is not None
+                else None
+            ),
+            "bookmaker": (
+                "Paddy Power"
+                if price is not None
+                else None
             ),
         })
 

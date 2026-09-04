@@ -231,6 +231,7 @@ class PaddyPowerEventExtractor:
             )
 
             market_map = {
+                "match odds": "match_winner",
                 "total legs": "total_legs",
                 "leg handicap": "handicap",
                 "most 180's": "most_180s",

@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from datetime import date
 from types import SimpleNamespace
 
@@ -210,6 +211,59 @@ class BestBetsServiceV33Tests(
                 "impact_percent"
             ],
             15.0,
+        )
+
+
+    @patch(
+        "app.services.best_bets_service."
+        "_latest_paddy_power_match_winner_price"
+    )
+    def test_attaches_latest_paddy_power_match_winner_odds(
+        self,
+        latest_price,
+    ):
+        latest_price.return_value = SimpleNamespace(
+            decimal_odds=1.95,
+            bookmaker_code="paddypower",
+        )
+
+        match = SimpleNamespace(
+            id=123,
+            date=date(2026, 8, 6),
+            tournament="MODUS",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+        )
+
+        result = build_best_bets(
+            FakeDb([match]),
+            limit=5,
+            snapshot_engine=(
+                FakeSnapshotEngine()
+            ),
+            model_registry=(
+                FakeRegistry()
+            ),
+        )
+
+        self.assertEqual(
+            len(result),
+            1,
+        )
+        self.assertEqual(
+            result[0]["market_odds"],
+            1.95,
+        )
+        self.assertEqual(
+            result[0]["bookmaker"],
+            "Paddy Power",
+        )
+
+        latest_price.assert_called_once_with(
+            unittest.mock.ANY,
+            fixture_id=123,
+            selection="Player A",
         )
 
 
