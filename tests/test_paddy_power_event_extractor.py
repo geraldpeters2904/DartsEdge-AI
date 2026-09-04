@@ -298,6 +298,16 @@ class PaddyPowerEventExtractorIsolationTests(
             ],
             [
                 (
+                    "handicap",
+                    "Ryan Joyce (+1.5)",
+                    1.666667,
+                ),
+                (
+                    "handicap",
+                    "Kim Huybrechts (-1.5)",
+                    2.1,
+                ),
+                (
                     "total_legs",
                     "Over (+9.5)",
                     1.833333,
@@ -306,6 +316,101 @@ class PaddyPowerEventExtractorIsolationTests(
                     "total_legs",
                     "Under (+9.5)",
                     1.833333,
+                ),
+            ],
+        )
+
+
+class PaddyPowerEventHandicapExtractorTests(
+    unittest.TestCase
+):
+
+    def test_extracts_leg_handicap_prices(self):
+        fixture = KnownBookmakerFixture(
+            fixture_date=date(
+                2026,
+                9,
+                4,
+            ),
+            tournament="Czech Darts Open",
+            player_a="Ryan Joyce",
+            player_b="Kim Huybrechts",
+        )
+
+        html = """
+        <html>
+          <body>
+            <abc-card class="event-card--item">
+              <abc-card-content>
+                <abc-accordion>
+                  <div class="accordion__header">
+                    <span class="accordion__title">
+                      Leg Handicap
+                    </span>
+                  </div>
+
+                  <section class="accordion__body">
+                    <outright-item-list>
+                      <outright-item>
+                        <p class="outright-item__runner-name">
+                          Ryan Joyce (+1.5)
+                        </p>
+                        <span class="btn-odds__label">
+                          4/6
+                        </span>
+                      </outright-item>
+
+                      <outright-item>
+                        <p class="outright-item__runner-name">
+                          Kim Huybrechts (-1.5)
+                        </p>
+                        <span class="btn-odds__label">
+                          11/10
+                        </span>
+                      </outright-item>
+                    </outright-item-list>
+                  </section>
+                </abc-accordion>
+              </abc-card-content>
+            </abc-card>
+          </body>
+        </html>
+        """
+
+        prices = list(
+            PaddyPowerEventExtractor(
+                fixture
+            ).extract(
+                html,
+                captured_at=datetime(
+                    2026,
+                    9,
+                    4,
+                    12,
+                    0,
+                ),
+            )
+        )
+
+        self.assertEqual(
+            [
+                (
+                    price.market,
+                    price.selection,
+                    price.decimal_odds,
+                )
+                for price in prices
+            ],
+            [
+                (
+                    "handicap",
+                    "Ryan Joyce (+1.5)",
+                    1.666667,
+                ),
+                (
+                    "handicap",
+                    "Kim Huybrechts (-1.5)",
+                    2.1,
                 ),
             ],
         )

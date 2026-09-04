@@ -223,15 +223,23 @@ class PaddyPowerEventExtractor:
         for market_name, runners in (
             parser.markets
         ):
-            if (
-                " ".join(
-                    market_name
-                    .strip()
-                    .casefold()
-                    .split()
-                )
-                != "total legs"
-            ):
+            normalised_market = " ".join(
+                market_name
+                .strip()
+                .casefold()
+                .split()
+            )
+
+            market_map = {
+                "total legs": "total_legs",
+                "leg handicap": "handicap",
+            }
+
+            market = market_map.get(
+                normalised_market
+            )
+
+            if market is None:
                 continue
 
             for selection, raw_odds in runners:
@@ -263,9 +271,7 @@ class PaddyPowerEventExtractor:
                             self.fixture
                             .player_b
                         ),
-                        market=(
-                            "total_legs"
-                        ),
+                        market=market,
                         selection=selection,
                         bookmaker=(
                             self.BOOKMAKER
