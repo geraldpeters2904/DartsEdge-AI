@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -110,6 +112,35 @@ def _latest_snapshot(
         )
         .first()
     )
+
+
+
+def _snapshot_fingerprint(
+    *,
+    fixture_id: int,
+    bookmaker_code: str,
+    market: str,
+    selection: str,
+    decimal_odds: float,
+    captured_at: datetime,
+) -> str:
+    canonical = "|".join(
+        (
+            str(int(fixture_id)),
+            bookmaker_code.strip().lower(),
+            market.strip().lower(),
+            selection.strip().lower(),
+            format(
+                float(decimal_odds),
+                ".10g",
+            ),
+            captured_at.isoformat(),
+        )
+    )
+
+    return hashlib.sha256(
+        canonical.encode("utf-8")
+    ).hexdigest()
 
 
 def record_odds(
@@ -233,6 +264,16 @@ def record_odds(
         bookmaker=code,
         provider_id=(
             source_reference
+        ),
+        fingerprint=(
+            _snapshot_fingerprint(
+                fixture_id=fixture_id,
+                bookmaker_code=code,
+                market=market_name,
+                selection=selection_name,
+                decimal_odds=price,
+                captured_at=captured,
+            )
         ),
     )
 

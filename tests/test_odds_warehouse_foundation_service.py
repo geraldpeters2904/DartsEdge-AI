@@ -77,6 +77,19 @@ class OddsWarehouseFoundationTests(unittest.TestCase):
             1,
         )
 
+        snapshot = (
+            self.db.query(OddsSnapshot)
+            .first()
+        )
+
+        self.assertIsNotNone(
+            snapshot.fingerprint
+        )
+        self.assertEqual(
+            len(snapshot.fingerprint),
+            64,
+        )
+
         self.assertEqual(
             self.db.query(OddsMovement).count(),
             0,

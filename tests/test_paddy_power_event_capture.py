@@ -254,6 +254,72 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
         )
 
 
+    def test_builder_waits_for_rendered_event_cards(self):
+        from app.services.paddy_power_live_capture import (
+            build_paddy_power_event_capture_once,
+        )
+
+        fixture = KnownBookmakerFixture(
+            fixture_date=date(2026, 9, 4),
+            tournament="MODUS Super Series",
+            player_a="Jordan Brooks",
+            player_b="Justin Smith",
+        )
+
+        service = MagicMock()
+        service.capture.return_value = object()
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "PaddyPowerCaptureService",
+            return_value=service,
+        ):
+            capture_once, _ = (
+                build_paddy_power_event_capture_once(
+                    fixture=fixture,
+                    source_url=(
+                        "https:"
+                        "//www.paddypower.com/darts/"
+                        "modus-super-series/"
+                        "jordan-brooks-v-justin-smith-36029022"
+                    ),
+                )
+            )
+
+        capture_once(object())
+
+        _, kwargs = service.capture.call_args
+
+        self.assertIn(
+            "page_ready",
+            kwargs,
+        )
+
+        predicate = kwargs["page_ready"]
+
+        shell_html = (
+            "<html>"
+            "Sports Darts Login Sign Up"
+            "</html>"
+        )
+
+        rendered_html = (
+            '<html>'
+            '<abc-card class="event-card--item">'
+            '<div>Match Odds</div>'
+            '</abc-card>'
+            '</html>'
+        )
+
+        self.assertFalse(
+            predicate(shell_html)
+        )
+
+        self.assertTrue(
+            predicate(rendered_html)
+        )
+
+
     def test_captures_discovered_event_for_fixture(self):
         from app.services.paddy_power_live_capture import (
             capture_discovered_paddy_power_events,

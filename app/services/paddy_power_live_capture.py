@@ -148,6 +148,15 @@ def build_paddy_power_capture_once():
     )
 
 
+def paddy_power_event_page_ready(
+    html: str,
+) -> bool:
+    return (
+        'class="event-card--item'
+        in (html or "").casefold()
+    )
+
+
 def build_paddy_power_event_capture_once(
     *,
     fixture: KnownBookmakerFixture,
@@ -165,6 +174,9 @@ def build_paddy_power_event_capture_once(
             db,
             source_url=source_url,
             extractor=extractor,
+            page_ready=(
+                paddy_power_event_page_ready
+            ),
         )
 
     return (
