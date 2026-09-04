@@ -317,6 +317,16 @@ class PaddyPowerEventExtractorIsolationTests(
                     "Under (+9.5)",
                     1.833333,
                 ),
+                (
+                    "total_180s",
+                    "Over (+4.5)",
+                    2.2,
+                ),
+                (
+                    "total_180s",
+                    "Under (+4.5)",
+                    1.615385,
+                ),
             ],
         )
 
@@ -413,4 +423,164 @@ class PaddyPowerEventHandicapExtractorTests(
                     2.1,
                 ),
             ],
+        )
+
+
+class PaddyPowerEvent180ExtractorTests(
+    unittest.TestCase
+):
+
+    def test_extracts_live_180_market_shapes(self):
+        fixture = KnownBookmakerFixture(
+            fixture_date=date(
+                2026,
+                9,
+                4,
+            ),
+            tournament="MODUS Super Series",
+            player_a="Danny Goddard",
+            player_b="Mark Layton",
+        )
+
+        html = """
+        <html>
+          <body>
+            <abc-card class="event-card--item">
+              <span class="accordion__title">
+                Most 180's
+              </span>
+              <p class="outright-item__runner-name">
+                Danny Goddard
+              </p>
+              <span class="btn-odds__label">11/10</span>
+              <p class="outright-item__runner-name">
+                Draw
+              </p>
+              <span class="btn-odds__label">7/5</span>
+              <p class="outright-item__runner-name">
+                Mark Layton
+              </p>
+              <span class="btn-odds__label">4/1</span>
+            </abc-card>
+
+            <abc-card class="event-card--item">
+              <span class="accordion__title">
+                Total 180's
+              </span>
+              <p class="outright-item__runner-name">
+                Over (+1.5)
+              </p>
+              <span class="btn-odds__label">6/4</span>
+              <p class="outright-item__runner-name">
+                Under (+1.5)
+              </p>
+              <span class="btn-odds__label">1/2</span>
+            </abc-card>
+
+            <abc-card class="event-card--item">
+              <span class="accordion__title">
+                Danny Goddard Total 180's
+              </span>
+              <p class="outright-item__runner-name">
+                Over (+0.5)
+              </p>
+              <span class="btn-odds__label">4/7</span>
+              <p class="outright-item__runner-name">
+                Under (+0.5)
+              </p>
+              <span class="btn-odds__label">5/4</span>
+            </abc-card>
+
+            <abc-card class="event-card--item">
+              <span class="accordion__title">
+                Mark Layton Total 180's
+              </span>
+              <p class="outright-item__runner-name">
+                Over (+0.5)
+              </p>
+              <span class="btn-odds__label">13/8</span>
+              <p class="outright-item__runner-name">
+                Under (+0.5)
+              </p>
+              <span class="btn-odds__label">4/9</span>
+            </abc-card>
+          </body>
+        </html>
+        """
+
+        prices = list(
+            PaddyPowerEventExtractor(
+                fixture
+            ).extract(
+                html,
+                captured_at=datetime(
+                    2026,
+                    9,
+                    4,
+                    12,
+                    0,
+                ),
+            )
+        )
+
+        actual = [
+            (
+                price.market,
+                price.selection,
+                price.decimal_odds,
+            )
+            for price in prices
+        ]
+
+        expected = [
+            (
+                "most_180s",
+                "Danny Goddard",
+                2.1,
+            ),
+            (
+                "most_180s",
+                "Draw",
+                2.4,
+            ),
+            (
+                "most_180s",
+                "Mark Layton",
+                5.0,
+            ),
+            (
+                "total_180s",
+                "Over (+1.5)",
+                2.5,
+            ),
+            (
+                "total_180s",
+                "Under (+1.5)",
+                1.5,
+            ),
+            (
+                "player_total_180s",
+                "Danny Goddard | Over (+0.5)",
+                1.571429,
+            ),
+            (
+                "player_total_180s",
+                "Danny Goddard | Under (+0.5)",
+                2.25,
+            ),
+            (
+                "player_total_180s",
+                "Mark Layton | Over (+0.5)",
+                2.625,
+            ),
+            (
+                "player_total_180s",
+                "Mark Layton | Under (+0.5)",
+                1.444444,
+            ),
+        ]
+
+        self.assertEqual(
+            actual,
+            expected,
         )

@@ -233,16 +233,55 @@ class PaddyPowerEventExtractor:
             market_map = {
                 "total legs": "total_legs",
                 "leg handicap": "handicap",
+                "most 180's": "most_180s",
+                "total 180's": "total_180s",
             }
 
             market = market_map.get(
                 normalised_market
             )
 
+            player_total_180s_player = None
+
+            if market is None:
+                for player in (
+                    self.fixture.player_a,
+                    self.fixture.player_b,
+                ):
+                    player_market = " ".join(
+                        (
+                            f"{player} Total 180's"
+                        )
+                        .casefold()
+                        .split()
+                    )
+
+                    if (
+                        normalised_market
+                        == player_market
+                    ):
+                        market = (
+                            "player_total_180s"
+                        )
+                        player_total_180s_player = (
+                            player
+                        )
+                        break
+
             if market is None:
                 continue
 
             for selection, raw_odds in runners:
+                if (
+                    market
+                    == "player_total_180s"
+                    and player_total_180s_player
+                ):
+                    selection = (
+                        f"{player_total_180s_player}"
+                        f" | {selection}"
+                    )
+
                 if market == "handicap":
                     for player in (
                         self.fixture.player_a,
