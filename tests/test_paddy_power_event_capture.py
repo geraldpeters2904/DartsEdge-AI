@@ -386,6 +386,94 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
         event_service.close.assert_called_once()
 
 
+
+    def test_continues_after_event_capture_failure(self):
+        from app.services.paddy_power_live_capture import (
+            capture_discovered_paddy_power_events,
+        )
+
+        first_fixture = KnownBookmakerFixture(
+            fixture_date=date(2026, 9, 4),
+            tournament="MODUS Super Series",
+            player_a="Player One",
+            player_b="Player Two",
+        )
+
+        second_fixture = KnownBookmakerFixture(
+            fixture_date=date(2026, 9, 4),
+            tournament="MODUS Super Series",
+            player_a="Player Three",
+            player_b="Player Four",
+        )
+
+        category_html = """
+        <a href="/darts/event/player-one-v-player-two">
+          <div>Player One</div>
+          <div>Player Two</div>
+        </a>
+        <a href="/darts/event/player-three-v-player-four">
+          <div>Player Three</div>
+          <div>Player Four</div>
+        </a>
+        """
+
+        first_capture = MagicMock(
+            side_effect=TimeoutError(
+                "event page timed out"
+            )
+        )
+        second_report = object()
+        second_capture = MagicMock(
+            return_value=second_report
+        )
+
+        first_service = MagicMock()
+        second_service = MagicMock()
+
+        builder_results = [
+            (
+                first_capture,
+                first_service,
+            ),
+            (
+                second_capture,
+                second_service,
+            ),
+        ]
+
+        db = MagicMock()
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "build_paddy_power_event_capture_once",
+            side_effect=builder_results,
+        ):
+            reports = (
+                capture_discovered_paddy_power_events(
+                    db,
+                    fixtures=[
+                        first_fixture,
+                        second_fixture,
+                    ],
+                    category_html=category_html,
+                )
+            )
+
+        self.assertEqual(
+            reports,
+            [second_report],
+        )
+
+        db.rollback.assert_called_once()
+
+        first_service.close.assert_called_once()
+        second_service.close.assert_called_once()
+
+        first_capture.assert_called_once_with(db)
+        second_capture.assert_called_once_with(db)
+
+
+
     def test_skips_fixture_without_discovered_event_url(self):
         from app.services.paddy_power_live_capture import (
             capture_discovered_paddy_power_events,

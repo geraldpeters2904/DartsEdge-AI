@@ -235,6 +235,15 @@ def capture_discovered_paddy_power_events(
             reports.append(
                 capture_once(db)
             )
+        except Exception:
+            rollback = getattr(
+                db,
+                "rollback",
+                None,
+            )
+
+            if callable(rollback):
+                rollback()
         finally:
             service.close()
 
