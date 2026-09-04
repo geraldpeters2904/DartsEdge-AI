@@ -13,6 +13,7 @@ from app.services.paddy_power_capture_service import (
 from app.services.paddy_power_modus_extractor import (
     KnownBookmakerFixture,
     PaddyPowerModusExtractor,
+    discover_fixture_event_url,
 )
 from app.services.paddy_power_event_extractor import (
     PaddyPowerEventExtractor,
@@ -121,6 +122,40 @@ def build_paddy_power_event_capture_once(
         capture_once,
         service,
     )
+
+
+def capture_discovered_paddy_power_events(
+    db,
+    *,
+    fixtures,
+    category_html: str,
+):
+    reports = []
+
+    for fixture in fixtures:
+        source_url = discover_fixture_event_url(
+            category_html,
+            fixture,
+        )
+
+        if source_url is None:
+            continue
+
+        capture_once, service = (
+            build_paddy_power_event_capture_once(
+                fixture=fixture,
+                source_url=source_url,
+            )
+        )
+
+        try:
+            reports.append(
+                capture_once(db)
+            )
+        finally:
+            service.close()
+
+    return reports
 
 
 def run_paddy_power_live_capture(
