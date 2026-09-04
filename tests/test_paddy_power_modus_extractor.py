@@ -157,5 +157,94 @@ class PaddyPowerModusExtractorTests(
         )
 
 
+    def test_discovers_event_url_for_known_fixture(self):
+        from app.services.paddy_power_modus_extractor import (
+            discover_fixture_event_url,
+        )
+
+        html = """
+        <html>
+          <body>
+            <a href="https://www.paddypower.com/darts/event/steve-west-v-andreas-harrysson">
+              <div>Steve West</div>
+              <div>Andreas Harrysson</div>
+              <span>8/13</span>
+              <span>6/5</span>
+            </a>
+          </body>
+        </html>
+        """
+
+        source_url = discover_fixture_event_url(
+            html,
+            self.fixture(),
+        )
+
+        self.assertEqual(
+            source_url,
+            (
+                "https://www.paddypower.com/darts/event/"
+                "steve-west-v-andreas-harrysson"
+            ),
+        )
+
+
+    def test_discovers_absolute_url_from_relative_event_link(self):
+        from app.services.paddy_power_modus_extractor import (
+            discover_fixture_event_url,
+        )
+
+        html = """
+        <a href="/darts/event/steve-west-v-andreas-harrysson">
+          <div>Steve West</div>
+          <div>Andreas Harrysson</div>
+        </a>
+        """
+
+        source_url = discover_fixture_event_url(
+            html,
+            self.fixture(),
+        )
+
+        self.assertEqual(
+            source_url,
+            (
+                "https://www.paddypower.com/darts/event/"
+                "steve-west-v-andreas-harrysson"
+            ),
+        )
+
+
+    def test_does_not_mix_players_from_different_event_links(self):
+        from app.services.paddy_power_modus_extractor import (
+            discover_fixture_event_url,
+        )
+
+        html = """
+        <html>
+          <body>
+            <a href="/darts/event/steve-west-v-player-one">
+              <div>Steve West</div>
+              <div>Player One</div>
+            </a>
+
+            <a href="/darts/event/player-two-v-andreas-harrysson">
+              <div>Player Two</div>
+              <div>Andreas Harrysson</div>
+            </a>
+          </body>
+        </html>
+        """
+
+        source_url = discover_fixture_event_url(
+            html,
+            self.fixture(),
+        )
+
+        self.assertIsNone(
+            source_url,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

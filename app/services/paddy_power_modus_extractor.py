@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+
+from urllib.parse import urljoin
 from dataclasses import dataclass
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -76,6 +78,111 @@ class _VisibleTextParser(HTMLParser):
             self.tokens.append(
                 cleaned
             )
+
+
+class _FixtureEventLinkParser(HTMLParser):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._active_href = None
+        self._active_tokens: list[str] = []
+        self.links: list[
+            tuple[str, tuple[str, ...]]
+        ] = []
+
+    def handle_starttag(
+        self,
+        tag,
+        attrs,
+    ):
+        if tag != "a":
+            return
+
+        href = dict(
+            attrs
+        ).get(
+            "href"
+        )
+
+        if not href:
+            return
+
+        self._active_href = href
+        self._active_tokens = []
+
+    def handle_data(
+        self,
+        data,
+    ):
+        if self._active_href is None:
+            return
+
+        cleaned = " ".join(
+            data.split()
+        )
+
+        if cleaned:
+            self._active_tokens.append(
+                cleaned
+            )
+
+    def handle_endtag(
+        self,
+        tag,
+    ):
+        if (
+            tag != "a"
+            or self._active_href is None
+        ):
+            return
+
+        self.links.append(
+            (
+                self._active_href,
+                tuple(
+                    self._active_tokens
+                ),
+            )
+        )
+
+        self._active_href = None
+        self._active_tokens = []
+
+
+def discover_fixture_event_url(
+    html: str,
+    fixture: KnownBookmakerFixture,
+) -> str | None:
+    parser = _FixtureEventLinkParser()
+    parser.feed(
+        html or ""
+    )
+
+    player_a = normalise_name(
+        fixture.player_a
+    )
+    player_b = normalise_name(
+        fixture.player_b
+    )
+
+    for href, tokens in parser.links:
+        normalised_tokens = {
+            normalise_name(
+                token
+            )
+            for token in tokens
+        }
+
+        if (
+            player_a in normalised_tokens
+            and player_b in normalised_tokens
+        ):
+            return urljoin(
+                "https:" + "//www.paddypower.com",
+                href,
+            )
+
+    return None
 
 
 def visible_text_tokens(
