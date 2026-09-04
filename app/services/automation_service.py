@@ -11,6 +11,9 @@ from app.services.daily_briefing_service import build_daily_briefing
 from app.services.data_provider_service import DataProviderService
 from app.services.fixture_import_service import FixtureImportService
 from app.services.odds_provider_service import OddsProviderService
+from app.services.paddy_power_live_capture import (
+    capture_paddy_power_discovered_events_report_once,
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,11 @@ class AutomationService:
                 "daily-briefing", "Refresh daily briefing",
                 "Rebuild the daily intelligence briefing from current application data.",
                 self._run_daily_briefing,
+            ),
+            "paddy-power-live": AutomationJob(
+                "paddy-power-live", "Capture Paddy Power odds",
+                "Capture one live Paddy Power MODUS event-price cycle.",
+                self._run_paddy_power_live,
             ),
         }
 
@@ -125,6 +133,19 @@ class AutomationService:
         provider = service.registry.get("remote-odds-json")
         rows = list(provider.fetch_odds(days=2))
         return len(rows), f"Validated {len(rows)} odds snapshots from the remote feed."
+
+    def _run_paddy_power_live(self):
+        report = capture_paddy_power_discovered_events_report_once(
+            self.db
+        )
+
+        return report.stored_prices, (
+            f"Extracted {report.extracted_prices}; "
+            f"stored {report.stored_prices}; "
+            f"unchanged {report.unchanged_prices}; "
+            f"skipped {report.skipped_prices}; "
+            f"challenge detected: {report.challenge_detected}."
+        )
 
     def _run_daily_briefing(self):
         briefing = build_daily_briefing(self.db)

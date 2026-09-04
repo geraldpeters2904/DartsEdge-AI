@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base
 from app.models.automation_job_run import AutomationJobRun
 from app.services.automation_service import AutomationBusyError, AutomationService
+from unittest.mock import patch
 
 
 class AutomationTests(unittest.TestCase):
@@ -24,8 +25,36 @@ class AutomationTests(unittest.TestCase):
         self.db.close()
         os.unlink(self.path)
 
-    def test_registers_three_jobs(self):
-        self.assertEqual(len(AutomationService(self.db).jobs), 3)
+    def test_registers_four_jobs(self):
+        service = AutomationService(self.db)
+        self.assertEqual(len(service.jobs), 4)
+        self.assertIn('paddy-power-live', service.jobs)
+
+    @patch(
+        'app.services.automation_service.'
+        'capture_paddy_power_discovered_events_report_once'
+    )
+    def test_paddy_power_live_job_captures_one_cycle(self, capture_once):
+        capture_once.return_value = type(
+            'Report',
+            (),
+            {
+                'extracted_prices': 26,
+                'stored_prices': 8,
+                'unchanged_prices': 18,
+                'skipped_prices': 0,
+                'challenge_detected': False,
+            },
+        )()
+
+        run = AutomationService(self.db).run('paddy-power-live')
+
+        capture_once.assert_called_once_with(self.db)
+        self.assertEqual(run.status, 'success')
+        self.assertEqual(run.records_processed, 8)
+        self.assertIn('Extracted 26', run.detail)
+        self.assertIn('stored 8', run.detail)
+        self.assertIn('unchanged 18', run.detail)
 
     def test_successful_job_is_persisted(self):
         service = AutomationService(self.db)
