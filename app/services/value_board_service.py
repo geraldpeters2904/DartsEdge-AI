@@ -1,7 +1,12 @@
 from datetime import date
 
+from app.models.odds_snapshot import OddsSnapshot
 from app.services.fixture_service import get_scheduled_fixtures
-from app.services.prediction_pipeline import build_prediction
+from app.services.opportunity_ranking_service import _value_metrics
+from app.services.prediction_context_service import (
+    build_prediction_context,
+    context_to_opportunity,
+)
 
 
 def build_value_board(db):
@@ -10,29 +15,61 @@ def build_value_board(db):
 
     for fixture in fixtures:
 
-        prediction = build_prediction(
-            db,
-            fixture.player_a,
-            fixture.player_b,
-        )
-
-        # Skip fixtures where a player cannot be found or predicted.
-        if not prediction:
+        try:
+            context = build_prediction_context(
+                db,
+                fixture.id,
+            )
+        except (
+            LookupError,
+            RuntimeError,
+            TypeError,
+            ValueError,
+        ):
             continue
 
-        selection = prediction["recommendation"]["selection"]
+        opportunity = context_to_opportunity(
+            context,
+            fixture_date=fixture.date,
+            tournament=fixture.tournament,
+        )
+
+        selection = opportunity["selection"]
+        selected_probability = float(
+            opportunity["probability"]
+        )
+        fair_odds = opportunity["fair_odds"]
 
         if selection == fixture.player_a:
-            selected_probability = prediction["win_prob_a"]
             opponent = fixture.player_b
         else:
-            selected_probability = prediction["win_prob_b"]
             opponent = fixture.player_a
 
-        fair_odds = (
-            1 / selected_probability
-            if selected_probability > 0
+        price = (
+            db.query(OddsSnapshot)
+            .filter(
+                OddsSnapshot.fixture_id == fixture.id,
+                OddsSnapshot.bookmaker_code == "paddypower",
+                OddsSnapshot.market == "match_winner",
+                OddsSnapshot.selection == selection,
+            )
+            .order_by(
+                OddsSnapshot.captured_at.desc(),
+                OddsSnapshot.id.desc(),
+            )
+            .first()
+        )
+
+        market_odds = (
+            float(price.decimal_odds)
+            if price is not None
             else None
+        )
+
+        value = _value_metrics(
+            selected_probability,
+            fair_odds,
+            market_odds,
         )
 
         rows.append(
@@ -50,11 +87,32 @@ def build_value_board(db):
                 ),
                 "selection": selection,
                 "opponent": opponent,
-                "probability": selected_probability * 100,
+                "probability": selected_probability,
                 "fair_odds": fair_odds,
-                "market_odds": None,
-                "edge": None,
-                "action": "Awaiting Odds",
+                "market_odds": value["market_odds"],
+                "bookmaker": (
+                    "Paddy Power"
+                    if price is not None
+                    else None
+                ),
+                "edge": value["edge_percent"],
+                "expected_value_percent": value.get(
+                    "expected_value_percent"
+                ),
+                "is_value_confirmed": value[
+                    "is_value_confirmed"
+                ],
+                "status": value["status"],
+                "status_tone": value["status_tone"],
+                "action": (
+                    "Consider"
+                    if value["is_value_confirmed"]
+                    else (
+                        "Awaiting Odds"
+                        if value["market_odds"] is None
+                        else "Pass"
+                    )
+                ),
             }
         )
 
