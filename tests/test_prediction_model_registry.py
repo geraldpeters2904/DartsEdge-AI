@@ -25,6 +25,8 @@ class PredictionModelRegistryTests(unittest.TestCase):
                 "transparent-v3.1",
                 "transparent-v3.2",
                 "transparent-v3.3",
+                "transparent-v3.4",
+                "transparent-v3.5",
             ],
         )
         self.assertEqual(

@@ -9,17 +9,48 @@ from app.services.current_match_enrichment_v33_feature_ablation_service import (
 class FakeAblationService(
     CurrentMatchEnrichmentV33FeatureAblationService
 ):
+
     def __init__(self):
         self.calls = []
+        self.snapshot_calls = []
 
-    def _validate(
+    def analyse(
+        self,
+        db,
+        *,
+        offset=0,
+        limit=100,
+        competition_code="MODUS",
+    ):
+        self._test_offset = offset
+        self._test_limit = limit
+        return super().analyse(
+            db,
+            offset=offset,
+            limit=limit,
+            competition_code=competition_code,
+        )
+
+    def _build_snapshot(
+        self,
+        db,
+        match_id,
+        competition_code,
+    ):
+        self.snapshot_calls.append(
+            {
+                "match_id": match_id,
+                "competition_code": competition_code,
+            }
+        )
+        return SimpleNamespace(match_id=match_id)
+
+    def _evaluate_engine(
         self,
         db,
         *,
         engine,
-        offset,
-        limit,
-        competition_code,
+        snapshots,
     ):
         names = tuple(
             feature.name
@@ -30,30 +61,68 @@ class FakeAblationService(
             {
                 "model_version": engine.MODEL_VERSION,
                 "feature_names": names,
-                "offset": offset,
-                "limit": limit,
-                "competition_code": competition_code,
+                "offset": self._test_offset,
+                "limit": self._test_limit,
+                "competition_code": (
+                    self.snapshot_calls[0]["competition_code"]
+                    if self.snapshot_calls
+                    else None
+                ),
+                "match_ids": tuple(
+                    snapshot.match_id
+                    for snapshot in snapshots
+                ),
             }
         )
 
-        # Baseline contains scoring_power.
         if "scoring_power" in names:
-            return SimpleNamespace(
-                model_version="transparent-v3.3",
-                matches_evaluated=100,
-                accuracy=62.0,
-                average_brier_score=0.220,
-                average_log_loss=0.640,
-            )
+            return {
+                "accuracy": 62.0,
+                "brier": 0.220,
+                "log_loss": 0.640,
+            }
 
-        # Removing scoring_power makes the model worse.
-        return SimpleNamespace(
-            model_version="transparent-v3.3",
-            matches_evaluated=100,
-            accuracy=58.0,
-            average_brier_score=0.240,
-            average_log_loss=0.680,
-        )
+        return {
+            "accuracy": 58.0,
+            "brier": 0.240,
+            "log_loss": 0.680,
+        }
+
+
+class FakeQuery:
+
+    def __init__(self):
+        self._offset = 0
+        self._limit = 100
+
+    def filter(self, *args):
+        return self
+
+    def order_by(self, *args):
+        return self
+
+    def offset(self, value):
+        self._offset = value
+        return self
+
+    def limit(self, value):
+        self._limit = value
+        return self
+
+    def all(self):
+        return [
+            (match_id,)
+            for match_id in range(
+                self._offset + 1,
+                self._offset + self._limit + 1,
+            )
+        ]
+
+
+class FakeDb:
+
+    def query(self, *args):
+        return FakeQuery()
 
 
 class CurrentMatchEnrichmentV33FeatureAblationIntegrationTests(
@@ -63,7 +132,7 @@ class CurrentMatchEnrichmentV33FeatureAblationIntegrationTests(
         service = FakeAblationService()
 
         report = service.analyse(
-            object(),
+            FakeDb(),
             offset=250,
             limit=100,
             competition_code="MODUS",
@@ -106,7 +175,7 @@ class CurrentMatchEnrichmentV33FeatureAblationIntegrationTests(
         service = FakeAblationService()
 
         report = service.analyse(
-            object(),
+            FakeDb(),
             offset=0,
             limit=100,
         )
@@ -130,7 +199,7 @@ class CurrentMatchEnrichmentV33FeatureAblationIntegrationTests(
         service = FakeAblationService()
 
         report = service.analyse(
-            object(),
+            FakeDb(),
             offset=0,
             limit=100,
         )
@@ -170,7 +239,7 @@ class CurrentMatchEnrichmentV33FeatureAblationIntegrationTests(
         service = FakeAblationService()
 
         report = service.analyse(
-            object(),
+            FakeDb(),
             offset=0,
             limit=100,
         )
