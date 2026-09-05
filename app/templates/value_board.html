@@ -20,7 +20,10 @@
             <th>Win %</th>
             <th>Fair Odds</th>
             <th>Market Odds</th>
+            <th>Bookmaker</th>
             <th>Edge</th>
+            <th>EV</th>
+            <th>Status</th>
             <th>Action</th>
             <th>Analysis</th>
         </tr>
@@ -70,6 +73,14 @@
             </td>
 
             <td>
+                {% if row.bookmaker %}
+                    {{ row.bookmaker }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
                 {% if row.edge is not none %}
 
                     {% if row.edge > 0 %}
@@ -88,7 +99,29 @@
             </td>
 
             <td>
-                {% if row.action == "Back" %}
+                {% if row.expected_value_percent is not none %}
+                    {% if row.expected_value_percent > 0 %}
+                        <span class="text-positive">
+                            +{{ "%.1f"|format(row.expected_value_percent) }}%
+                        </span>
+                    {% else %}
+                        <span class="text-negative">
+                            {{ "%.1f"|format(row.expected_value_percent) }}%
+                        </span>
+                    {% endif %}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                {{ row.status }}
+            </td>
+
+            <td>
+                {% if row.action == "Consider" %}
+                    🟢 Consider
+                {% elif row.action == "Back" %}
                     🟢 Back
                 {% elif row.action == "Watch" %}
                     🟡 Watch
