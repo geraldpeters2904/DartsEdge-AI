@@ -198,3 +198,17 @@ app.include_router(historical_import_queue_router)
 app.include_router(historical_import_engine_router)
 app.include_router(modus_capture_assistant_router)
 app.include_router(import_wizard_router)
+
+app.include_router(modus_fixture_import_router)
+
+app.include_router(modus_capture_manager_router)
+
+app.include_router(capture_library_router)
+
+app.include_router(historical_capture_batch_router)
+
+app.include_router(historical_operations_router)
+
+app.include_router(capture_discovery_router)
+
+app.include_router(capture_wizard_router)
