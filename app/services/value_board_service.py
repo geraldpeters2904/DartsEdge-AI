@@ -116,9 +116,17 @@ def build_value_board(db):
             }
         )
 
-    # Highest model probability first for now.
     rows.sort(
-    key=lambda row: (row["fixture_date"], -row["probability"])
-)
+        key=lambda row: (
+            row["fixture_date"],
+            0 if row["is_value_confirmed"] else 1,
+            -(
+                row["expected_value_percent"]
+                if row["expected_value_percent"] is not None
+                else float("-inf")
+            ),
+            -row["probability"],
+        )
+    )
 
     return rows

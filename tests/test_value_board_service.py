@@ -107,6 +107,86 @@ class ValueBoardServiceTests(unittest.TestCase):
             "Consider",
         )
 
+    @patch(
+        "app.services.value_board_service.context_to_opportunity"
+    )
+    @patch(
+        "app.services.value_board_service.build_prediction_context"
+    )
+    @patch(
+        "app.services.value_board_service.get_scheduled_fixtures"
+    )
+    def test_ranks_stronger_confirmed_value_ahead_of_win_probability(
+        self,
+        get_scheduled_fixtures,
+        build_prediction_context,
+        context_to_opportunity,
+    ):
+        fixtures = [
+            SimpleNamespace(
+                id=1,
+                date=None,
+                tournament="MODUS Super Series",
+                stage=None,
+                match_format=None,
+                player_a="Player A",
+                player_b="Player B",
+            ),
+            SimpleNamespace(
+                id=2,
+                date=None,
+                tournament="MODUS Super Series",
+                stage=None,
+                match_format=None,
+                player_a="Player C",
+                player_b="Player D",
+            ),
+        ]
+        get_scheduled_fixtures.return_value = fixtures
+        build_prediction_context.side_effect = [
+            SimpleNamespace(),
+            SimpleNamespace(),
+        ]
+        context_to_opportunity.side_effect = [
+            {
+                "selection": "Player A",
+                "probability": 65.0,
+                "fair_odds": 1.54,
+            },
+            {
+                "selection": "Player C",
+                "probability": 55.0,
+                "fair_odds": 1.82,
+            },
+        ]
+
+        db = MagicMock()
+        query = db.query.return_value
+        filtered = query.filter.return_value
+        ordered = filtered.order_by.return_value
+        ordered.first.side_effect = [
+            SimpleNamespace(
+                decimal_odds=1.60,
+                bookmaker_code="paddypower",
+            ),
+            SimpleNamespace(
+                decimal_odds=2.20,
+                bookmaker_code="paddypower",
+            ),
+        ]
+
+        rows = build_value_board(db)
+
+        self.assertEqual(
+            [row["fixture_id"] for row in rows],
+            [2, 1],
+        )
+        self.assertGreater(
+            rows[0]["expected_value_percent"],
+            rows[1]["expected_value_percent"],
+        )
+
+
 
 if __name__ == "__main__":
     unittest.main()
