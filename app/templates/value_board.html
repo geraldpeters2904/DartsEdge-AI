@@ -139,6 +139,67 @@
                 >
                     View Prediction
                 </a>
+
+                {% if row.action == "Consider" and row.market_odds is not none %}
+                    <form method="post" action="/bet-slip/add">
+                        <input
+                            type="hidden"
+                            name="fixture_id"
+                            value="{{ row.fixture_id }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="market"
+                            value="Match Winner"
+                        >
+                        <input
+                            type="hidden"
+                            name="selection"
+                            value="{{ row.selection }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="bookmaker"
+                            value="{{ row.bookmaker }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="odds"
+                            value="{{ row.market_odds }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="stake"
+                            value="1.00"
+                        >
+                        <input
+                            type="hidden"
+                            name="model_probability"
+                            value="{{ row.probability }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="expected_value"
+                            value="{{ row.expected_value_percent }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="kelly_stake"
+                            value="0"
+                        >
+                        <input
+                            type="hidden"
+                            name="strategy_name"
+                            value="Daily Value Board"
+                        >
+                        <button
+                            class="small-button"
+                            type="submit"
+                        >
+                            Add to Bet Slip
+                        </button>
+                    </form>
+                {% endif %}
             </td>
         </tr>
 

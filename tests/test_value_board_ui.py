@@ -19,6 +19,13 @@ class ValueBoardUITests(unittest.TestCase):
         self.assertIn("Status", text)
         self.assertIn('row.action == "Consider"', text)
         self.assertIn("🟢 Consider", text)
+        self.assertIn('action="/bet-slip/add"', text)
+        self.assertIn('name="fixture_id"', text)
+        self.assertIn('name="selection"', text)
+        self.assertIn('name="odds"', text)
+        self.assertIn('name="model_probability"', text)
+        self.assertIn('name="expected_value"', text)
+        self.assertIn("Add to Bet Slip", text)
 
     def test_route_still_renders(self):
         response = TestClient(app).get("/value-board")
