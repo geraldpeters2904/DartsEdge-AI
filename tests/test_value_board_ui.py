@@ -28,6 +28,8 @@ class ValueBoardUITests(unittest.TestCase):
         self.assertIn('name="model_probability"', text)
         self.assertIn('name="expected_value"', text)
         self.assertIn("Add to Bet Slip", text)
+        self.assertIn("<th>Model %</th>", text)
+        self.assertNotIn("<th>Win %</th>", text)
 
     def test_route_still_renders(self):
         response = TestClient(app).get("/value-board")
