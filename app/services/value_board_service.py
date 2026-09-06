@@ -157,6 +157,224 @@ def _current_player_total_180_line(rows, player_name):
     }
 
 
+def _current_total_180_line(rows):
+    grouped = {}
+
+    for row in rows:
+        selection = str(
+            getattr(row, "selection", "")
+            or ""
+        )
+
+        match = re.match(
+            r"^(Over|Under) \(\+([0-9]+(?:\.[0-9]+)?)\)$",
+            selection,
+        )
+        if match is None:
+            continue
+
+        side = match.group(1).lower()
+        line = float(match.group(2))
+
+        timestamp = getattr(
+            row,
+            "captured_at",
+            None,
+        )
+        row_id = getattr(
+            row,
+            "id",
+            0,
+        )
+
+        grouped.setdefault(
+            line,
+            {},
+        )[side] = (
+            timestamp,
+            row_id,
+            float(row.decimal_odds),
+        )
+
+    complete = []
+
+    for line, sides in grouped.items():
+        if (
+            "over" not in sides
+            or "under" not in sides
+        ):
+            continue
+
+        newest = max(
+            sides["over"][:2],
+            sides["under"][:2],
+        )
+
+        complete.append(
+            (
+                newest,
+                line,
+                sides,
+            )
+        )
+
+    if not complete:
+        return None
+
+    _, line, sides = max(
+        complete,
+        key=lambda item: item[0],
+    )
+
+    return {
+        "line": line,
+        "over_odds": sides["over"][2],
+        "under_odds": sides["under"][2],
+    }
+
+
+def _total_180_rows(db, fixture):
+    player_a_expectation = _player_180_expectation(
+        db,
+        fixture.player_a,
+    )
+    player_b_expectation = _player_180_expectation(
+        db,
+        fixture.player_b,
+    )
+
+    if (
+        player_a_expectation is None
+        or player_b_expectation is None
+    ):
+        return []
+
+    price_rows = (
+        db.query(OddsSnapshot)
+        .filter(
+            OddsSnapshot.fixture_id == fixture.id,
+            OddsSnapshot.bookmaker_code == "paddypower",
+            OddsSnapshot.market == "total_180s",
+        )
+        .all()
+    )
+
+    current = _current_total_180_line(
+        price_rows,
+    )
+
+    if current is None:
+        return []
+
+    line = float(current["line"])
+    expected = (
+        float(player_a_expectation["expected"])
+        + float(player_b_expectation["expected"])
+    )
+
+    over_probability_decimal = probability_over(
+        line,
+        expected,
+    )
+    under_probability_decimal = (
+        1.0 - over_probability_decimal
+    )
+
+    sides = [
+        (
+            "Over",
+            over_probability_decimal,
+            float(current["over_odds"]),
+        ),
+        (
+            "Under",
+            under_probability_decimal,
+            float(current["under_odds"]),
+        ),
+    ]
+
+    rows = []
+
+    for side, probability_decimal, market_odds in sides:
+        probability = probability_decimal * 100.0
+
+        fair_odds = (
+            1.0 / probability_decimal
+            if probability_decimal > 0
+            else 0.0
+        )
+
+        value = _value_metrics(
+            probability,
+            fair_odds,
+            market_odds,
+        )
+
+        rows.append(
+            {
+                "fixture_id": fixture.id,
+                "fixture_date": fixture.date,
+                "tournament": fixture.tournament,
+                "stage": fixture.stage,
+                "match_format": fixture.match_format,
+                "player_a": fixture.player_a,
+                "player_b": fixture.player_b,
+                "match": (
+                    f"{fixture.player_a} vs "
+                    f"{fixture.player_b}"
+                ),
+                "market": "Total 180s",
+                "selection": (
+                    f"{side} {line:g} Total 180s"
+                ),
+                "opponent": None,
+                "probability": round(
+                    probability,
+                    2,
+                ),
+                "fair_odds": round(
+                    fair_odds,
+                    2,
+                ),
+                "market_odds": value[
+                    "market_odds"
+                ],
+                "bookmaker": "Paddy Power",
+                "edge": value[
+                    "edge_percent"
+                ],
+                "expected_value_percent": value.get(
+                    "expected_value_percent"
+                ),
+                "is_value_confirmed": value[
+                    "is_value_confirmed"
+                ],
+                "status": value[
+                    "status"
+                ],
+                "status_tone": value[
+                    "status_tone"
+                ],
+                "action": (
+                    "Consider"
+                    if value["is_value_confirmed"]
+                    else "Pass"
+                ),
+                "player_a_history_matches": (
+                    player_a_expectation["matches"]
+                ),
+                "player_b_history_matches": (
+                    player_b_expectation["matches"]
+                ),
+                "expected_180s": round(
+                    expected,
+                    3,
+                ),
+            }
+        )
+
+    return rows
+
 def _player_total_180_rows(db, fixture, player_name):
     expectation = _player_180_expectation(
         db,
@@ -412,6 +630,13 @@ def build_value_board(db):
                 db,
                 fixture,
                 fixture.player_b,
+            )
+        )
+
+        rows.extend(
+            _total_180_rows(
+                db,
+                fixture,
             )
         )
 
