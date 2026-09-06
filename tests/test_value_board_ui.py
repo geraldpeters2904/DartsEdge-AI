@@ -22,6 +22,8 @@ class ValueBoardUITests(unittest.TestCase):
         self.assertIn('action="/bet-slip/add"', text)
         self.assertIn('name="fixture_id"', text)
         self.assertIn('name="selection"', text)
+        self.assertIn('name="market"', text)
+        self.assertIn('value="{{ row.market }}"', text)
         self.assertIn('name="odds"', text)
         self.assertIn('name="model_probability"', text)
         self.assertIn('name="expected_value"', text)

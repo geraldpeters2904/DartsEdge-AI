@@ -2,7 +2,52 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from app.services.value_board_service import build_value_board
+from app.services.value_board_service import (
+    _current_player_total_180_line,
+    build_value_board,
+)
+
+
+class PlayerTotal180LineTests(unittest.TestCase):
+
+    def test_uses_most_recent_line_and_ignores_stale_line(self):
+        from datetime import datetime
+
+        rows = [
+            SimpleNamespace(
+                id=144,
+                captured_at=datetime(2026, 9, 4, 14, 25, 48),
+                selection="Justin Smith | Over (+0.5)",
+                decimal_odds=1.363636,
+            ),
+            SimpleNamespace(
+                id=145,
+                captured_at=datetime(2026, 9, 4, 14, 25, 48),
+                selection="Justin Smith | Under (+0.5)",
+                decimal_odds=2.875,
+            ),
+            SimpleNamespace(
+                id=230,
+                captured_at=datetime(2026, 9, 4, 16, 17, 40),
+                selection="Justin Smith | Over (+1.5)",
+                decimal_odds=2.75,
+            ),
+            SimpleNamespace(
+                id=231,
+                captured_at=datetime(2026, 9, 4, 16, 17, 40),
+                selection="Justin Smith | Under (+1.5)",
+                decimal_odds=1.4,
+            ),
+        ]
+
+        current = _current_player_total_180_line(
+            rows,
+            "Justin Smith",
+        )
+
+        self.assertEqual(current["line"], 1.5)
+        self.assertEqual(current["over_odds"], 2.75)
+        self.assertEqual(current["under_odds"], 1.4)
 
 
 class ValueBoardServiceTests(unittest.TestCase):
@@ -70,6 +115,10 @@ class ValueBoardServiceTests(unittest.TestCase):
         self.assertEqual(
             rows[0]["selection"],
             "Martyn Turner",
+        )
+        self.assertEqual(
+            rows[0]["market"],
+            "Match Winner",
         )
         self.assertEqual(
             rows[0]["probability"],
