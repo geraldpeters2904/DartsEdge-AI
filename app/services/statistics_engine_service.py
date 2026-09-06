@@ -103,10 +103,13 @@ class StatisticsEngineService:
             performance.scores_140_plus or 0
             for performance in performances
         )
-        scores_180 = sum(
-            performance.scores_180 or 0
+        scores_180_values = [
+            int(performance.scores_180)
             for performance in performances
-        )
+            if performance.scores_180 is not None
+        ]
+
+        scores_180 = sum(scores_180_values)
 
         checkout_attempts = sum(
             performance.checkout_attempts or 0
@@ -154,8 +157,8 @@ class StatisticsEngineService:
             scores_140_plus=scores_140_plus,
             scores_180=scores_180,
             maximums_per_match=(
-                round(scores_180 / matches_played, 3)
-                if matches_played
+                round(scores_180 / len(scores_180_values), 3)
+                if scores_180_values
                 else 0.0
             ),
             checkout_attempts=checkout_attempts,

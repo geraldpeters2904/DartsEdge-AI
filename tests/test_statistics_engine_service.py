@@ -172,6 +172,27 @@ class StatisticsEngineServiceTests(unittest.TestCase):
         )
         self.assertIsNone(stats.highest_checkout)
 
+    def test_maximums_per_match_ignores_matches_with_missing_180_data(self):
+        self.add_performance(
+            days_ago=2,
+            won_match=True,
+            scores_180=2,
+        )
+        self.add_performance(
+            days_ago=1,
+            won_match=False,
+            scores_180=None,
+        )
+
+        stats = self.service.build_player_statistics(
+            self.db,
+            self.player.id,
+        )
+
+        self.assertEqual(stats.matches_played, 2)
+        self.assertEqual(stats.scores_180, 2)
+        self.assertEqual(stats.maximums_per_match, 2.0)
+
     def test_filters_by_competition(self):
         self.add_performance(
             days_ago=2,
