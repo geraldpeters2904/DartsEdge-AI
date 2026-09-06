@@ -5,6 +5,7 @@ from datetime import date, timedelta
 
 from app.models.match import Match
 from app.models.player import Player
+from app.services.player_name_service import canonical_player_display_name, normalise_player_name
 from app.providers.base import FixtureRecord
 
 
@@ -32,9 +33,15 @@ class FixtureImportService:
         existing = self._existing_keys(start, end)
         rows = []
         for fixture in fixtures:
+            fixture_key = (
+                fixture.event_date.isoformat(),
+                (fixture.tournament or "").strip().casefold(),
+                normalise_player_name(fixture.player_a),
+                normalise_player_name(fixture.player_b),
+            )
             rows.append({
                 "fixture": fixture,
-                "duplicate": fixture.natural_key() in existing,
+                "duplicate": fixture_key in existing,
             })
         return {
             "provider": provider,
@@ -59,16 +66,18 @@ class FixtureImportService:
                     skipped += 1
                     continue
                 try:
-                    players_created += self._ensure_player(fixture.player_a)
-                    players_created += self._ensure_player(fixture.player_b)
+                    player_a = canonical_player_display_name(fixture.player_a)
+                    player_b = canonical_player_display_name(fixture.player_b)
+                    players_created += self._ensure_player(player_a)
+                    players_created += self._ensure_player(player_b)
                     self.db.add(Match(
                         date=fixture.event_date,
                         tournament=fixture.tournament,
                         stage=fixture.stage,
                         match_format=fixture.match_format,
                         status="scheduled",
-                        player_a=fixture.player_a,
-                        player_b=fixture.player_b,
+                        player_a=player_a,
+                        player_b=player_b,
                         winner=None,
                         score=None,
                         first_180_player=None,
@@ -105,8 +114,8 @@ class FixtureImportService:
             (
                 row.date.isoformat(),
                 (row.tournament or "").strip().casefold(),
-                (row.player_a or "").strip().casefold(),
-                (row.player_b or "").strip().casefold(),
+                normalise_player_name(row.player_a),
+                normalise_player_name(row.player_b),
             )
             for row in rows
         }

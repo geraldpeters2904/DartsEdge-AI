@@ -8,6 +8,7 @@ from app.connectors import ConnectorRegistry, FeedConnectorError
 from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
 from app.models.match import Match
 from app.models.player import Player
+from app.services.player_name_service import canonical_player_display_name, normalise_player_name
 
 
 class FeedConnectorService:
@@ -71,7 +72,18 @@ class FeedConnectorService:
             records = self.registry.get(config.connector_type).fetch(config)
             records = self._filter(records, config, days)
             existing = self._existing_keys(records)
-            rows = [{"fixture": row, "duplicate": row.natural_key() in existing} for row in records]
+            rows = [
+                {
+                    "fixture": row,
+                    "duplicate": (
+                        row.event_date.isoformat(),
+                        (row.tournament or "").strip().casefold(),
+                        normalise_player_name(row.player_a),
+                        normalise_player_name(row.player_b),
+                    ) in existing,
+                }
+                for row in records
+            ]
             self._history(config.connector_id, "preview", "success", started, len(rows), sum(not x["duplicate"] for x in rows), sum(x["duplicate"] for x in rows))
             return {"config": config, "rows": rows, "count": len(rows), "new_count": sum(not x["duplicate"] for x in rows)}
         except Exception as exc:
@@ -88,11 +100,13 @@ class FeedConnectorService:
                 if item["duplicate"]:
                     skipped += 1
                     continue
-                players_created += self._ensure_player(fixture.player_a)
-                players_created += self._ensure_player(fixture.player_b)
+                player_a = canonical_player_display_name(fixture.player_a)
+                player_b = canonical_player_display_name(fixture.player_b)
+                players_created += self._ensure_player(player_a)
+                players_created += self._ensure_player(player_b)
                 self.db.add(Match(date=fixture.event_date, tournament=fixture.tournament, stage=fixture.stage,
-                                  match_format=fixture.match_format, status="scheduled", player_a=fixture.player_a,
-                                  player_b=fixture.player_b, winner=None, score=None, first_180_player=None,
+                                  match_format=fixture.match_format, status="scheduled", player_a=player_a,
+                                  player_b=player_b, winner=None, score=None, first_180_player=None,
                                   first_leg_winner=None))
                 created += 1
             self.db.commit()
@@ -147,9 +161,18 @@ class FeedConnectorService:
             return set()
         start, end = min(r.event_date for r in records), max(r.event_date for r in records)
         matches = self.db.query(Match).filter(Match.date >= start, Match.date <= end).all()
-        return {(m.date.isoformat(), (m.tournament or "").strip().casefold(), (m.player_a or "").strip().casefold(), (m.player_b or "").strip().casefold()) for m in matches}
+        return {
+            (
+                m.date.isoformat(),
+                (m.tournament or "").strip().casefold(),
+                normalise_player_name(m.player_a),
+                normalise_player_name(m.player_b),
+            )
+            for m in matches
+        }
 
     def _ensure_player(self, name):
+        name = canonical_player_display_name(name)
         if self.db.query(Player).filter(Player.name == name).first():
             return 0
         self.db.add(Player(name=name)); self.db.flush(); return 1

@@ -66,6 +66,76 @@ class FixtureImportTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_import_canonicalises_player_display_names(self):
+        db = self.Session()
+        try:
+            bad = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+            event_date = (date.today() + timedelta(days=1)).isoformat()
+            json.dump({"fixtures": [
+                {
+                    "external_id": "name-fix",
+                    "date": event_date,
+                    "tournament": "MODUS",
+                    "stage": "Group A",
+                    "match_format": "Best of 7",
+                    "player_a": "Noa-Lynn van_Leuven_",
+                    "player_b": "Beta",
+                }
+            ]}, bad)
+            bad.close()
+            try:
+                provider = RemoteJsonFixtureProvider(feed_url=f"file://{bad.name}")
+                FixtureImportService(
+                    db,
+                    StubProviderService(provider),
+                ).import_fixtures("remote-json", 7)
+                match = db.query(Match).one()
+                player = db.query(Player).filter(Player.name.like("Noa-Lynn%")).one()
+                self.assertEqual(match.player_a, "Noa-Lynn van Leuven")
+                self.assertEqual(player.name, "Noa-Lynn van Leuven")
+            finally:
+                os.unlink(bad.name)
+        finally:
+            db.close()
+
+    def test_preview_treats_canonical_name_variant_as_duplicate(self):
+        db = self.Session()
+        try:
+            event_date = date.today() + timedelta(days=1)
+            db.add(Match(
+                date=event_date,
+                tournament="MODUS",
+                player_a="Noa-Lynn van_Leuven_",
+                player_b="Beta",
+                status="scheduled",
+            ))
+            db.commit()
+
+            feed = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+            json.dump({"fixtures": [
+                {
+                    "external_id": "canonical-dup",
+                    "date": event_date.isoformat(),
+                    "tournament": "MODUS",
+                    "stage": "Group A",
+                    "match_format": "Best of 7",
+                    "player_a": "Noa-Lynn van Leuven",
+                    "player_b": "Beta",
+                }
+            ]}, feed)
+            feed.close()
+            try:
+                provider = RemoteJsonFixtureProvider(feed_url=f"file://{feed.name}")
+                preview = FixtureImportService(
+                    db,
+                    StubProviderService(provider),
+                ).preview("remote-json", 7)
+                self.assertEqual(preview["new_count"], 0)
+            finally:
+                os.unlink(feed.name)
+        finally:
+            db.close()
+
     def test_repeated_import_is_duplicate_safe(self):
         db = self.Session()
         try:

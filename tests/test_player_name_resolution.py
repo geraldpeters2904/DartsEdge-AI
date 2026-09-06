@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from app.services.player_name_service import (
+    canonical_player_display_name,
     normalise_player_name,
     resolve_player_by_name,
 )
@@ -30,6 +31,14 @@ class FakeDb:
 
 
 class PlayerNameResolutionTests(unittest.TestCase):
+    def test_canonicalises_display_name_without_lowercasing(self):
+        self.assertEqual(
+            canonical_player_display_name(
+                "  Noa-Lynn van_Leuven_ "
+            ),
+            "Noa-Lynn van Leuven",
+        )
+
     def test_normalises_underscore_case_and_whitespace(self):
         self.assertEqual(
             normalise_player_name("  Keanu   Van_Velzen "),

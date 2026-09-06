@@ -8,6 +8,7 @@ from app.models.match_player_stats import MatchPlayerStats
 from app.models.odds_snapshot import OddsSnapshot
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.models.historical_import import HistoricalImportBatch, HistoricalImportItem, PlayerAlias
+from app.services.player_name_service import canonical_player_display_name, normalise_player_name
 from app.services.canonical_data_service import store_raw, map_entity, record_provenance, SUPPORTED_COMPETITIONS
 
 REQUIRED = ('date','player_a','player_b')
@@ -37,10 +38,10 @@ def _normalise_row(row, provider, default_competition):
       'stage':str(r.get('stage') or 'Historical').strip(),
       'match_format':str(r.get('match_format') or r.get('format') or 'Best of 7').strip(),
       'status':str(r.get('status') or ('completed' if r.get('winner') else 'scheduled')).strip().lower(),
-      'player_a':str(r['player_a']).strip(),'player_b':str(r['player_b']).strip(),
-      'winner':str(r.get('winner') or '').strip() or None,'score':str(r.get('score') or '').strip() or None,
-      'first_180_player':str(r.get('first_180_player') or '').strip() or None,
-      'first_leg_winner':str(r.get('first_leg_winner') or '').strip() or None,
+      'player_a':canonical_player_display_name(r['player_a']),'player_b':canonical_player_display_name(r['player_b']),
+      'winner':canonical_player_display_name(r.get('winner')) or None,'score':str(r.get('score') or '').strip() or None,
+      'first_180_player':canonical_player_display_name(r.get('first_180_player')) or None,
+      'first_leg_winner':canonical_player_display_name(r.get('first_leg_winner')) or None,
       'provider':provider,
     }
     for side in ('player_a','player_b'):
@@ -95,6 +96,25 @@ def _resolve_player(db,name,provider,batch):
     map_entity(db,provider,'player',name,player.id)
     return player,created
 
+
+def _find_existing_match(db, match_date, tournament, player_a, player_b):
+    candidates = db.query(Match).filter(
+        Match.date == match_date,
+        Match.tournament == tournament,
+    ).all()
+
+    player_a_key = normalise_player_name(player_a)
+    player_b_key = normalise_player_name(player_b)
+
+    for match in candidates:
+        if (
+            normalise_player_name(match.player_a) == player_a_key
+            and normalise_player_name(match.player_b) == player_b_key
+        ):
+            return match
+
+    return None
+
 def import_rows(db,rows,filename,provider='historical-upload',competition='MODUS'):
     batch=HistoricalImportBatch(batch_uuid=str(uuid.uuid4()),filename=filename,provider=provider,competition_code=competition,received_rows=len(rows),status='importing')
     db.add(batch); db.flush(); created_players=created_matches=duplicates=rejected=0
@@ -104,7 +124,7 @@ def import_rows(db,rows,filename,provider='historical-upload',competition='MODUS
           raw,_=store_raw(db,provider,'fixture',row['external_id'],{**row,'date':row['date'].isoformat()})
           pa,ca=_resolve_player(db,row['player_a'],provider,batch); pb,cb=_resolve_player(db,row['player_b'],provider,batch)
           created_players += int(ca)+int(cb)
-          existing=db.query(Match).filter(Match.date==row['date'],Match.player_a==row['player_a'],Match.player_b==row['player_b'],Match.tournament==row['tournament']).first()
+          existing=_find_existing_match(db,row['date'],row['tournament'],row['player_a'],row['player_b'])
           if existing:
             duplicates+=1; db.add(HistoricalImportItem(batch_id=batch.id,entity_type='match',internal_id=existing.id,external_id=row['external_id'],action='duplicate',created_by_batch=False)); continue
           match=Match(date=row['date'],tournament=row['tournament'],stage=row['stage'],match_format=row['match_format'],status=row['status'],player_a=row['player_a'],player_b=row['player_b'],winner=row['winner'],score=row['score'],first_180_player=row['first_180_player'],first_leg_winner=row['first_leg_winner'])
@@ -255,7 +275,7 @@ def import_rows_with_mappings(db, rows, filename, provider='historical-upload', 
           created_players += int(ca)+int(cb)
           # Store canonical player names when an alias was explicitly reconciled.
           player_a_name, player_b_name = pa.name, pb.name
-          existing=db.query(Match).filter(Match.date==row['date'],Match.player_a==player_a_name,Match.player_b==player_b_name,Match.tournament==row['tournament']).first()
+          existing=_find_existing_match(db,row['date'],row['tournament'],player_a_name,player_b_name)
           if existing:
             duplicates+=1; db.add(HistoricalImportItem(batch_id=batch.id,entity_type='match',internal_id=existing.id,external_id=row['external_id'],action='duplicate',created_by_batch=False)); continue
           match=Match(date=row['date'],tournament=row['tournament'],stage=row['stage'],match_format=row['match_format'],status=row['status'],player_a=player_a_name,player_b=player_b_name,winner=(pa.name if row['winner']==row['player_a'] else pb.name if row['winner']==row['player_b'] else row['winner']),score=row['score'],first_180_player=row['first_180_player'],first_leg_winner=row['first_leg_winner'])

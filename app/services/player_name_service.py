@@ -25,6 +25,24 @@ _SPACE_VARIANTS = {
 }
 
 
+def canonical_player_display_name(value: str) -> str:
+    text = str(value or "")
+
+    for old, new in _APOSTROPHE_VARIANTS.items():
+        text = text.replace(old, new)
+
+    for old, new in _SPACE_VARIANTS.items():
+        text = text.replace(old, new)
+
+    text = unicodedata.normalize("NFKC", text)
+    text = text.replace("\u0301", "'")
+    text = text.replace("_", " ")
+    text = re.sub(r"\s*'\s*", "'", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text
+
+
 def normalise_player_name(value: str) -> str:
     text = str(value or "")
 
