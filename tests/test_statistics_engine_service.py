@@ -237,5 +237,32 @@ class StatisticsEngineServiceTests(unittest.TestCase):
         self.assertEqual(len(stats.recent_form), 3)
 
 
+    def test_reports_number_of_matches_with_180_data(self):
+        self.add_performance(
+            days_ago=3,
+            won_match=True,
+            scores_180=0,
+        )
+        self.add_performance(
+            days_ago=2,
+            won_match=False,
+            scores_180=2,
+        )
+        self.add_performance(
+            days_ago=1,
+            won_match=True,
+            scores_180=None,
+        )
+
+        stats = self.service.build_player_statistics(
+            self.db,
+            self.player.id,
+        )
+
+        self.assertEqual(stats.matches_played, 3)
+        self.assertEqual(stats.scores_180_matches, 2)
+        self.assertEqual(stats.scores_180, 2)
+        self.assertEqual(stats.maximums_per_match, 1.0)
+
 if __name__ == "__main__":
     unittest.main()

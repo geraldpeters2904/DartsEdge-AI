@@ -29,6 +29,7 @@ class PlayerStatistics:
     scores_100_plus: int
     scores_140_plus: int
     scores_180: int
+    scores_180_matches: int
     maximums_per_match: float
 
     checkout_attempts: int
@@ -156,6 +157,7 @@ class StatisticsEngineService:
             scores_100_plus=scores_100_plus,
             scores_140_plus=scores_140_plus,
             scores_180=scores_180,
+            scores_180_matches=len(scores_180_values),
             maximums_per_match=(
                 round(scores_180 / len(scores_180_values), 3)
                 if scores_180_values
