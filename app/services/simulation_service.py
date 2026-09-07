@@ -133,6 +133,7 @@ def simulate_match(
             score: round(probability, 3)
             for score, probability in scores.items()
         },
+        "_score_probabilities": dict(scores),
         "handicaps": {
             "player_a_minus_1_5": round(
                 player_a_minus_1_5,
@@ -152,3 +153,45 @@ def simulate_match(
             "over_6_5": round(over_6_5, 3),
         },
     }
+
+
+def handicap_cover_probability(simulation, *, player, line):
+    scores = simulation.get(
+        "_score_probabilities",
+        simulation["scores"],
+    )
+    probability = 0.0
+
+    for score, score_probability in scores.items():
+        legs_a_text, legs_b_text = score.split("-", 1)
+        legs_a = int(legs_a_text)
+        legs_b = int(legs_b_text)
+
+        if player == "a":
+            covered = (legs_a + float(line)) > legs_b
+        elif player == "b":
+            covered = (legs_b + float(line)) > legs_a
+        else:
+            raise ValueError("player must be 'a' or 'b'")
+
+        if covered:
+            probability += float(score_probability)
+
+    return probability
+
+
+def total_legs_over_probability(simulation, *, line):
+    scores = simulation.get(
+        "_score_probabilities",
+        simulation["scores"],
+    )
+    probability = 0.0
+
+    for score, score_probability in scores.items():
+        legs_a_text, legs_b_text = score.split("-", 1)
+        total_legs = int(legs_a_text) + int(legs_b_text)
+
+        if total_legs > float(line):
+            probability += float(score_probability)
+
+    return probability
