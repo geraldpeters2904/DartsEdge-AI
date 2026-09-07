@@ -12,6 +12,10 @@ from app.services.markets_service import (
 )
 from app.services.opportunity_ranking_service import _value_metrics
 from app.services.match_engine import leg_win_probability
+from app.services.leg_market_calibration_service import (
+    calibrate_handicap_probability,
+    calibrate_total_legs_probability,
+)
 from app.services.simulation_service import (
     handicap_cover_probability,
     simulate_match,
@@ -674,6 +678,33 @@ def _handicap_rows(db, fixture):
             player=player_side,
             line=line,
         )
+
+        if (
+            player_side == "a"
+            and line == -1.5
+        ):
+            probability_decimal = (
+                calibrate_handicap_probability(
+                    probability_decimal
+                )
+            )
+        elif (
+            player_side == "b"
+            and line == 1.5
+        ):
+            player_a_probability = (
+                handicap_cover_probability(
+                    simulation,
+                    player="a",
+                    line=-1.5,
+                )
+            )
+            probability_decimal = (
+                1.0
+                - calibrate_handicap_probability(
+                    player_a_probability
+                )
+            )
         probability = probability_decimal * 100.0
 
         fair_odds = (
@@ -780,6 +811,13 @@ def _total_legs_rows(db, fixture):
             line=line,
         )
     )
+    if line == 5.5:
+        over_probability_decimal = (
+            calibrate_total_legs_probability(
+                over_probability_decimal
+            )
+        )
+
     under_probability_decimal = (
         1.0 - over_probability_decimal
     )
