@@ -26,6 +26,10 @@ class LegMarketValidationRecord:
     player_a_handicap_result: int
     total_legs_over_probability: float
     total_legs_over_result: int
+    player_a_average: Optional[float] = None
+    player_a_checkout: Optional[float] = None
+    player_b_average: Optional[float] = None
+    player_b_checkout: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -218,6 +222,10 @@ class LegMarketValidationEngine:
             total_legs_over_result=int(
                 (legs_a + legs_b) > total_legs_line
             ),
+            player_a_average=float(average_a),
+            player_a_checkout=float(checkout_a),
+            player_b_average=float(average_b),
+            player_b_checkout=float(checkout_b),
         )
 
     @staticmethod
