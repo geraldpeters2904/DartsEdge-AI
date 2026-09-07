@@ -8,6 +8,10 @@ from app.models.player import Player
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.models.odds_snapshot import OddsSnapshot
 from app.services.value_board_service import (
+    _current_handicap_market,
+    _current_total_legs_line,
+    _handicap_rows,
+    _total_legs_rows,
     _current_player_total_180_line,
     _current_total_180_line,
     _current_most_180_market,
@@ -18,6 +22,382 @@ from app.services.value_board_service import (
     build_value_board,
 )
 from tests.helpers.database import create_test_session
+
+
+class HandicapAndTotalLegsLineTests(unittest.TestCase):
+    def test_uses_earliest_complete_handicap_market(self):
+        rows = [
+            SimpleNamespace(
+                id=1,
+                selection="Player A -2.5",
+                decimal_odds=2.375,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=2,
+                selection="Player B +2.5",
+                decimal_odds=1.533333,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=3,
+                selection="Player A -1.5",
+                decimal_odds=1.727273,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=4,
+                selection="Player B +1.5",
+                decimal_odds=2.0,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+        ]
+
+        current = _current_handicap_market(
+            rows,
+            "Player A",
+            "Player B",
+        )
+
+        self.assertEqual(current["player_a_line"], -2.5)
+        self.assertEqual(current["player_a_odds"], 2.375)
+        self.assertEqual(current["player_b_line"], 2.5)
+        self.assertEqual(current["player_b_odds"], 1.533333)
+
+    def test_ignores_incomplete_newer_handicap_market(self):
+        rows = [
+            SimpleNamespace(
+                id=1,
+                selection="Player A -2.5",
+                decimal_odds=2.375,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=2,
+                selection="Player B +2.5",
+                decimal_odds=1.533333,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=3,
+                selection="Player A -1.5",
+                decimal_odds=1.727273,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+        ]
+
+        current = _current_handicap_market(
+            rows,
+            "Player A",
+            "Player B",
+        )
+
+        self.assertEqual(current["player_a_line"], -2.5)
+        self.assertEqual(current["player_b_line"], 2.5)
+
+    def test_uses_earliest_complete_total_legs_line(self):
+        rows = [
+            SimpleNamespace(
+                id=1,
+                selection="Over (+5.5)",
+                decimal_odds=1.533333,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=2,
+                selection="Under (+5.5)",
+                decimal_odds=2.375,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=3,
+                selection="Over (+6.5)",
+                decimal_odds=2.625,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=4,
+                selection="Under (+6.5)",
+                decimal_odds=1.444444,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+        ]
+
+        current = _current_total_legs_line(rows)
+
+        self.assertEqual(current["line"], 5.5)
+        self.assertEqual(current["over_odds"], 1.533333)
+        self.assertEqual(current["under_odds"], 2.375)
+
+    def test_ignores_incomplete_newer_total_legs_line(self):
+        rows = [
+            SimpleNamespace(
+                id=1,
+                selection="Over (+5.5)",
+                decimal_odds=1.533333,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=2,
+                selection="Under (+5.5)",
+                decimal_odds=2.375,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=3,
+                selection="Over (+6.5)",
+                decimal_odds=2.625,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+        ]
+
+        current = _current_total_legs_line(rows)
+
+        self.assertEqual(current["line"], 5.5)
+        self.assertEqual(current["over_odds"], 1.533333)
+        self.assertEqual(current["under_odds"], 2.375)
+
+
+class HandicapAndTotalLegsValueRowsTests(unittest.TestCase):
+    def setUp(self):
+        self.db = create_test_session()
+
+    def tearDown(self):
+        self.db.close()
+
+    def test_builds_handicap_rows_from_model_leg_probability(self):
+        player_a = Player(
+            name="Player A",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        player_b = Player(
+            name="Player B",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        self.db.add_all([player_a, player_b])
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+            match_format="Best of 7",
+        )
+        self.db.add(fixture)
+        self.db.flush()
+
+        captured_at = datetime(2026, 9, 6, 12, 0, 0)
+        self.db.add_all(
+            [
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="Player A -1.5",
+                    decimal_odds=3.20,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="Player B +1.5",
+                    decimal_odds=1.40,
+                    captured_at=captured_at,
+                ),
+            ]
+        )
+        self.db.commit()
+
+        rows = _handicap_rows(
+            self.db,
+            fixture,
+        )
+
+        self.assertEqual(len(rows), 2)
+
+        by_selection = {
+            row["selection"]: row
+            for row in rows
+        }
+
+        player_a = by_selection["Player A -1.5"]
+        player_b = by_selection["Player B +1.5"]
+
+        self.assertEqual(player_a["market"], "Leg Handicap")
+        self.assertEqual(player_a["market_odds"], 3.20)
+        self.assertEqual(player_b["market_odds"], 1.40)
+
+        self.assertAlmostEqual(
+            player_a["probability"],
+            34.38,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            player_b["probability"],
+            65.62,
+            places=2,
+        )
+
+    def test_builds_total_legs_rows_from_model_leg_probability(self):
+        player_a = Player(
+            name="Player A",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        player_b = Player(
+            name="Player B",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        self.db.add_all([player_a, player_b])
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+            match_format="Best of 7",
+        )
+        self.db.add(fixture)
+        self.db.flush()
+
+        captured_at = datetime(2026, 9, 6, 12, 0, 0)
+        self.db.add_all(
+            [
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Over (+5.5)",
+                    decimal_odds=1.80,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Under (+5.5)",
+                    decimal_odds=2.10,
+                    captured_at=captured_at,
+                ),
+            ]
+        )
+        self.db.commit()
+
+        rows = _total_legs_rows(
+            self.db,
+            fixture,
+        )
+
+        self.assertEqual(len(rows), 2)
+
+        by_selection = {
+            row["selection"]: row
+            for row in rows
+        }
+
+        over = by_selection["Over 5.5 Total Legs"]
+        under = by_selection["Under 5.5 Total Legs"]
+
+        self.assertEqual(over["market"], "Total Legs")
+        self.assertEqual(over["market_odds"], 1.80)
+        self.assertEqual(under["market_odds"], 2.10)
+
+        self.assertAlmostEqual(
+            over["probability"],
+            62.5,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            under["probability"],
+            37.5,
+            places=2,
+        )
+
+
+    def test_skips_leg_markets_when_players_have_no_real_history(self):
+        player_a = Player(
+            name="No History A",
+            average=0.0,
+            checkout=0.0,
+            elo=1500.0,
+        )
+        player_b = Player(
+            name="No History B",
+            average=0.0,
+            checkout=0.0,
+            elo=1500.0,
+        )
+        self.db.add_all([player_a, player_b])
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            player_a="No History A",
+            player_b="No History B",
+            status="scheduled",
+            match_format="Best of 7",
+        )
+        self.db.add(fixture)
+        self.db.flush()
+
+        captured_at = datetime(2026, 9, 6, 12, 0, 0)
+
+        self.db.add_all(
+            [
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="No History A -1.5",
+                    decimal_odds=2.0,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="No History B +1.5",
+                    decimal_odds=1.8,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Over (+5.5)",
+                    decimal_odds=1.8,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Under (+5.5)",
+                    decimal_odds=2.0,
+                    captured_at=captured_at,
+                ),
+            ]
+        )
+        self.db.commit()
+
+        self.assertEqual(
+            _handicap_rows(self.db, fixture),
+            [],
+        )
+        self.assertEqual(
+            _total_legs_rows(self.db, fixture),
+            [],
+        )
 
 
 class Player180ExpectationTests(unittest.TestCase):
@@ -1102,6 +1482,161 @@ class ValueBoardPlayer180IntegrationTests(unittest.TestCase):
             {
                 "Justin Smith Over 1.5 180s",
                 "Justin Smith Under 1.5 180s",
+            },
+        )
+
+
+class ValueBoardHandicapTotalLegsIntegrationTests(unittest.TestCase):
+    def setUp(self):
+        self.db = create_test_session()
+
+    def tearDown(self):
+        self.db.close()
+
+    @patch(
+        "app.services.value_board_service.context_to_opportunity"
+    )
+    @patch(
+        "app.services.value_board_service.build_prediction_context"
+    )
+    def test_build_value_board_includes_handicap_and_total_legs_rows(
+        self,
+        build_prediction_context,
+        context_to_opportunity,
+    ):
+        player_a = Player(
+            name="Player A",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        player_b = Player(
+            name="Player B",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        self.db.add_all([player_a, player_b])
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            stage=None,
+            match_format="Best of 7",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+        )
+        self.db.add(fixture)
+        self.db.flush()
+
+        captured_at = datetime(
+            2026,
+            9,
+            6,
+            12,
+            0,
+            0,
+        )
+
+        self.db.add_all(
+            [
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="match_winner",
+                    selection="Player A",
+                    decimal_odds=2.10,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="Player A -1.5",
+                    decimal_odds=3.20,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="Player B +1.5",
+                    decimal_odds=1.40,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Over (+5.5)",
+                    decimal_odds=1.80,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Under (+5.5)",
+                    decimal_odds=2.10,
+                    captured_at=captured_at,
+                ),
+            ]
+        )
+        self.db.commit()
+
+        build_prediction_context.return_value = (
+            SimpleNamespace()
+        )
+        context_to_opportunity.return_value = {
+            "selection": "Player A",
+            "probability": 55.0,
+            "fair_odds": 1.82,
+        }
+
+        rows = build_value_board(self.db)
+
+        markets = [
+            row["market"]
+            for row in rows
+        ]
+
+        self.assertEqual(
+            markets.count("Match Winner"),
+            1,
+        )
+        self.assertEqual(
+            markets.count("Leg Handicap"),
+            2,
+        )
+        self.assertEqual(
+            markets.count("Total Legs"),
+            2,
+        )
+
+        handicap_selections = {
+            row["selection"]
+            for row in rows
+            if row["market"] == "Leg Handicap"
+        }
+        self.assertEqual(
+            handicap_selections,
+            {
+                "Player A -1.5",
+                "Player B +1.5",
+            },
+        )
+
+        total_legs_selections = {
+            row["selection"]
+            for row in rows
+            if row["market"] == "Total Legs"
+        }
+        self.assertEqual(
+            total_legs_selections,
+            {
+                "Over 5.5 Total Legs",
+                "Under 5.5 Total Legs",
             },
         )
 

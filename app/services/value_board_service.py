@@ -3,6 +3,7 @@ import re
 from datetime import date
 
 from app.models.odds_snapshot import OddsSnapshot
+from app.models.player import Player
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.services.fixture_service import get_scheduled_fixtures
 from app.services.markets_service import (
@@ -10,7 +11,14 @@ from app.services.markets_service import (
     probability_over,
 )
 from app.services.opportunity_ranking_service import _value_metrics
+from app.services.match_engine import leg_win_probability
+from app.services.simulation_service import (
+    handicap_cover_probability,
+    simulate_match,
+    total_legs_over_probability,
+)
 from app.services.player_name_service import resolve_player_by_name
+from app.services.player_profile_service import get_player_profile
 from app.services.prediction_context_service import (
     build_prediction_context,
     context_to_opportunity,
@@ -159,6 +167,199 @@ def _current_player_total_180_line(rows, player_name):
         "under_odds": current["under"][1],
     }
 
+
+
+def _current_handicap_market(
+    rows,
+    player_a_name,
+    player_b_name,
+):
+    grouped = {}
+
+    for row in rows:
+        selection = str(
+            getattr(row, "selection", "")
+            or ""
+        )
+
+        match = re.match(
+            r"^(.*) ([+-]\d+(?:\.\d+)?)$",
+            selection,
+        )
+        if match is None:
+            continue
+
+        player_name = match.group(1)
+        line = float(match.group(2))
+
+        if player_name not in {
+            player_a_name,
+            player_b_name,
+        }:
+            continue
+
+        captured_at = getattr(
+            row,
+            "captured_at",
+            None,
+        )
+        row_id = getattr(
+            row,
+            "id",
+            0,
+        ) or 0
+        ordering = (
+            captured_at,
+            row_id,
+        )
+
+        absolute_line = abs(line)
+        group = grouped.setdefault(
+            absolute_line,
+            {
+                "player_a": None,
+                "player_b": None,
+                "latest": None,
+            },
+        )
+
+        if (
+            group["latest"] is None
+            or ordering > group["latest"]
+        ):
+            group["latest"] = ordering
+
+        key = (
+            "player_a"
+            if player_name == player_a_name
+            else "player_b"
+        )
+
+        current = group[key]
+        if (
+            current is None
+            or ordering > current[0]
+        ):
+            group[key] = (
+                ordering,
+                line,
+                float(row.decimal_odds),
+            )
+
+    complete = []
+
+    for group in grouped.values():
+        player_a = group["player_a"]
+        player_b = group["player_b"]
+
+        if (
+            player_a is None
+            or player_b is None
+        ):
+            continue
+
+        if player_a[1] != -player_b[1]:
+            continue
+
+        complete.append(group)
+
+    if not complete:
+        return None
+
+    current = min(
+        complete,
+        key=lambda group: group["latest"],
+    )
+
+    return {
+        "player_a_line": current["player_a"][1],
+        "player_a_odds": current["player_a"][2],
+        "player_b_line": current["player_b"][1],
+        "player_b_odds": current["player_b"][2],
+    }
+
+
+def _current_total_legs_line(rows):
+    grouped = {}
+
+    for row in rows:
+        selection = str(
+            getattr(row, "selection", "")
+            or ""
+        )
+
+        match = re.match(
+            r"^(Over|Under) \(\+([0-9]+(?:\.[0-9]+)?)\)$",
+            selection,
+        )
+        if match is None:
+            continue
+
+        side = match.group(1).lower()
+        line = float(match.group(2))
+        captured_at = getattr(
+            row,
+            "captured_at",
+            None,
+        )
+        row_id = getattr(
+            row,
+            "id",
+            0,
+        ) or 0
+        ordering = (
+            captured_at,
+            row_id,
+        )
+
+        group = grouped.setdefault(
+            line,
+            {
+                "line": line,
+                "over": None,
+                "under": None,
+                "latest": None,
+            },
+        )
+
+        if (
+            group["latest"] is None
+            or ordering > group["latest"]
+        ):
+            group["latest"] = ordering
+
+        current = group[side]
+        if (
+            current is None
+            or ordering > current[0]
+        ):
+            group[side] = (
+                ordering,
+                float(row.decimal_odds),
+            )
+
+    complete = [
+        group
+        for group in grouped.values()
+        if (
+            group["over"] is not None
+            and group["under"] is not None
+        )
+    ]
+
+    if not complete:
+        return None
+
+    current = min(
+        complete,
+        key=lambda group: group["latest"],
+    )
+
+    return {
+        "line": current["line"],
+        "over_odds": current["over"][1],
+        "under_odds": current["under"][1],
+    }
 
 def _current_total_180_line(rows):
     grouped = {}
@@ -335,6 +536,338 @@ def _current_most_180_market(
         ][1],
     }
 
+
+
+def _best_of_from_match_format(match_format):
+    match = re.search(
+        r"Best of (\d+)",
+        str(match_format or ""),
+        re.IGNORECASE,
+    )
+    if match is None:
+        return None
+
+    best_of = int(match.group(1))
+    if best_of <= 0 or best_of % 2 == 0:
+        return None
+
+    return best_of
+
+
+def _match_leg_simulation(db, fixture):
+    profile_a = get_player_profile(
+        db,
+        fixture.player_a,
+    )
+    profile_b = get_player_profile(
+        db,
+        fixture.player_b,
+    )
+
+    if profile_a is None or profile_b is None:
+        return None
+
+    average_a = profile_a.get("average")
+    checkout_a = profile_a.get("checkout")
+    average_b = profile_b.get("average")
+    checkout_b = profile_b.get("checkout")
+
+    required = (
+        average_a,
+        checkout_a,
+        average_b,
+        checkout_b,
+    )
+
+    if any(
+        value is None or float(value) <= 0.0
+        for value in required
+    ):
+        return None
+
+    best_of = _best_of_from_match_format(
+        fixture.match_format
+    )
+    if best_of is None:
+        return None
+
+    player_a = Player(
+        name=fixture.player_a,
+        average=float(average_a),
+        checkout=float(checkout_a),
+    )
+    player_b = Player(
+        name=fixture.player_b,
+        average=float(average_b),
+        checkout=float(checkout_b),
+    )
+
+    leg_probability = leg_win_probability(
+        player_a,
+        player_b,
+    )
+
+    return simulate_match(
+        {
+            "elo": float(
+                profile_a.get("elo")
+                or 1500.0
+            )
+        },
+        {
+            "elo": float(
+                profile_b.get("elo")
+                or 1500.0
+            )
+        },
+        leg_win_prob_a=leg_probability,
+        best_of=best_of,
+    )
+
+
+def _handicap_rows(db, fixture):
+    price_rows = (
+        db.query(OddsSnapshot)
+        .filter(
+            OddsSnapshot.fixture_id == fixture.id,
+            OddsSnapshot.bookmaker_code == "paddypower",
+            OddsSnapshot.market == "handicap",
+        )
+        .all()
+    )
+
+    current = _current_handicap_market(
+        price_rows,
+        fixture.player_a,
+        fixture.player_b,
+    )
+    if current is None:
+        return []
+
+    simulation = _match_leg_simulation(
+        db,
+        fixture,
+    )
+    if simulation is None:
+        return []
+
+    outcomes = [
+        (
+            fixture.player_a,
+            "a",
+            float(current["player_a_line"]),
+            float(current["player_a_odds"]),
+        ),
+        (
+            fixture.player_b,
+            "b",
+            float(current["player_b_line"]),
+            float(current["player_b_odds"]),
+        ),
+    ]
+
+    rows = []
+
+    for player_name, player_side, line, market_odds in outcomes:
+        probability_decimal = handicap_cover_probability(
+            simulation,
+            player=player_side,
+            line=line,
+        )
+        probability = probability_decimal * 100.0
+
+        fair_odds = (
+            1.0 / probability_decimal
+            if probability_decimal > 0
+            else 0.0
+        )
+
+        value = _value_metrics(
+            probability,
+            fair_odds,
+            market_odds,
+        )
+
+        rows.append(
+            {
+                "fixture_id": fixture.id,
+                "fixture_date": fixture.date,
+                "tournament": fixture.tournament,
+                "stage": fixture.stage,
+                "match_format": fixture.match_format,
+                "player_a": fixture.player_a,
+                "player_b": fixture.player_b,
+                "match": (
+                    f"{fixture.player_a} vs "
+                    f"{fixture.player_b}"
+                ),
+                "market": "Leg Handicap",
+                "selection": (
+                    f"{player_name} {line:+g}"
+                ),
+                "opponent": (
+                    fixture.player_b
+                    if player_name == fixture.player_a
+                    else fixture.player_a
+                ),
+                "probability": round(
+                    probability,
+                    2,
+                ),
+                "fair_odds": round(
+                    fair_odds,
+                    2,
+                ),
+                "market_odds": value[
+                    "market_odds"
+                ],
+                "bookmaker": "Paddy Power",
+                "edge": value[
+                    "edge_percent"
+                ],
+                "expected_value_percent": value.get(
+                    "expected_value_percent"
+                ),
+                "is_value_confirmed": value[
+                    "is_value_confirmed"
+                ],
+                "status": value[
+                    "status"
+                ],
+                "status_tone": value[
+                    "status_tone"
+                ],
+                "action": (
+                    "Consider"
+                    if value["is_value_confirmed"]
+                    else "Pass"
+                ),
+            }
+        )
+
+    return rows
+
+
+def _total_legs_rows(db, fixture):
+    price_rows = (
+        db.query(OddsSnapshot)
+        .filter(
+            OddsSnapshot.fixture_id == fixture.id,
+            OddsSnapshot.bookmaker_code == "paddypower",
+            OddsSnapshot.market == "total_legs",
+        )
+        .all()
+    )
+
+    current = _current_total_legs_line(
+        price_rows,
+    )
+    if current is None:
+        return []
+
+    simulation = _match_leg_simulation(
+        db,
+        fixture,
+    )
+    if simulation is None:
+        return []
+
+    line = float(current["line"])
+
+    over_probability_decimal = (
+        total_legs_over_probability(
+            simulation,
+            line=line,
+        )
+    )
+    under_probability_decimal = (
+        1.0 - over_probability_decimal
+    )
+
+    outcomes = [
+        (
+            "Over",
+            over_probability_decimal,
+            float(current["over_odds"]),
+        ),
+        (
+            "Under",
+            under_probability_decimal,
+            float(current["under_odds"]),
+        ),
+    ]
+
+    rows = []
+
+    for side, probability_decimal, market_odds in outcomes:
+        probability = probability_decimal * 100.0
+
+        fair_odds = (
+            1.0 / probability_decimal
+            if probability_decimal > 0
+            else 0.0
+        )
+
+        value = _value_metrics(
+            probability,
+            fair_odds,
+            market_odds,
+        )
+
+        rows.append(
+            {
+                "fixture_id": fixture.id,
+                "fixture_date": fixture.date,
+                "tournament": fixture.tournament,
+                "stage": fixture.stage,
+                "match_format": fixture.match_format,
+                "player_a": fixture.player_a,
+                "player_b": fixture.player_b,
+                "match": (
+                    f"{fixture.player_a} vs "
+                    f"{fixture.player_b}"
+                ),
+                "market": "Total Legs",
+                "selection": (
+                    f"{side} {line:g} Total Legs"
+                ),
+                "opponent": None,
+                "probability": round(
+                    probability,
+                    2,
+                ),
+                "fair_odds": round(
+                    fair_odds,
+                    2,
+                ),
+                "market_odds": value[
+                    "market_odds"
+                ],
+                "bookmaker": "Paddy Power",
+                "edge": value[
+                    "edge_percent"
+                ],
+                "expected_value_percent": value.get(
+                    "expected_value_percent"
+                ),
+                "is_value_confirmed": value[
+                    "is_value_confirmed"
+                ],
+                "status": value[
+                    "status"
+                ],
+                "status_tone": value[
+                    "status_tone"
+                ],
+                "action": (
+                    "Consider"
+                    if value["is_value_confirmed"]
+                    else "Pass"
+                ),
+            }
+        )
+
+    return rows
 
 def _most_180_rows(db, fixture):
     player_a_expectation = _player_180_expectation(
@@ -899,6 +1432,21 @@ def build_value_board(db):
                 fixture,
             )
         )
+
+        rows.extend(
+            _handicap_rows(
+                db,
+                fixture,
+            )
+        )
+
+        rows.extend(
+            _total_legs_rows(
+                db,
+                fixture,
+            )
+        )
+
 
     rows.sort(
         key=lambda row: (
