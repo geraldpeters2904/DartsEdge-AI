@@ -10,6 +10,8 @@ from app.models.odds_snapshot import OddsSnapshot
 from app.services.value_board_service import (
     _current_player_total_180_line,
     _current_total_180_line,
+    _current_most_180_market,
+    _most_180_rows,
     _player_180_expectation,
     _player_total_180_rows,
     _total_180_rows,
@@ -193,6 +195,238 @@ class Total180LineTests(unittest.TestCase):
         self.assertEqual(current["line"], 3.5)
         self.assertEqual(current["over_odds"], 2.50)
         self.assertEqual(current["under_odds"], 1.50)
+
+
+class Most180MarketTests(unittest.TestCase):
+    def test_uses_earliest_complete_three_way_market(self):
+        rows = [
+            SimpleNamespace(
+                id=1,
+                selection="Player A",
+                decimal_odds=2.80,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=2,
+                selection="Draw",
+                decimal_odds=3.10,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=3,
+                selection="Player B",
+                decimal_odds=2.37,
+                captured_at=datetime(2026, 9, 4, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=4,
+                selection="Player A",
+                decimal_odds=2.50,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=5,
+                selection="Draw",
+                decimal_odds=3.25,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+            SimpleNamespace(
+                id=6,
+                selection="Player B",
+                decimal_odds=2.75,
+                captured_at=datetime(2026, 9, 5, 12, 0, 0),
+            ),
+        ]
+
+        current = _current_most_180_market(
+            rows,
+            "Player A",
+            "Player B",
+        )
+
+        self.assertEqual(current["player_a_odds"], 2.80)
+        self.assertEqual(current["draw_odds"], 3.10)
+        self.assertEqual(current["player_b_odds"], 2.37)
+
+
+class Most180ValueRowsTests(unittest.TestCase):
+    def setUp(self):
+        self.db = create_test_session()
+
+    def tearDown(self):
+        self.db.close()
+
+    def test_builds_three_way_rows_when_both_players_have_history(self):
+        player_a = Player(name="Player A")
+        player_b = Player(name="Player B")
+        self.db.add_all([player_a, player_b])
+        self.db.flush()
+
+        samples = [
+            (player_a, player_b, 2),
+            (player_a, player_b, 1),
+            (player_b, player_a, 0),
+            (player_b, player_a, 1),
+        ]
+
+        for index, (player, opponent, scores_180) in enumerate(
+            samples,
+            start=1,
+        ):
+            match = Match(
+                date=date(2026, 8, index),
+                tournament="MODUS Super Series",
+                player_a=player.name,
+                player_b=opponent.name,
+                status="completed",
+            )
+            self.db.add(match)
+            self.db.flush()
+
+            self.db.add(
+                PlayerMatchPerformance(
+                    match_id=match.id,
+                    player_id=player.id,
+                    opponent_id=opponent.id,
+                    scores_180=scores_180,
+                    source_provider="test",
+                )
+            )
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+        )
+        self.db.add(fixture)
+        self.db.flush()
+
+        captured_at = datetime(2026, 9, 6, 12, 0, 0)
+
+        self.db.add_all(
+            [
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="most_180s",
+                    selection="Player A",
+                    decimal_odds=2.50,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="most_180s",
+                    selection="Draw",
+                    decimal_odds=3.25,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="most_180s",
+                    selection="Player B",
+                    decimal_odds=2.75,
+                    captured_at=captured_at,
+                ),
+            ]
+        )
+
+        self.db.commit()
+
+        rows = _most_180_rows(
+            self.db,
+            fixture,
+        )
+
+        self.assertEqual(len(rows), 3)
+
+        by_selection = {
+            row["selection"]: row
+            for row in rows
+        }
+
+        self.assertEqual(
+            set(by_selection),
+            {
+                "Player A Most 180s",
+                "Draw Most 180s",
+                "Player B Most 180s",
+            },
+        )
+
+        self.assertEqual(
+            by_selection["Player A Most 180s"]["market"],
+            "Most 180s",
+        )
+        self.assertEqual(
+            by_selection["Player A Most 180s"]["market_odds"],
+            2.50,
+        )
+        self.assertEqual(
+            by_selection["Draw Most 180s"]["market_odds"],
+            3.25,
+        )
+        self.assertEqual(
+            by_selection["Player B Most 180s"]["market_odds"],
+            2.75,
+        )
+
+        total_probability = sum(
+            row["probability"]
+            for row in rows
+        )
+        self.assertAlmostEqual(
+            total_probability,
+            100.0,
+            delta=0.2,
+        )
+
+    def test_skips_when_either_player_has_no_180_history(self):
+        player_a = Player(name="Player A")
+        player_b = Player(name="Player B")
+        self.db.add_all([player_a, player_b])
+        self.db.flush()
+
+        match = Match(
+            date=date(2026, 8, 1),
+            tournament="MODUS Super Series",
+            player_a="Player A",
+            player_b="Player B",
+            status="completed",
+        )
+        self.db.add(match)
+        self.db.flush()
+
+        self.db.add(
+            PlayerMatchPerformance(
+                match_id=match.id,
+                player_id=player_a.id,
+                opponent_id=player_b.id,
+                scores_180=1,
+                source_provider="test",
+            )
+        )
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+        )
+        self.db.add(fixture)
+        self.db.commit()
+
+        self.assertEqual(
+            _most_180_rows(
+                self.db,
+                fixture,
+            ),
+            [],
+        )
 
 
 class PlayerTotal180ValueRowsTests(unittest.TestCase):
@@ -804,6 +1038,30 @@ class ValueBoardPlayer180IntegrationTests(unittest.TestCase):
                     decimal_odds=1.62,
                     captured_at=captured_at,
                 ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="most_180s",
+                    selection="Justin Smith",
+                    decimal_odds=2.50,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="most_180s",
+                    selection="Draw",
+                    decimal_odds=3.25,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="most_180s",
+                    selection="Opponent",
+                    decimal_odds=2.75,
+                    captured_at=captured_at,
+                ),
             ]
         )
         self.db.commit()
@@ -817,10 +1075,11 @@ class ValueBoardPlayer180IntegrationTests(unittest.TestCase):
 
         rows = build_value_board(self.db)
 
-        self.assertEqual(len(rows), 5)
+        self.assertEqual(len(rows), 8)
 
         markets = [row["market"] for row in rows]
         self.assertEqual(markets.count("Total 180s"), 2)
+        self.assertEqual(markets.count("Most 180s"), 3)
 
 
         self.assertEqual(

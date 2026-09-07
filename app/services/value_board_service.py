@@ -5,7 +5,10 @@ from datetime import date
 from app.models.odds_snapshot import OddsSnapshot
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.services.fixture_service import get_scheduled_fixtures
-from app.services.markets_service import probability_over
+from app.services.markets_service import (
+    one80_markets,
+    probability_over,
+)
 from app.services.opportunity_ranking_service import _value_metrics
 from app.services.player_name_service import resolve_player_by_name
 from app.services.prediction_context_service import (
@@ -231,6 +234,256 @@ def _current_total_180_line(rows):
         "over_odds": sides["over"][2],
         "under_odds": sides["under"][2],
     }
+
+
+def _current_most_180_market(
+    rows,
+    player_a_name,
+    player_b_name,
+):
+    grouped = {}
+
+    for row in rows:
+        selection = str(
+            getattr(row, "selection", "")
+            or ""
+        )
+
+        if selection not in {
+            player_a_name,
+            "Draw",
+            player_b_name,
+        }:
+            continue
+
+        captured_at = getattr(
+            row,
+            "captured_at",
+            None,
+        )
+        row_id = getattr(
+            row,
+            "id",
+            0,
+        ) or 0
+
+        key = captured_at
+
+        group = grouped.setdefault(
+            key,
+            {},
+        )
+
+        current = group.get(selection)
+        ordering = (
+            captured_at,
+            row_id,
+        )
+
+        if (
+            current is None
+            or ordering > current[0]
+        ):
+            group[selection] = (
+                ordering,
+                float(row.decimal_odds),
+            )
+
+    complete = []
+
+    for captured_at, selections in grouped.items():
+        if not all(
+            selection in selections
+            for selection in (
+                player_a_name,
+                "Draw",
+                player_b_name,
+            )
+        ):
+            continue
+
+        newest = max(
+            selections[player_a_name][0],
+            selections["Draw"][0],
+            selections[player_b_name][0],
+        )
+
+        complete.append(
+            (
+                newest,
+                selections,
+            )
+        )
+
+    if not complete:
+        return None
+
+    _, selections = min(
+        complete,
+        key=lambda item: item[0],
+    )
+
+    return {
+        "player_a_odds": selections[
+            player_a_name
+        ][1],
+        "draw_odds": selections[
+            "Draw"
+        ][1],
+        "player_b_odds": selections[
+            player_b_name
+        ][1],
+    }
+
+
+def _most_180_rows(db, fixture):
+    player_a_expectation = _player_180_expectation(
+        db,
+        fixture.player_a,
+    )
+    player_b_expectation = _player_180_expectation(
+        db,
+        fixture.player_b,
+    )
+
+    if (
+        player_a_expectation is None
+        or player_b_expectation is None
+    ):
+        return []
+
+    price_rows = (
+        db.query(OddsSnapshot)
+        .filter(
+            OddsSnapshot.fixture_id == fixture.id,
+            OddsSnapshot.bookmaker_code == "paddypower",
+            OddsSnapshot.market == "most_180s",
+        )
+        .all()
+    )
+
+    current = _current_most_180_market(
+        price_rows,
+        fixture.player_a,
+        fixture.player_b,
+    )
+
+    if current is None:
+        return []
+
+    markets = one80_markets(
+        player_a_expectation["expected"],
+        player_b_expectation["expected"],
+    )
+
+    if not markets["most_180s_data_available"]:
+        return []
+
+    outcomes = [
+        (
+            f"{fixture.player_a} Most 180s",
+            float(markets["most_180s_a"]),
+            float(current["player_a_odds"]),
+        ),
+        (
+            "Draw Most 180s",
+            float(markets["most_180s_draw"]),
+            float(current["draw_odds"]),
+        ),
+        (
+            f"{fixture.player_b} Most 180s",
+            float(markets["most_180s_b"]),
+            float(current["player_b_odds"]),
+        ),
+    ]
+
+    rows = []
+
+    for selection, probability_decimal, market_odds in outcomes:
+        probability = probability_decimal * 100.0
+
+        fair_odds = (
+            1.0 / probability_decimal
+            if probability_decimal > 0
+            else 0.0
+        )
+
+        value = _value_metrics(
+            probability,
+            fair_odds,
+            market_odds,
+        )
+
+        rows.append(
+            {
+                "fixture_id": fixture.id,
+                "fixture_date": fixture.date,
+                "tournament": fixture.tournament,
+                "stage": fixture.stage,
+                "match_format": fixture.match_format,
+                "player_a": fixture.player_a,
+                "player_b": fixture.player_b,
+                "match": (
+                    f"{fixture.player_a} vs "
+                    f"{fixture.player_b}"
+                ),
+                "market": "Most 180s",
+                "selection": selection,
+                "opponent": None,
+                "probability": round(
+                    probability,
+                    2,
+                ),
+                "fair_odds": round(
+                    fair_odds,
+                    2,
+                ),
+                "market_odds": value[
+                    "market_odds"
+                ],
+                "bookmaker": "Paddy Power",
+                "edge": value[
+                    "edge_percent"
+                ],
+                "expected_value_percent": value.get(
+                    "expected_value_percent"
+                ),
+                "is_value_confirmed": value[
+                    "is_value_confirmed"
+                ],
+                "status": value[
+                    "status"
+                ],
+                "status_tone": value[
+                    "status_tone"
+                ],
+                "action": (
+                    "Consider"
+                    if value["is_value_confirmed"]
+                    else "Pass"
+                ),
+                "player_a_history_matches": (
+                    player_a_expectation["matches"]
+                ),
+                "player_b_history_matches": (
+                    player_b_expectation["matches"]
+                ),
+                "player_a_expected_180s": round(
+                    float(
+                        player_a_expectation["expected"]
+                    ),
+                    3,
+                ),
+                "player_b_expected_180s": round(
+                    float(
+                        player_b_expectation["expected"]
+                    ),
+                    3,
+                ),
+            }
+        )
+
+    return rows
 
 
 def _total_180_rows(db, fixture):
@@ -635,6 +888,13 @@ def build_value_board(db):
 
         rows.extend(
             _total_180_rows(
+                db,
+                fixture,
+            )
+        )
+
+        rows.extend(
+            _most_180_rows(
                 db,
                 fixture,
             )
