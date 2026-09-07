@@ -271,6 +271,42 @@ class BookmakerCaptureTests(
             1,
         )
 
+    def test_capture_can_reject_page_before_extracting_prices(self):
+        db = FakeDb()
+        service = PaddyPowerCaptureService(
+            browser_session=FakeBrowser(
+                "<html>IN_PLAY event-card--item</html>"
+            )
+        )
+
+        report = service.capture(
+            db,
+            source_url=(
+                "https:" + "//example.test/darts"
+            ),
+            extractor=FakeExtractor(),
+            page_allowed=lambda html: (
+                "IN_PLAY" not in html
+            ),
+        )
+
+        self.assertEqual(
+            report.extracted_prices,
+            0,
+        )
+        self.assertEqual(
+            report.stored_prices,
+            0,
+        )
+        self.assertEqual(
+            len(db.rows),
+            0,
+        )
+        self.assertIn(
+            "rejected",
+            report.message.casefold(),
+        )
+
     def test_challenge_stops_capture(self):
         db = FakeDb()
 

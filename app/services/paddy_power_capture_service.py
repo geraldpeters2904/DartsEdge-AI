@@ -65,6 +65,9 @@ class PaddyPowerCaptureService:
         page_ready: Optional[
             Callable[[str], bool]
         ] = None,
+        page_allowed: Optional[
+            Callable[[str], bool]
+        ] = None,
     ) -> BookmakerCaptureReport:
         captured_at = datetime.utcnow()
 
@@ -108,6 +111,24 @@ class PaddyPowerCaptureService:
             for marker
             in self.CHALLENGE_MARKERS
         )
+
+        if (
+            page_allowed is not None
+            and not page_allowed(html)
+        ):
+            return BookmakerCaptureReport(
+                bookmaker=self.BOOKMAKER,
+                source_url=source_url,
+                captured_at=captured_at,
+                extracted_prices=0,
+                stored_prices=0,
+                unchanged_prices=0,
+                skipped_prices=0,
+                challenge_detected=False,
+                message=(
+                    "Paddy Power page rejected before odds extraction."
+                ),
+            )
 
         if challenge_detected:
             return BookmakerCaptureReport(
