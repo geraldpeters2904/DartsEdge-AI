@@ -84,6 +84,8 @@ def build_prediction(db, player_a, player_b):
     simulation = simulate_match(
         profile_a,
         profile_b,
+        leg_win_prob_a=leg_prob,
+        best_of=7,
     )
 
     confidence_breakdown = build_confidence_breakdown(
