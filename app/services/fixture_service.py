@@ -17,10 +17,16 @@ def get_fixture_form_data(db):
     }
 
 
-def get_scheduled_fixtures(db):
+def get_scheduled_fixtures(db, *, today=None):
+
+    today = today or date.today()
+
     return (
         db.query(Match)
-        .filter(Match.status == "scheduled")
+        .filter(
+            Match.status == "scheduled",
+            Match.date >= today,
+        )
         .order_by(Match.date.asc(), Match.id.asc())
         .all()
     )

@@ -1363,7 +1363,7 @@ class ValueBoardPlayer180IntegrationTests(unittest.TestCase):
             )
 
         fixture = Match(
-            date=date(2026, 9, 6),
+            date=date.today(),
             tournament="MODUS Super Series",
             stage=None,
             match_format=None,
@@ -1519,7 +1519,7 @@ class ValueBoardHandicapTotalLegsIntegrationTests(unittest.TestCase):
         self.db.add_all([player_a, player_b])
 
         fixture = Match(
-            date=date(2026, 9, 6),
+            date=date.today(),
             tournament="MODUS Super Series",
             stage=None,
             match_format="Best of 7",
