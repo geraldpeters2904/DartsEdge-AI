@@ -46,9 +46,9 @@ class CandidateLegWinProbabilityTests(unittest.TestCase):
             checkout_a=profile_a.checkout,
             average_b=profile_b.average,
             checkout_b=profile_b.checkout,
-            average_weight=0.7,
-            checkout_weight=0.3,
-            logistic_scale=8.0,
+            average_weight=0.9,
+            checkout_weight=0.1,
+            logistic_scale=14.0,
         )
 
         self.assertAlmostEqual(

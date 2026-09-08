@@ -11,10 +11,10 @@ def expected_180s(player):
 
 
 def leg_win_probability(player_a, player_b):
-    score_a = player_a.average * 0.7 + player_a.checkout * 0.3
-    score_b = player_b.average * 0.7 + player_b.checkout * 0.3
+    score_a = player_a.average * 0.9 + player_a.checkout * 0.1
+    score_b = player_b.average * 0.9 + player_b.checkout * 0.1
 
-    return 1 / (1 + math.exp((score_b - score_a) / 8))
+    return 1 / (1 + math.exp((score_b - score_a) / 14))
 
 
 def value_edge(model_prob, market_prob=0.5):

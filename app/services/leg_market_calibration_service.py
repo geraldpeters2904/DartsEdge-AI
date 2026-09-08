@@ -47,29 +47,29 @@ class PlattCalibration:
         return z / (1.0 + z)
 
 
-# Fitted on the chronological historical training period ending
-# 2025-09-26 and validated against the date-disjoint holdout
-# beginning 2025-09-27.
+# Fitted on the historical development period ending
+# 2026-03-13 and validated once against the sealed date-disjoint
+# holdout beginning 2026-03-14.
 #
-# Holdout results:
+# Sealed holdout results for the 90/10, scale-14 leg model:
 # Handicap -1.5:
-#   raw Brier        0.237586
-#   calibrated Brier 0.211123
-#   constant Brier   0.226523
+#   raw Brier        0.206148
+#   calibrated Brier 0.208617
+#   constant Brier   0.229120
 #
 # Total Legs Over 5.5:
-#   raw Brier        0.262687
-#   calibrated Brier 0.243754
-#   constant Brier   0.245379
+#   raw Brier        0.245752
+#   calibrated Brier 0.245944
+#   constant Brier   0.247505
 
 HANDICAP_CALIBRATION = PlattCalibration(
-    slope=0.225,
-    intercept=-0.45,
+    slope=0.425,
+    intercept=-0.35,
 )
 
 TOTAL_LEGS_CALIBRATION = PlattCalibration(
-    slope=0.15,
-    intercept=0.375,
+    slope=0.35,
+    intercept=0.275,
 )
 
 
