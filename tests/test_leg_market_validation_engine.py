@@ -94,6 +94,8 @@ class LegMarketValidationEngineTests(unittest.TestCase):
         self.assertEqual(record.player_a_checkout, 40.0)
         self.assertEqual(record.player_b_average, 90.0)
         self.assertEqual(record.player_b_checkout, 40.0)
+        self.assertEqual(record.best_of, 7)
+        self.assertEqual(record.match_date, match.date)
         self.assertAlmostEqual(
             record.player_a_handicap_probability,
             0.34375,

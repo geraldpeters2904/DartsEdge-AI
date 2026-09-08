@@ -4,7 +4,9 @@ from app.services.leg_market_validation_engine import (
     LegMarketValidationRecord,
 )
 from app.services.leg_market_walk_forward_service import (
+    brier_score,
     chronological_folds,
+    fit_platt_calibration,
 )
 
 
@@ -100,8 +102,89 @@ class ChronologicalFoldTests(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
+
+
+class DateDisjointFoldTests(unittest.TestCase):
+
+    def test_never_splits_calendar_date_between_train_and_test(self):
+        from datetime import date
+
+        from app.services.leg_market_walk_forward_service import (
+            date_disjoint_folds,
+        )
+
+        dates = (
+            date(2026, 1, 1),
+            date(2026, 1, 1),
+            date(2026, 1, 2),
+            date(2026, 1, 2),
+            date(2026, 1, 2),
+            date(2026, 1, 3),
+            date(2026, 1, 3),
+            date(2026, 1, 4),
+            date(2026, 1, 4),
+            date(2026, 1, 5),
+        )
+
+        records = tuple(
+            LegMarketValidationRecord(
+                match_id=index,
+                player_a_leg_win_probability=0.5,
+                player_a_handicap_probability=0.4,
+                player_a_handicap_result=0,
+                total_legs_over_probability=0.6,
+                total_legs_over_result=1,
+                match_date=match_date,
+            )
+            for index, match_date in enumerate(
+                dates,
+                start=1,
+            )
+        )
+
+        folds = date_disjoint_folds(
+            records,
+            initial_train_size=4,
+            test_size=2,
+        )
+
+        self.assertGreaterEqual(len(folds), 1)
+
+        for fold in folds:
+            train_dates = {
+                item.match_date
+                for item in fold.train
+            }
+            test_dates = {
+                item.match_date
+                for item in fold.test
+            }
+
+            self.assertTrue(
+                train_dates.isdisjoint(test_dates)
+            )
+            self.assertLess(
+                max(train_dates),
+                min(test_dates),
+            )
+
+    def test_rejects_records_without_match_date(self):
+        from app.services.leg_market_walk_forward_service import (
+            date_disjoint_folds,
+        )
+
+        records = (
+            record(1),
+            record(2),
+            record(3),
+        )
+
+        with self.assertRaises(ValueError):
+            date_disjoint_folds(
+                records,
+                initial_train_size=2,
+                test_size=1,
+            )
 
 
 class PlattFittingTests(unittest.TestCase):
@@ -289,6 +372,138 @@ class WalkForwardEvaluationTests(unittest.TestCase):
         )
         self.assertLessEqual(
             result.calibrated_brier_score,
+            1.0,
+        )
+
+
+class FixedHoldoutEvaluationTests(unittest.TestCase):
+
+    def test_fits_calibration_on_train_and_scores_holdout(self):
+        from types import SimpleNamespace
+
+        from app.services.leg_market_walk_forward_service import (
+            evaluate_fixed_holdout,
+        )
+
+        train = tuple(
+            SimpleNamespace(
+                probability=probability,
+                result=result,
+            )
+            for probability, result in (
+                (0.20, 0),
+                (0.30, 0),
+                (0.40, 0),
+                (0.60, 1),
+                (0.70, 1),
+                (0.80, 1),
+            )
+        )
+
+        test = tuple(
+            SimpleNamespace(
+                probability=probability,
+                result=result,
+            )
+            for probability, result in (
+                (0.25, 0),
+                (0.75, 1),
+            )
+        )
+
+        evaluation = evaluate_fixed_holdout(
+            train,
+            test,
+            probability_attr="probability",
+            result_attr="result",
+        )
+
+        self.assertEqual(evaluation.train_size, 6)
+        self.assertEqual(evaluation.test_size, 2)
+
+        expected_calibration = fit_platt_calibration(
+            tuple(record.probability for record in train),
+            tuple(record.result for record in train),
+        )
+
+        self.assertEqual(
+            evaluation.calibration,
+            expected_calibration,
+        )
+
+        expected_probabilities = tuple(
+            expected_calibration.apply(record.probability)
+            for record in test
+        )
+
+        self.assertAlmostEqual(
+            evaluation.calibrated_brier_score,
+            brier_score(
+                expected_probabilities,
+                tuple(record.result for record in test),
+            ),
+            places=12,
+        )
+
+
+class DateDisjointWalkForwardEvaluationTests(unittest.TestCase):
+
+    def test_evaluates_date_disjoint_folds(self):
+        from datetime import date, timedelta
+
+        from app.services.leg_market_walk_forward_service import (
+            evaluate_date_disjoint_walk_forward,
+        )
+
+        start = date(2026, 1, 1)
+
+        records = tuple(
+            LegMarketValidationRecord(
+                match_id=index,
+                player_a_leg_win_probability=0.5,
+                player_a_handicap_probability=(
+                    0.7 if index % 2 else 0.3
+                ),
+                player_a_handicap_result=(
+                    1 if index % 2 else 0
+                ),
+                total_legs_over_probability=0.6,
+                total_legs_over_result=1,
+                match_date=(
+                    start
+                    + timedelta(days=(index - 1) // 2)
+                ),
+            )
+            for index in range(1, 13)
+        )
+
+        report = evaluate_date_disjoint_walk_forward(
+            records,
+            probability_attr="player_a_handicap_probability",
+            result_attr="player_a_handicap_result",
+            initial_train_size=4,
+            test_size=2,
+        )
+
+        self.assertEqual(report.records, 12)
+        self.assertGreaterEqual(report.folds_evaluated, 1)
+        self.assertGreater(report.test_observations, 0)
+
+        self.assertGreaterEqual(
+            report.raw_brier_score,
+            0.0,
+        )
+        self.assertLessEqual(
+            report.raw_brier_score,
+            1.0,
+        )
+
+        self.assertGreaterEqual(
+            report.calibrated_brier_score,
+            0.0,
+        )
+        self.assertLessEqual(
+            report.calibrated_brier_score,
             1.0,
         )
 

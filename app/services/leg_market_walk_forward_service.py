@@ -52,6 +52,77 @@ def chronological_folds(
     return tuple(folds)
 
 
+
+def date_disjoint_folds(
+    records,
+    *,
+    initial_train_size,
+    test_size,
+):
+    initial_train_size = int(initial_train_size)
+    test_size = int(test_size)
+
+    if initial_train_size <= 0:
+        raise ValueError(
+            "initial_train_size must be positive."
+        )
+
+    if test_size <= 0:
+        raise ValueError(
+            "test_size must be positive."
+        )
+
+    records = tuple(records)
+
+    if any(
+        getattr(record, "match_date", None) is None
+        for record in records
+    ):
+        raise ValueError(
+            "All records must have match_date."
+        )
+
+    folds = []
+    train_end = initial_train_size
+
+    while train_end < len(records):
+        train_cutoff_date = records[train_end - 1].match_date
+
+        while (
+            train_end < len(records)
+            and records[train_end].match_date == train_cutoff_date
+        ):
+            train_end += 1
+
+        if train_end >= len(records):
+            break
+
+        test_end = min(
+            train_end + test_size,
+            len(records),
+        )
+
+        test_cutoff_date = records[test_end - 1].match_date
+
+        while (
+            test_end < len(records)
+            and records[test_end].match_date == test_cutoff_date
+        ):
+            test_end += 1
+
+        folds.append(
+            ChronologicalFold(
+                train=records[:train_end],
+                test=records[train_end:test_end],
+            )
+        )
+
+        train_end = test_end
+
+    return tuple(folds)
+
+
+
 def brier_score(
     probabilities,
     results,
@@ -256,6 +327,23 @@ class FoldEvaluation:
     calibration: object
 
 
+
+def evaluate_fixed_holdout(
+    train,
+    test,
+    *,
+    probability_attr,
+    result_attr,
+):
+    return evaluate_fold(
+        train,
+        test,
+        probability_attr=probability_attr,
+        result_attr=result_attr,
+    )
+
+
+
 def evaluate_fold(
     train,
     test,
@@ -348,6 +436,81 @@ class WalkForwardReport:
     slopes: Tuple[float, ...]
     intercepts: Tuple[float, ...]
     folds: Tuple[FoldEvaluation, ...]
+
+
+
+def evaluate_date_disjoint_walk_forward(
+    records,
+    *,
+    probability_attr,
+    result_attr,
+    initial_train_size,
+    test_size,
+):
+    records = tuple(records)
+
+    folds = date_disjoint_folds(
+        records,
+        initial_train_size=initial_train_size,
+        test_size=test_size,
+    )
+
+    if not folds:
+        raise ValueError(
+            "not enough records to create a date-disjoint walk-forward fold."
+        )
+
+    evaluations = tuple(
+        evaluate_fold(
+            fold.train,
+            fold.test,
+            probability_attr=probability_attr,
+            result_attr=result_attr,
+        )
+        for fold in folds
+    )
+
+    test_observations = sum(
+        evaluation.test_size
+        for evaluation in evaluations
+    )
+
+    raw_brier_score = sum(
+        evaluation.raw_brier_score
+        * evaluation.test_size
+        for evaluation in evaluations
+    ) / test_observations
+
+    calibrated_brier_score = sum(
+        evaluation.calibrated_brier_score
+        * evaluation.test_size
+        for evaluation in evaluations
+    ) / test_observations
+
+    constant_brier_score = sum(
+        evaluation.constant_brier_score
+        * evaluation.test_size
+        for evaluation in evaluations
+    ) / test_observations
+
+    return WalkForwardReport(
+        records=len(records),
+        folds_evaluated=len(evaluations),
+        test_observations=test_observations,
+        raw_brier_score=raw_brier_score,
+        calibrated_brier_score=calibrated_brier_score,
+        constant_brier_score=constant_brier_score,
+        slopes=tuple(
+            evaluation.calibration.slope
+            for evaluation in evaluations
+        ),
+        intercepts=tuple(
+            evaluation.calibration.intercept
+            for evaluation in evaluations
+        ),
+        folds=evaluations,
+    )
+
 
 
 def evaluate_walk_forward(

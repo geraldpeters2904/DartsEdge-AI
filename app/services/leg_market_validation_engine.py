@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from datetime import date
+
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Optional, Tuple
@@ -30,6 +32,8 @@ class LegMarketValidationRecord:
     player_a_checkout: Optional[float] = None
     player_b_average: Optional[float] = None
     player_b_checkout: Optional[float] = None
+    best_of: Optional[int] = None
+    match_date: Optional[date] = None
 
 
 @dataclass(frozen=True)
@@ -226,6 +230,8 @@ class LegMarketValidationEngine:
             player_a_checkout=float(checkout_a),
             player_b_average=float(average_b),
             player_b_checkout=float(checkout_b),
+            best_of=int(best_of),
+            match_date=match.date,
         )
 
     @staticmethod
