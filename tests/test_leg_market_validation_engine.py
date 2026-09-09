@@ -44,11 +44,13 @@ class FakeSnapshotEngine:
                 last_10_average=90.0,
                 last_10_checkout_percentage=40.0,
                 last_10_matches=10,
+                latest_match_date="2026-07-30",
             ),
             player_b=SimpleNamespace(
                 last_10_average=90.0,
                 last_10_checkout_percentage=40.0,
                 last_10_matches=10,
+                latest_match_date="2026-07-29",
             ),
         )
 
@@ -96,6 +98,14 @@ class LegMarketValidationEngineTests(unittest.TestCase):
         self.assertEqual(record.player_b_checkout, 40.0)
         self.assertEqual(record.best_of, 7)
         self.assertEqual(record.match_date, match.date)
+        self.assertEqual(
+            record.player_a_latest_match_date,
+            "2026-07-30",
+        )
+        self.assertEqual(
+            record.player_b_latest_match_date,
+            "2026-07-29",
+        )
         self.assertAlmostEqual(
             record.player_a_handicap_probability,
             0.34375,

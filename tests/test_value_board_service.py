@@ -235,12 +235,12 @@ class HandicapAndTotalLegsValueRowsTests(unittest.TestCase):
 
         self.assertAlmostEqual(
             player_a["probability"],
-            34.87,
+            34.37,
             places=2,
         )
         self.assertAlmostEqual(
             player_b["probability"],
-            65.13,
+            65.63,
             places=2,
         )
 
@@ -314,12 +314,12 @@ class HandicapAndTotalLegsValueRowsTests(unittest.TestCase):
 
         self.assertAlmostEqual(
             over["probability"],
-            61.15,
+            61.47,
             places=2,
         )
         self.assertAlmostEqual(
             under["probability"],
-            38.85,
+            38.53,
             places=2,
         )
 

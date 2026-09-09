@@ -58,21 +58,21 @@ class LegMarketCalibrationTests(unittest.TestCase):
     def test_uses_validated_handicap_parameters(self):
         self.assertEqual(
             HANDICAP_CALIBRATION.slope,
-            0.425,
+            0.575,
         )
         self.assertEqual(
             HANDICAP_CALIBRATION.intercept,
-            -0.35,
+            -0.275,
         )
 
     def test_uses_validated_total_legs_parameters(self):
         self.assertEqual(
             TOTAL_LEGS_CALIBRATION.slope,
-            0.35,
+            0.425,
         )
         self.assertEqual(
             TOTAL_LEGS_CALIBRATION.intercept,
-            0.275,
+            0.25,
         )
 
     def test_handicap_helper_compresses_extreme_probability(self):

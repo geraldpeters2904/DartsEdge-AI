@@ -38,6 +38,7 @@ class PlayerPredictionSnapshot:
     momentum_score: Optional[float]
     confidence_score: float
     matches_available: int
+    latest_match_date: Optional[str]
 
     last_5_wins: int
     last_5_matches: int
@@ -294,7 +295,8 @@ class PredictionSnapshotEngine:
                 PlayerMatchPerformance.observed_at
                 < cutoff_observed_at,
             )
-        elif target_match.date is not None:
+
+        if target_match.date is not None:
             query = query.filter(
                 or_(
                     Match.date < target_match.date,
@@ -304,11 +306,10 @@ class PredictionSnapshotEngine:
                     ),
                 )
             )
-        else:
+        elif cutoff_observed_at is None:
             query = query.filter(
                 Match.id < target_match.id
             )
-
         return query.order_by(
             Match.date.desc(),
             PlayerMatchPerformance.observed_at.desc(),
@@ -410,6 +411,7 @@ class PredictionSnapshotEngine:
             momentum_score=rating.momentum_score,
             confidence_score=rating.confidence_score,
             matches_available=rating.matches_available,
+            latest_match_date=features.latest_match_date,
             last_5_wins=window_5.wins,
             last_5_matches=window_5.matches,
             last_10_wins=window_10.wins,

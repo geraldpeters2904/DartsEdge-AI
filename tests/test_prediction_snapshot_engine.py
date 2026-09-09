@@ -165,6 +165,14 @@ class PredictionSnapshotEngineTests(unittest.TestCase):
             snapshot.scoring_edge,
             0,
         )
+        self.assertEqual(
+            snapshot.player_a.latest_match_date,
+            "2026-08-04",
+        )
+        self.assertEqual(
+            snapshot.player_b.latest_match_date,
+            "2026-08-04",
+        )
 
     def test_empty_history_returns_baseline_ratings(self):
         engine = PredictionSnapshotEngine()
@@ -208,7 +216,117 @@ class PredictionSnapshotEngineTests(unittest.TestCase):
             snapshot.player_a.confidence_score,
             0.0,
         )
+        self.assertIsNone(
+            snapshot.player_a.latest_match_date,
+        )
+        self.assertIsNone(
+            snapshot.player_b.latest_match_date,
+        )
 
+
+    def test_observed_at_cutoff_never_includes_future_match_date(self):
+        from datetime import datetime
+
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from app.db import Base
+        from app.models.match import Match
+        from app.models.player import Player
+        from app.models.player_match_performance import (
+            PlayerMatchPerformance,
+        )
+
+        engine_sql = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+        )
+        Base.metadata.create_all(bind=engine_sql)
+        Session = sessionmaker(bind=engine_sql)
+        db = Session()
+
+        try:
+            player = Player(
+                id=1,
+                name="Player A",
+                elo=1500.0,
+            )
+            opponent = Player(
+                id=2,
+                name="Player B",
+                elo=1500.0,
+            )
+
+            prior_match = Match(
+                id=10,
+                date=date(2026, 8, 4),
+                player_a="Player A",
+                player_b="Player B",
+                status="completed",
+            )
+            target_match = Match(
+                id=20,
+                date=date(2026, 8, 5),
+                player_a="Player A",
+                player_b="Player B",
+                status="completed",
+            )
+            future_match = Match(
+                id=30,
+                date=date(2026, 8, 6),
+                player_a="Player A",
+                player_b="Player B",
+                status="completed",
+            )
+
+            db.add_all([
+                player,
+                opponent,
+                prior_match,
+                target_match,
+                future_match,
+            ])
+            db.flush()
+
+            db.add_all([
+                PlayerMatchPerformance(
+                    match_id=10,
+                    player_id=1,
+                    opponent_id=2,
+                    source_provider="test",
+                    observed_at=datetime(2026, 8, 4, 12, 0),
+                ),
+                PlayerMatchPerformance(
+                    match_id=20,
+                    player_id=1,
+                    opponent_id=2,
+                    source_provider="test",
+                    observed_at=datetime(2026, 8, 10, 12, 0),
+                ),
+                PlayerMatchPerformance(
+                    match_id=30,
+                    player_id=1,
+                    opponent_id=2,
+                    source_provider="test",
+                    observed_at=datetime(2026, 8, 6, 12, 0),
+                ),
+            ])
+            db.commit()
+
+            rows = PredictionSnapshotEngine()._load_history_before_match(
+                db,
+                player_id=1,
+                target_match=target_match,
+                competition_code=None,
+            )
+
+            self.assertEqual(
+                [match.id for _performance, match in rows],
+                [10],
+            )
+        finally:
+            db.close()
+            engine_sql.dispose()
 
 if __name__ == "__main__":
     unittest.main()

@@ -47,29 +47,29 @@ class PlattCalibration:
         return z / (1.0 + z)
 
 
-# Fitted on the historical development period ending
-# 2026-03-13 and validated once against the sealed date-disjoint
-# holdout beginning 2026-03-14.
+# Fitted on the leakage-corrected historical development period
+# ending 2026-03-13. The date-disjoint final test period begins
+# 2026-03-14 and was used for validation, not parameter tuning.
 #
-# Sealed holdout results for the 90/10, scale-14 leg model:
+# Final-test results for the 90/10, scale-14 leg model:
 # Handicap -1.5:
-#   raw Brier        0.206148
-#   calibrated Brier 0.208617
-#   constant Brier   0.229120
+#   raw Brier        0.207854
+#   calibrated Brier 0.206262
+#   constant Brier   0.228255
 #
 # Total Legs Over 5.5:
-#   raw Brier        0.245752
-#   calibrated Brier 0.245944
-#   constant Brier   0.247505
+#   raw Brier        0.246093
+#   calibrated Brier 0.245788
+#   constant Brier   0.247734
 
 HANDICAP_CALIBRATION = PlattCalibration(
-    slope=0.425,
-    intercept=-0.35,
+    slope=0.575,
+    intercept=-0.275,
 )
 
 TOTAL_LEGS_CALIBRATION = PlattCalibration(
-    slope=0.35,
-    intercept=0.275,
+    slope=0.425,
+    intercept=0.25,
 )
 
 

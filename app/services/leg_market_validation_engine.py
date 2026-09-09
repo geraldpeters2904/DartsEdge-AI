@@ -34,6 +34,8 @@ class LegMarketValidationRecord:
     player_b_checkout: Optional[float] = None
     best_of: Optional[int] = None
     match_date: Optional[date] = None
+    player_a_latest_match_date: Optional[str] = None
+    player_b_latest_match_date: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -232,6 +234,12 @@ class LegMarketValidationEngine:
             player_b_checkout=float(checkout_b),
             best_of=int(best_of),
             match_date=match.date,
+            player_a_latest_match_date=(
+                snapshot.player_a.latest_match_date
+            ),
+            player_b_latest_match_date=(
+                snapshot.player_b.latest_match_date
+            ),
         )
 
     @staticmethod
