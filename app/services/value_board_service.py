@@ -571,6 +571,18 @@ def _match_leg_simulation(db, fixture):
     if profile_a is None or profile_b is None:
         return None
 
+    if fixture.date is not None:
+        for profile in (profile_a, profile_b):
+            latest_match_date = profile.get("latest_match_date")
+            if latest_match_date:
+                latest_match_date = date.fromisoformat(
+                    latest_match_date
+                )
+                if (
+                    fixture.date - latest_match_date
+                ).days > 180:
+                    return None
+
     average_a = profile_a.get("average")
     checkout_a = profile_a.get("checkout")
     average_b = profile_b.get("average")

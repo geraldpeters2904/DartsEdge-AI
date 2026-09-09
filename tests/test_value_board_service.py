@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from app.models.match import Match
 from app.models.player import Player
 from app.models.player_match_performance import PlayerMatchPerformance
+from app.models.player_career_profile import PlayerCareerProfile
 from app.models.odds_snapshot import OddsSnapshot
 from app.services.value_board_service import (
     _current_handicap_market,
@@ -388,6 +389,116 @@ class HandicapAndTotalLegsValueRowsTests(unittest.TestCase):
                 ),
             ]
         )
+        self.db.commit()
+
+        self.assertEqual(
+            _handicap_rows(self.db, fixture),
+            [],
+        )
+        self.assertEqual(
+            _total_legs_rows(self.db, fixture),
+            [],
+        )
+
+
+    def test_skips_leg_markets_when_known_profile_is_over_180_days_stale(self):
+        player_a = Player(
+            name="Fresh Player",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        player_b = Player(
+            name="Stale Player",
+            average=90.0,
+            checkout=40.0,
+            elo=1500.0,
+        )
+        self.db.add_all([player_a, player_b])
+        self.db.flush()
+
+        self.db.add_all(
+            [
+                PlayerCareerProfile(
+                    player_id=player_a.id,
+                    competition_code="ALL",
+                    matches_played=10,
+                    wins=5,
+                    losses=5,
+                    win_percentage=50.0,
+                    legs_won=20,
+                    legs_lost=20,
+                    leg_difference=0,
+                    average_three_dart_average=90.0,
+                    calculated_checkout_percentage=40.0,
+                    latest_match_date=date(2026, 9, 1),
+                ),
+                PlayerCareerProfile(
+                    player_id=player_b.id,
+                    competition_code="ALL",
+                    matches_played=10,
+                    wins=5,
+                    losses=5,
+                    win_percentage=50.0,
+                    legs_won=20,
+                    legs_lost=20,
+                    leg_difference=0,
+                    average_three_dart_average=90.0,
+                    calculated_checkout_percentage=40.0,
+                    latest_match_date=date(2026, 3, 1),
+                ),
+            ]
+        )
+
+        fixture = Match(
+            date=date(2026, 9, 6),
+            tournament="MODUS Super Series",
+            player_a="Fresh Player",
+            player_b="Stale Player",
+            status="scheduled",
+            match_format="Best of 7",
+        )
+        self.db.add(fixture)
+        self.db.flush()
+
+        captured_at = datetime(2026, 9, 6, 12, 0, 0)
+        self.db.add_all(
+            [
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="Fresh Player -1.5",
+                    decimal_odds=2.0,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="handicap",
+                    selection="Stale Player +1.5",
+                    decimal_odds=1.8,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Over (+5.5)",
+                    decimal_odds=1.8,
+                    captured_at=captured_at,
+                ),
+                OddsSnapshot(
+                    fixture_id=fixture.id,
+                    bookmaker_code="paddypower",
+                    market="total_legs",
+                    selection="Under (+5.5)",
+                    decimal_odds=2.0,
+                    captured_at=captured_at,
+                ),
+            ]
+        )
+
         self.db.commit()
 
         self.assertEqual(
