@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from typing import Callable, Optional
 
 from app.db import SessionLocal
-from app.services.paddy_power_live_bridge import (
-    run_existing_paddy_power_capture,
+from app.services.paddy_power_live_capture import (
+    capture_paddy_power_discovered_events_report_once,
 )
 
 
@@ -157,48 +157,28 @@ class AutomaticOddsCaptureTrigger:
         db = SessionLocal()
 
         try:
-            result = (
-                run_existing_paddy_power_capture(
+            report = (
+                capture_paddy_power_discovered_events_report_once(
                     db
                 )
             )
-
             captured_at = now.isoformat()
-
-            if not result.ready:
+            extracted_prices = report.extracted_prices
+            stored_prices = report.stored_prices
+            if report.challenge_detected:
                 return AutomaticOddsCaptureTriggerResult(
                     triggered=True,
                     ready=False,
                     future_fixtures=count,
                     captured_at=captured_at,
-                    extracted_prices=(
-                        result.report.extracted_prices
-                        if result.report is not None
-                        else 0
+                    extracted_prices=extracted_prices,
+                    stored_prices=stored_prices,
+                    message=(
+                        "Paddy Power presented an access or "
+                        "verification challenge."
                     ),
-                    stored_prices=(
-                        result.report.stored_prices
-                        if result.report is not None
-                        else 0
-                    ),
-                    message=result.message,
-                    error=result.error,
+                    error=report.message,
                 )
-
-            report = result.report
-
-            extracted_prices = (
-                report.extracted_prices
-                if report is not None
-                else 0
-            )
-
-            stored_prices = (
-                report.stored_prices
-                if report is not None
-                else 0
-            )
-
             self._last_capture_at = captured_at
 
             if extracted_prices > 0:

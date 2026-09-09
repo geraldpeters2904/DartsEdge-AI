@@ -67,7 +67,7 @@ class AutomaticOddsCaptureTriggerTests(
     @patch(
         "app.services."
         "automatic_odds_capture_trigger_service."
-        "run_existing_paddy_power_capture"
+        "capture_paddy_power_discovered_events_report_once"
     )
     def test_new_fixture_count_triggers_capture(
         self,
@@ -77,13 +77,10 @@ class AutomaticOddsCaptureTriggerTests(
         db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
         capture.return_value = SimpleNamespace(
-            ready=True,
-            report=SimpleNamespace(
-                extracted_prices=4,
-                stored_prices=4,
-            ),
+            extracted_prices=4,
+            stored_prices=4,
+            challenge_detected=False,
             message="completed",
-            error=None,
         )
 
         result = self.trigger.consider(
@@ -103,7 +100,7 @@ class AutomaticOddsCaptureTriggerTests(
     @patch(
         "app.services."
         "automatic_odds_capture_trigger_service."
-        "run_existing_paddy_power_capture"
+        "capture_paddy_power_discovered_events_report_once"
     )
     def test_unchanged_fixture_count_does_not_repeat_after_prices(
         self,
@@ -113,13 +110,10 @@ class AutomaticOddsCaptureTriggerTests(
         db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
         capture.return_value = SimpleNamespace(
-            ready=True,
-            report=SimpleNamespace(
-                extracted_prices=2,
-                stored_prices=2,
-            ),
+            extracted_prices=2,
+            stored_prices=2,
+            challenge_detected=False,
             message="completed",
-            error=None,
         )
 
         first = self.trigger.consider(
@@ -141,7 +135,7 @@ class AutomaticOddsCaptureTriggerTests(
     @patch(
         "app.services."
         "automatic_odds_capture_trigger_service."
-        "run_existing_paddy_power_capture"
+        "capture_paddy_power_discovered_events_report_once"
     )
     def test_zero_price_capture_enters_cooldown(
         self,
@@ -151,13 +145,10 @@ class AutomaticOddsCaptureTriggerTests(
         db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
         capture.return_value = SimpleNamespace(
-            ready=True,
-            report=SimpleNamespace(
-                extracted_prices=0,
-                stored_prices=0,
-            ),
+            extracted_prices=0,
+            stored_prices=0,
+            challenge_detected=False,
             message="completed",
-            error=None,
         )
 
         first = self.trigger.consider(
@@ -183,7 +174,7 @@ class AutomaticOddsCaptureTriggerTests(
     @patch(
         "app.services."
         "automatic_odds_capture_trigger_service."
-        "run_existing_paddy_power_capture"
+        "capture_paddy_power_discovered_events_report_once"
     )
     def test_zero_price_capture_retries_after_cooldown(
         self,
@@ -193,13 +184,10 @@ class AutomaticOddsCaptureTriggerTests(
         db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
         capture.return_value = SimpleNamespace(
-            ready=True,
-            report=SimpleNamespace(
-                extracted_prices=0,
-                stored_prices=0,
-            ),
+            extracted_prices=0,
+            stored_prices=0,
+            challenge_detected=False,
             message="completed",
-            error=None,
         )
 
         first = self.trigger.consider(
@@ -233,7 +221,7 @@ class AutomaticOddsCaptureTriggerTests(
     @patch(
         "app.services."
         "automatic_odds_capture_trigger_service."
-        "run_existing_paddy_power_capture"
+        "capture_paddy_power_discovered_events_report_once"
     )
     def test_fixture_count_change_bypasses_zero_price_cooldown(
         self,
@@ -243,13 +231,10 @@ class AutomaticOddsCaptureTriggerTests(
         db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
         capture.return_value = SimpleNamespace(
-            ready=True,
-            report=SimpleNamespace(
-                extracted_prices=0,
-                stored_prices=0,
-            ),
+            extracted_prices=0,
+            stored_prices=0,
+            challenge_detected=False,
             message="completed",
-            error=None,
         )
 
         first = self.trigger.consider(
@@ -271,7 +256,7 @@ class AutomaticOddsCaptureTriggerTests(
     @patch(
         "app.services."
         "automatic_odds_capture_trigger_service."
-        "run_existing_paddy_power_capture"
+        "capture_paddy_power_discovered_events_report_once"
     )
     def test_failed_capture_can_retry_next_cycle(
         self,
@@ -280,11 +265,8 @@ class AutomaticOddsCaptureTriggerTests(
     ):
         db = SimpleNamespace(close=lambda: None)
         session_local.return_value = db
-        capture.return_value = SimpleNamespace(
-            ready=False,
-            report=None,
-            message="capture failed",
-            error="temporary error",
+        capture.side_effect = RuntimeError(
+            "temporary error"
         )
 
         first = self.trigger.consider(
@@ -297,6 +279,41 @@ class AutomaticOddsCaptureTriggerTests(
         self.assertTrue(first.triggered)
         self.assertTrue(second.triggered)
         self.assertEqual(capture.call_count, 2)
+
+
+    @patch(
+        "app.services."
+        "automatic_odds_capture_trigger_service."
+        "SessionLocal"
+    )
+    @patch(
+        "app.services."
+        "automatic_odds_capture_trigger_service."
+        "capture_paddy_power_discovered_events_report_once"
+    )
+    def test_new_fixture_count_uses_discovered_event_capture(
+        self,
+        capture,
+        session_local,
+    ):
+        db = SimpleNamespace(close=lambda: None)
+        session_local.return_value = db
+        capture.return_value = SimpleNamespace(
+            extracted_prices=8,
+            stored_prices=6,
+            challenge_detected=False,
+            message="completed",
+        )
+
+        result = self.trigger.consider(
+            future_fixtures=2
+        )
+
+        self.assertTrue(result.triggered)
+        self.assertTrue(result.ready)
+        self.assertEqual(result.extracted_prices, 8)
+        self.assertEqual(result.stored_prices, 6)
+        capture.assert_called_once_with(db)
 
 
 if __name__ == "__main__":
