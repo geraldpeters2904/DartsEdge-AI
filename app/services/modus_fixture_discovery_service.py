@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.match import Match
+
 from app.collector.commit_helpers import find_match_by_external_id
 from app.providers.adapters.modus_official.identifiers import (
     modus_match_external_id,
@@ -17,6 +19,7 @@ from app.services.automatic_modus_fixture_import_service import (
     AutomaticModusFixtureImportService,
 )
 from app.services.browser_session import BrowserSession
+from app.services.canonical_data_service import map_entity
 from app.services.modus_fixture_lifecycle_service import (
     ModusFixtureCard,
     ModusFixtureLifecycleService,
@@ -219,10 +222,21 @@ class ModusFixtureDiscoveryService:
         )
 
         if match is None:
-            raise ValueError(
-                "No existing fixture mapping was found for "
-                f"{match_external_id}; completed MODUS card "
-                "cannot enter enrichment."
+            match = self._find_unique_scheduled_fixture_for_card(
+                db,
+                card,
+            )
+
+            if match is None:
+                return "quarantined", None
+
+            map_entity(
+                db,
+                provider="modus-official",
+                entity_type="fixture",
+                external_id=match_external_id,
+                internal_id=int(match.id),
+                competition_code="MODUS",
             )
 
         if match.status == "scheduled":
@@ -241,6 +255,67 @@ class ModusFixtureDiscoveryService:
             f"Mapped match {match.id} has unsupported lifecycle status "
             f"{match.status!r}; completed MODUS card cannot enter enrichment."
         )
+
+    @staticmethod
+    def _normalise_fixture_player_name(value: str) -> str:
+        return "".join(
+            character
+            for character in (value or "").casefold()
+            if character.isalnum()
+        )
+
+    def _find_unique_scheduled_fixture_for_card(
+        self,
+        db: Session,
+        card: ModusFixtureCard,
+    ):
+        """
+        Safely reconcile a completed MODUS card whose upcoming fixture used
+        data-source-game-number rather than the final MODUS match_id.
+
+        A fallback is accepted only when exactly one scheduled MODUS fixture
+        has the same two players. Player order may be reversed. Ambiguous or
+        missing matches remain quarantined.
+        """
+        card_players = {
+            self._normalise_fixture_player_name(card.player_a_name),
+            self._normalise_fixture_player_name(card.player_b_name),
+        }
+
+        candidates = (
+            db.query(Match)
+            .filter(
+                Match.status == "scheduled",
+                Match.tournament.ilike("MODUS%"),
+            )
+            .order_by(Match.id.asc())
+            .all()
+        )
+
+        matches = []
+
+        for candidate in candidates:
+            candidate_players = {
+                self._normalise_fixture_player_name(candidate.player_a),
+                self._normalise_fixture_player_name(candidate.player_b),
+            }
+
+            if candidate_players != card_players:
+                continue
+
+            if (
+                card.group
+                and candidate.stage
+                and candidate.stage != card.group
+            ):
+                continue
+
+            matches.append(candidate)
+
+        if len(matches) != 1:
+            return None
+
+        return matches[0]
 
     def _enrich_completed_card(
         self,
@@ -334,8 +409,12 @@ class ModusFixtureDiscoveryService:
 
     def _fixture_cards_loaded(self) -> bool:
         html = self.browser_session.html().casefold()
+
         return (
-            "match-db-stats.php?match_id=" in html
-            and 'id="seriesselect"' in html
+            'id="seriesselect"' in html
             and 'id="weekselect"' in html
+            and (
+                "fixtures" in html
+                or "match-db-stats.php?match_id=" in html
+            )
         )

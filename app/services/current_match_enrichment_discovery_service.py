@@ -434,7 +434,7 @@ def run_current_match_enrichment_discovery(
     timeout_seconds: float = 30.0,
 ) -> CurrentMatchEnrichmentDiscoveryReport:
     db = SessionLocal()
-    browser = ChromeBrowserSession()
+    browser = ChromeBrowserSession(headless=True)
     url_model = ModusUrlModel()
     catalog_service = (
         ModusHistoricalCatalogService()

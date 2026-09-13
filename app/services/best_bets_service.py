@@ -180,6 +180,10 @@ def build_best_bets(
             tournament=match.tournament,
         )
 
+        # Preserve the already-built prediction context for downstream
+        # intelligence analysis without rebuilding the historical snapshot.
+        opportunity["_prediction_context"] = context
+
         probability = float(
             opportunity["probability"]
         )

@@ -398,7 +398,7 @@ class ModusFixtureDiscoveryServiceTests(unittest.TestCase):
             result.message,
         )
 
-    def test_completed_card_without_fixture_mapping_is_rejected(self):
+    def test_completed_card_without_fixture_mapping_is_quarantined(self):
         completed = card(19001, MatchStatus.COMPLETED)
         self.service.lifecycle_service = FakeLifecycleService([completed])
 
@@ -406,19 +406,89 @@ class ModusFixtureDiscoveryServiceTests(unittest.TestCase):
             "app.services.modus_fixture_discovery_service."
             "find_match_by_external_id",
             return_value=None,
+        ), patch.object(
+            self.service,
+            "_find_unique_scheduled_fixture_for_card",
+            return_value=None,
         ):
-            with self.assertRaisesRegex(
-                ValueError,
-                "No existing fixture mapping",
-            ):
-                self.service.discover(
-                    object(),
-                    series_id=15,
-                    week_id=178,
-                    group="Group A",
-                )
+            result = self.service.discover(
+                object(),
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            )
 
+        self.assertEqual(self.importer.calls, [])
         self.assertEqual(self.workflow.calls, [])
+        self.assertEqual(result.enrichment_results, ())
+        self.assertIn(
+            "quarantined 1 legacy incomplete completed match(es)",
+            result.message,
+        )
+
+    def test_completed_card_can_reconcile_to_unique_scheduled_fixture(self):
+        completed = card(
+            19715,
+            MatchStatus.COMPLETED,
+        )
+
+        scheduled_match = type(
+            "ScheduledMatch",
+            (),
+            {
+                "id": 17702,
+                "status": "scheduled",
+                "date": None,
+                "stage": "Group A",
+                "player_a": completed.player_a_name,
+                "player_b": completed.player_b_name,
+            },
+        )()
+
+        enrichment_result = object()
+
+        with patch(
+            "app.services.modus_fixture_discovery_service."
+            "find_match_by_external_id",
+            return_value=None,
+        ), patch.object(
+            self.service,
+            "_find_unique_scheduled_fixture_for_card",
+            return_value=scheduled_match,
+        ) as fallback, patch(
+            "app.services.modus_fixture_discovery_service.map_entity",
+        ) as mapper, patch.object(
+            self.service,
+            "_enrich_completed_card",
+            return_value=enrichment_result,
+        ) as enrich:
+            disposition, result = self.service._process_completed_card(
+                object(),
+                completed,
+            )
+
+        self.assertEqual(disposition, "enriched")
+        self.assertIs(result, enrichment_result)
+
+        fallback.assert_called_once_with(
+            unittest.mock.ANY,
+            completed,
+        )
+
+        mapper.assert_called_once_with(
+            unittest.mock.ANY,
+            provider="modus-official",
+            entity_type="fixture",
+            external_id="modus-match-19715",
+            internal_id=17702,
+            competition_code="MODUS",
+        )
+
+        enrich.assert_called_once_with(
+            unittest.mock.ANY,
+            completed,
+            match=scheduled_match,
+        )
 
 
 if __name__ == "__main__":

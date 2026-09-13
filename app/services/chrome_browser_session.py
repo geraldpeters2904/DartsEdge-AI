@@ -64,43 +64,21 @@ class ChromeBrowserSession:
             first_error = exc
             self._cleanup_profile()
 
-            # On older macOS/Chrome combinations, Selenium may be able to
-            # launch Chrome normally while headless startup fails with
-            # "session not created / chrome not reachable". Preserve the
-            # requested headless behaviour when it works, but recover by
-            # retrying once with a fresh visible Chrome session.
             if (
                 self._driver_factory is None
                 and self._headless
             ):
-                original_headless = self._headless
-                self._headless = False
-
-                try:
-                    driver = (
-                        self._create_chrome_driver()
-                    )
-                except Exception as fallback_exc:
-                    self._cleanup_profile()
-                    self._headless = original_headless
-
-                    raise RuntimeError(
-                        "Could not start dedicated Chrome automation "
-                        "in headless mode or visible fallback mode. "
-                        f"Headless error: {first_error}. "
-                        f"Visible fallback error: {fallback_exc}"
-                    ) from fallback_exc
-
-                # Keep the live session marked as non-headless so any later
-                # session recovery during this object's lifetime uses the
-                # working mode rather than retrying the broken mode.
-                self._headless = False
-
-            else:
                 raise RuntimeError(
-                    "Could not start dedicated Chrome automation: "
-                    + str(exc)
+                    "Could not start dedicated Chrome automation "
+                    "in headless mode. Visible fallback is disabled "
+                    "so automated collection cannot steal desktop focus. "
+                    f"Headless error: {first_error}"
                 ) from exc
+
+            raise RuntimeError(
+                "Could not start dedicated Chrome automation: "
+                + str(exc)
+            ) from exc
 
         self._driver = driver
 

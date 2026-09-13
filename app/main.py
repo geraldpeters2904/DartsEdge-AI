@@ -27,6 +27,8 @@ from app.services.live_edge_monitor_service import live_edge_monitor
 from app.services.forward_schedule_monitor_service import forward_schedule_monitor
 from app.services.model_trust_monitor_service import model_trust_monitor
 from app.services.sparse_consensus_risk_monitor_service import sparse_consensus_risk_monitor
+
+from app.services.unified_sync_worker import unified_sync_worker
 from app.routes.opportunity_replay import router as opportunity_replay_router
 from app.models.feed_connector import FeedConnectorConfig, FeedSyncRun
 from app.routes.feed_connectors import router as feed_connectors_router
@@ -108,10 +110,12 @@ async def lifespan(app: FastAPI):
     forward_schedule_monitor.start()
     model_trust_monitor.start()
     sparse_consensus_risk_monitor.start()
+    unified_sync_worker.start()
 
     try:
         yield
     finally:
+        unified_sync_worker.stop()
         sparse_consensus_risk_monitor.stop()
         model_trust_monitor.stop()
         forward_schedule_monitor.stop()

@@ -2,6 +2,8 @@ import unittest
 
 from app.services.current_series_modus_fetcher import (
     CURRENT_GROUPS,
+    CurrentModusTarget,
+    _discover_targets,
     _targets_from_catalog,
 )
 
@@ -24,6 +26,141 @@ HTML = """
 class CurrentSeriesModusFetcherTests(
     unittest.TestCase
 ):
+    def test_discovery_timeout_does_not_block_other_groups(
+        self,
+    ):
+        calls = []
+
+        class Discovery:
+            def discover(
+                self,
+                db,
+                *,
+                series_id,
+                week_id,
+                group,
+            ):
+                calls.append(group)
+
+                if group == "Group C":
+                    raise TimeoutError(
+                        "future group unavailable"
+                    )
+
+        targets = (
+            CurrentModusTarget(
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            ),
+            CurrentModusTarget(
+                series_id=15,
+                week_id=178,
+                group="Group B",
+            ),
+            CurrentModusTarget(
+                series_id=15,
+                week_id=178,
+                group="Group C",
+            ),
+            CurrentModusTarget(
+                series_id=15,
+                week_id=178,
+                group="Final",
+            ),
+        )
+
+        _discover_targets(
+            Discovery(),
+            object(),
+            targets,
+        )
+
+        self.assertEqual(
+            calls,
+            [
+                "Group A",
+                "Group B",
+                "Group C",
+                "Final",
+            ],
+        )
+
+    def test_empty_fixture_group_does_not_block_other_groups(
+        self,
+    ):
+        calls = []
+
+        class Discovery:
+            def discover(
+                self,
+                db,
+                *,
+                series_id,
+                week_id,
+                group,
+            ):
+                calls.append(group)
+
+                if group == "Final":
+                    raise ValueError(
+                        "No MODUS fixture cards were found."
+                    )
+
+        targets = tuple(
+            CurrentModusTarget(
+                series_id=15,
+                week_id=178,
+                group=group,
+            )
+            for group in CURRENT_GROUPS
+        )
+
+        _discover_targets(
+            Discovery(),
+            object(),
+            targets,
+        )
+
+        self.assertEqual(
+            calls,
+            list(CURRENT_GROUPS),
+        )
+
+    def test_other_value_error_is_not_hidden(
+        self,
+    ):
+        class Discovery:
+            def discover(
+                self,
+                db,
+                *,
+                series_id,
+                week_id,
+                group,
+            ):
+                raise ValueError(
+                    "unexpected parser failure"
+                )
+
+        targets = (
+            CurrentModusTarget(
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "unexpected parser failure",
+        ):
+            _discover_targets(
+                Discovery(),
+                object(),
+                targets,
+            )
+
     def test_targets_selected_current_series_week(
         self,
     ):

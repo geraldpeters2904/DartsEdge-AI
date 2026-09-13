@@ -30,6 +30,9 @@ from app.services.prediction_evidence_service import (
     build_prediction_evidence,
     evidence_summary,
 )
+from app.services.prediction_audit_service import (
+    get_or_create_prediction_context_audit,
+)
 from app.services.prediction_stability_service import (
     analyse_snapshot_stability,
     stability_summary,
@@ -549,6 +552,15 @@ def build_prediction_centre(
             if value
             else None
         )
+
+        if opportunity:
+            context = opportunity.get("_prediction_context")
+            if context is not None:
+                get_or_create_prediction_context_audit(
+                    db,
+                    context,
+                    tournament=fixture.tournament,
+                )
 
         price = (
             value.get("price")

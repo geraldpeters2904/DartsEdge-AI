@@ -99,6 +99,39 @@ class FixtureCommitCorrectnessTests(unittest.TestCase):
         )
         self.assertEqual(item.external_id, "modus-match-20001")
 
+    def test_cancelled_fixture_is_not_resurrected_by_old_scheduled_feed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.commit_csv(directory, SCHEDULED)
+
+            match = self.db.query(Match).one()
+            match.status = "cancelled"
+            self.db.commit()
+
+            repeated = self.commit_csv(directory, SCHEDULED)
+
+        match = self.db.query(Match).one()
+
+        self.assertEqual(match.status, "cancelled")
+        self.assertEqual(repeated.created_matches, 0)
+        self.assertEqual(repeated.duplicate_matches, 1)
+
+        item = (
+            self.db.query(HistoricalImportItem)
+            .filter_by(
+                entity_type="fixture",
+                action="duplicate",
+            )
+            .order_by(HistoricalImportItem.id.desc())
+            .first()
+        )
+
+        self.assertIsNotNone(item)
+        self.assertIn(
+            "cancelled",
+            (item.detail or "").lower(),
+        )
+
+
     def test_rollback_restores_updated_fixture(self):
         with tempfile.TemporaryDirectory() as directory:
             self.commit_csv(directory, SCHEDULED)

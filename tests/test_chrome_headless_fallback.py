@@ -9,45 +9,58 @@ class _FakeDriver:
 
 
 class ChromeHeadlessFallbackTests(unittest.TestCase):
-    def test_headless_startup_falls_back_to_visible(self):
+    def test_headless_startup_does_not_fall_back_to_visible(self):
+
         session = ChromeBrowserSession(
+
             headless=True,
+
         )
 
         calls = []
 
         def create():
+
             calls.append(session._headless)
 
-            if session._headless:
-                raise RuntimeError(
-                    "session not created from chrome not reachable"
-                )
+            raise RuntimeError(
 
-            return _FakeDriver()
+                "session not created from chrome not reachable"
+
+            )
 
         session._create_chrome_driver = create
 
-        try:
+        with self.assertRaisesRegex(
+
+            RuntimeError,
+
+            "Visible fallback is disabled",
+
+        ):
+
             session.open()
 
-            self.assertTrue(
-                session.running
-            )
+        self.assertEqual(
 
-            self.assertEqual(
-                calls,
-                [
-                    True,
-                    False,
-                ],
-            )
+            calls,
 
-            self.assertFalse(
-                session._headless
-            )
-        finally:
-            session.close()
+            [True],
+
+        )
+
+        self.assertTrue(
+
+            session._headless
+
+        )
+
+        self.assertFalse(
+
+            session.running
+
+        )
+
 
     def test_non_headless_failure_is_not_retried(self):
         session = ChromeBrowserSession(

@@ -601,6 +601,54 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
 
 
 
+
+    def test_skips_event_when_market_polling_says_not_due(self):
+
+        from app.services.paddy_power_live_capture import (
+            capture_discovered_paddy_power_events,
+        )
+
+        fixture = KnownBookmakerFixture(
+            fixture_date=date(2026, 9, 4),
+            tournament="MODUS Super Series",
+            player_a="Player One",
+            player_b="Player Two",
+        )
+
+        category_html = """
+        <a href="/darts/event/player-one-v-player-two">
+          <div>Player One</div>
+          <div>Player Two</div>
+        </a>
+        """
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "_should_poll_event_fixture",
+            return_value=False,
+        ) as should_poll:
+            with patch(
+                "app.services.paddy_power_live_capture."
+                "build_paddy_power_event_capture_once",
+            ) as builder:
+                reports = (
+                    capture_discovered_paddy_power_events(
+                        object(),
+                        fixtures=[fixture],
+                        category_html=category_html,
+                    )
+                )
+
+        self.assertEqual(
+            reports,
+            [],
+        )
+
+        should_poll.assert_called_once()
+
+        builder.assert_not_called()
+
+
     def test_skips_fixture_without_discovered_event_url(self):
         from app.services.paddy_power_live_capture import (
             capture_discovered_paddy_power_events,

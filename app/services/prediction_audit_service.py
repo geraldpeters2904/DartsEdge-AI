@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import math
+import re
 import uuid
 from datetime import date, datetime, time
 from typing import Any, Dict, Iterable, Optional
@@ -12,7 +13,6 @@ from app.models.prediction_audit import PredictionAudit
 from app.version import VERSION
 
 MODEL_VERSION = "player-intelligence-shadow-0.2"
-V33_MODEL_VERSION = "transparent-v3.3"
 
 
 def _json_default(value: Any):
@@ -198,6 +198,21 @@ def create_prediction_context_audit(
         },
     }
 
+    model_version = str(context.model_version or "").strip()
+    if not model_version:
+        raise ValueError("Prediction context model_version is required.")
+
+    version_match = re.search(r"v(\d+)(?:\.(\d+))?", model_version)
+    profile_version = None
+    if version_match is not None:
+        major = int(version_match.group(1))
+        minor = version_match.group(2)
+        profile_version = (
+            major * 10 + int(minor)
+            if minor is not None
+            else major
+        )
+
     record = PredictionAudit(
         audit_uuid=str(uuid.uuid4()),
         prediction_id=int(context.match_id),
@@ -212,8 +227,8 @@ def create_prediction_context_audit(
         prediction_confidence=confidence_label,
         explanation_confidence=confidence_label,
         profile_name="Transparent",
-        profile_version=33,
-        model_version=context.model_version or V33_MODEL_VERSION,
+        profile_version=profile_version,
+        model_version=model_version,
         application_version=VERSION,
         shadow_mode=False,
         intelligence_rating_a=None,

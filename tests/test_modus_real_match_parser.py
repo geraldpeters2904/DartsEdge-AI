@@ -53,6 +53,58 @@ class ModusRealMatchParserTests(unittest.TestCase):
         self.assertEqual(stats.highest_checkout, 40)
         self.assertEqual(stats.ton_plus_checkouts, 0)
 
+
+    def test_ignores_date_time_header_before_real_timestamp(self):
+
+        html = self.html.replace(
+            '<a href="#" class="tab">20 Jul 2026 / 09:42</a>',
+            '<a href="#" class="tab">Date Time</a>',
+            1,
+        ).replace(
+            '<p class="mobile-date">20 Jul 2026 <span>09:42</span></p>',
+            '<p class="mobile-date">Date Time</p>\n'
+            '                <p class="mobile-date">'
+            '20 Jul 2026 <span>09:42</span></p>',
+            1,
+        )
+
+        match = self.parser.parse(
+            html,
+            match_id=18195,
+        )
+
+        self.assertEqual(
+            match.played_at,
+            datetime(2026, 7, 20, 9, 42),
+        )
+
+
+    def test_ignores_score_placeholder_before_real_scores(self):
+
+        html = self.html.replace(
+            '<div class="score-area">\n'
+            '                        <span class="highlight">4</span>\n'
+            '                        <span class="">2</span>\n'
+            '                    </div>',
+            '<div class="score-area">\n'
+            '                        <span>-</span>\n'
+            '                        <span class="highlight">4</span>\n'
+            '                        <span class="">2</span>\n'
+            '                    </div>',
+            1,
+        )
+
+        match = self.parser.parse(
+            html,
+            match_id=18195,
+        )
+
+        self.assertEqual(
+            (match.player_a_legs, match.player_b_legs),
+            (4, 2),
+        )
+
+
     def test_match_id_is_required(self):
         with self.assertRaisesRegex(ValueError, "Pass match_id explicitly"):
             self.parser.parse(self.html)

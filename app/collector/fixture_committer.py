@@ -188,6 +188,30 @@ class FixtureCommitter:
                     "created_players": int(created_a) + int(created_b),
                 }
 
+            if (
+                match.status == "cancelled"
+                and fixture.status.value == "scheduled"
+            ):
+                raw_record.processed = True
+                db.add(
+                    HistoricalImportItem(
+                        batch_id=batch.id,
+                        entity_type="fixture",
+                        internal_id=match.id,
+                        external_id=fixture.external_id,
+                        action="duplicate",
+                        detail=(
+                            "Ignored an older scheduled fixture because the "
+                            "warehouse match is already cancelled."
+                        ),
+                        created_by_batch=False,
+                    )
+                )
+                return {
+                    "action": "duplicate",
+                    "created_players": int(created_a) + int(created_b),
+                }
+
             current = self._match_state(match)
             if current == incoming:
                 raw_record.processed = True
@@ -282,6 +306,15 @@ class FixtureCommitter:
     @staticmethod
     def _apply_fixture(match: Match, fixture: CanonicalFixture) -> None:
         match.date = fixture.scheduled_at.date()
+        match.scheduled_at = (
+            None
+            if (
+                fixture.status.value == "scheduled"
+                and fixture.scheduled_at
+                == fixture.source.retrieved_at
+            )
+            else fixture.scheduled_at
+        )
         match.tournament = fixture.competition_name
         match.stage = fixture.stage or fixture.group or "Scheduled"
         match.match_format = fixture.match_format
@@ -299,6 +332,15 @@ class FixtureCommitter:
     def _fixture_state(fixture: CanonicalFixture) -> dict:
         return {
             "date": fixture.scheduled_at.date().isoformat(),
+            "scheduled_at": (
+                None
+                if (
+                    fixture.status.value == "scheduled"
+                    and fixture.scheduled_at
+                    == fixture.source.retrieved_at
+                )
+                else fixture.scheduled_at.isoformat()
+            ),
             "tournament": fixture.competition_name,
             "stage": fixture.stage or fixture.group or "Scheduled",
             "match_format": fixture.match_format,
@@ -311,6 +353,11 @@ class FixtureCommitter:
     def _match_state(match: Match) -> dict:
         return {
             "date": match.date.isoformat() if match.date else None,
+            "scheduled_at": (
+                match.scheduled_at.isoformat()
+                if match.scheduled_at
+                else None
+            ),
             "tournament": match.tournament,
             "stage": match.stage,
             "match_format": match.match_format,

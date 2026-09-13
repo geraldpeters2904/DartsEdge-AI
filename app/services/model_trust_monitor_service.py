@@ -31,7 +31,7 @@ class ModelTrustMonitorStatus:
 
 class ModelTrustMonitor:
     """
-    Refresh transparent-v3.3 model-trust evidence outside
+    Refresh active production model-trust evidence outside
     interactive HTTP requests.
 
     The latest successful report remains available in memory

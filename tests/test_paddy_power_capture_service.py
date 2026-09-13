@@ -11,6 +11,9 @@ from app.services.bookmaker_capture_types import (
 from app.services.paddy_power_capture_service import (
     PaddyPowerCaptureService,
 )
+from app.services.paddy_power_modus_extractor import (
+    normalise_name,
+)
 
 
 class FakeQuery:
@@ -142,6 +145,24 @@ class FakeExtractor:
 class BookmakerCaptureTests(
     unittest.TestCase
 ):
+
+    def test_player_name_apostrophe_variants_normalise_equally(
+        self,
+    ):
+        expected = "john oshea"
+
+        samples = (
+            "John O´Shea",
+            "John O'Shea",
+            "John O’Shea",
+            "John OShea",
+        )
+
+        for value in samples:
+            self.assertEqual(
+                normalise_name(value),
+                expected,
+            )
     def test_only_stores_price_change(self):
         db = FakeDb()
 

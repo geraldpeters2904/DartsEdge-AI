@@ -98,7 +98,8 @@ class PredictionContextAuditSettlementTests(unittest.TestCase):
         )
 
         report = settle_completed_prediction_audits(
-            self.db
+            self.db,
+            model_version="transparent-v3.3",
         )
 
         outcomes = latest_outcomes(
@@ -123,11 +124,13 @@ class PredictionContextAuditSettlementTests(unittest.TestCase):
         )
 
         first = settle_completed_prediction_audits(
-            self.db
+            self.db,
+            model_version="transparent-v3.3",
         )
 
         second = settle_completed_prediction_audits(
-            self.db
+            self.db,
+            model_version="transparent-v3.3",
         )
 
         self.assertEqual(first.settled, 1)
@@ -145,7 +148,8 @@ class PredictionContextAuditSettlementTests(unittest.TestCase):
         )
 
         report = settle_completed_prediction_audits(
-            self.db
+            self.db,
+            model_version="transparent-v3.3",
         )
 
         self.assertEqual(report.settled, 0)
@@ -166,11 +170,34 @@ class PredictionContextAuditSettlementTests(unittest.TestCase):
         )
 
         report = settle_completed_prediction_audits(
-            self.db
+            self.db,
+            model_version="transparent-v3.3",
         )
 
         self.assertEqual(report.settled, 0)
         self.assertEqual(report.invalid_match_result, 1)
+
+
+    def test_default_settlement_uses_active_model(self):
+        self.add_match(
+            status="completed",
+            winner="Alpha",
+        )
+        context = self.context()
+        context.model_name = "transparent-v3.5"
+        context.model_version = "transparent-v3.5"
+
+        create_prediction_context_audit(
+            self.db,
+            context,
+        )
+
+        report = settle_completed_prediction_audits(
+            self.db
+        )
+
+        self.assertEqual(report.settled, 1)
+
 
 
 if __name__ == "__main__":

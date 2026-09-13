@@ -11,10 +11,17 @@ def run_once(
     db = SessionLocal()
 
     try:
-        return (
-            run_forward_fixture_catchup(
-                db
-            )
+        report = run_forward_fixture_catchup(
+            db
         )
+
+        db.commit()
+
+        return report
+
+    except Exception:
+        db.rollback()
+        raise
+
     finally:
         db.close()

@@ -60,6 +60,9 @@ class UnifiedSynchronisationManager:
         poll_seconds: float = 180.0,
         historical_every_n_cycles: int = 5,
         sleeper: Callable[[float], None] = sleep,
+        shutdown_callback: Optional[
+            Callable[[], None]
+        ] = None,
     ) -> None:
         self.current_series_sync = current_series_sync
         self.settlement_sync = settlement_sync
@@ -78,6 +81,8 @@ class UnifiedSynchronisationManager:
             ),
         )
         self.sleeper = sleeper
+        self.shutdown_callback = shutdown_callback
+        self._shutdown_complete = False
 
         self._running = False
         self._stop_requested = False
@@ -102,6 +107,19 @@ class UnifiedSynchronisationManager:
         self._last_message = (
             "Stop requested."
         )
+
+    def close(
+        self,
+    ) -> None:
+        if self._shutdown_complete:
+            return
+
+        self._shutdown_complete = True
+
+        callback = self.shutdown_callback
+
+        if callable(callback):
+            callback()
 
     def status(
         self,

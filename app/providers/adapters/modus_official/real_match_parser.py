@@ -221,10 +221,14 @@ class _DocumentParser(HTMLParser):
                 self.played_at = _parse_datetime(value)
 
         elif kind == "date" and self.played_at is None:
+            if _normalise_label(value) == "date time":
+                return
             self.played_at = _parse_datetime(value)
         elif kind == "player":
             self.players.append(value)
         elif kind == "score":
+            if value.strip() == "-":
+                return
             self.scores.append(int(value))
         elif (
             kind in {"left", "label", "right"}

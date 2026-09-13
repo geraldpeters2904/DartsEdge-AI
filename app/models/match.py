@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String, Date, DateTime
 from app.db import Base
 
 
@@ -8,6 +8,8 @@ class Match(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     date = Column(Date)
+
+    scheduled_at = Column(DateTime, nullable=True, index=True)
 
     tournament = Column(String, default="MODUS")
     stage = Column(String, default="Group")

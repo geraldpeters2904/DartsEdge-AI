@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from app.models.match import Match
 from app.models.prediction_audit import PredictionAudit
+from app.prediction_config import ACTIVE_PREDICTION_MODEL_NAME
 from app.services.shadow_comparison_service import (
     latest_outcomes,
     record_outcome,
@@ -24,7 +25,7 @@ def settle_completed_prediction_audits(
     db,
     *,
     source: str = "warehouse-auto",
-    model_version: str = "transparent-v3.3",
+    model_version: str = ACTIVE_PREDICTION_MODEL_NAME,
     limit: int = 1000,
 ) -> PredictionSettlementReport:
     safe_limit = max(1, min(int(limit), 5000))

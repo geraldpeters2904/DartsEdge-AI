@@ -151,12 +151,33 @@ def _matches_for_window(
     )
 
 
+def _discover_targets(
+    discovery,
+    db,
+    targets,
+) -> None:
+    for target in targets:
+        try:
+            discovery.discover(
+                db,
+                series_id=target.series_id,
+                week_id=target.week_id,
+                group=target.group,
+            )
+        except TimeoutError:
+            continue
+        except ValueError as exc:
+            if str(exc) == "No MODUS fixture cards were found.":
+                continue
+            raise
+
+
 def fetch_current_modus_matches(
     window_start: date,
     window_end: date,
 ) -> Iterable[object]:
     browser = (
-        ChromeBrowserSession()
+        ChromeBrowserSession(headless=True)
     )
 
     catalog_service = (
@@ -193,13 +214,11 @@ def fetch_current_modus_matches(
             )
         )
 
-        for target in targets:
-            discovery.discover(
-                db,
-                series_id=target.series_id,
-                week_id=target.week_id,
-                group=target.group,
-            )
+        _discover_targets(
+            discovery,
+            db,
+            targets,
+        )
 
         return list(
             _matches_for_window(

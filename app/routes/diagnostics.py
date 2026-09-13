@@ -15,6 +15,12 @@ from app.services.model_trust_monitor_service import (
 from app.services.sparse_consensus_risk_monitor_service import (
     sparse_consensus_risk_monitor,
 )
+
+from app.services.unified_sync_worker import (
+
+    unified_sync_worker,
+
+)
 from app.services.stale_scheduled_fixture_diagnostic_service import (
     build_stale_scheduled_fixture_diagnostic,
 )
@@ -165,6 +171,12 @@ def health_endpoint(
 
     sparse_status = (
         sparse_consensus_risk_monitor.status()
+    )
+
+    unified_status = (
+
+        unified_sync_worker.status()
+
     )
 
     sparse_consensus = _monitor_health(
@@ -373,6 +385,42 @@ def health_endpoint(
                 "flagged_matches": (
                     sparse_status.flagged_matches
                 ),
+            },
+
+            "unified_sync": {
+
+                "successful_cycles": (
+
+                    unified_status.successful_cycles
+
+                ),
+
+                "failed_cycles": (
+
+                    unified_status.failed_cycles
+
+                ),
+
+                "last_results": [
+
+                    {
+
+                        "name": item.name,
+
+                        "success": item.success,
+
+                        "message": item.message,
+
+                    }
+
+                    for item in (
+
+                        unified_status.last_results
+
+                    )
+
+                ],
+
             },
         },
     }

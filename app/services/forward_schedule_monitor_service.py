@@ -8,6 +8,9 @@ from typing import Optional
 from app.services.forward_schedule_discovery_service import (
     run_forward_schedule_discovery,
 )
+from app.services.forward_fixture_catchup_runner import (
+    run_once as run_forward_fixture_catchup_once,
+)
 from app.services.automatic_odds_capture_trigger_service import (
     automatic_odds_capture_trigger,
 )
@@ -42,6 +45,7 @@ class ForwardScheduleMonitor:
         *,
         interval_seconds: float = 900.0,
         initial_delay_seconds: float = 10.0,
+        enable_odds_capture_trigger: bool = True,
     ) -> None:
         self.interval_seconds = max(
             60.0,
@@ -50,6 +54,9 @@ class ForwardScheduleMonitor:
         self.initial_delay_seconds = max(
             0.0,
             float(initial_delay_seconds),
+        )
+        self.enable_odds_capture_trigger = bool(
+            enable_odds_capture_trigger
         )
         self._lock = threading.RLock()
         self._run_lock = threading.Lock()
@@ -176,13 +183,33 @@ class ForwardScheduleMonitor:
                 run_forward_schedule_discovery()
             )
 
-            odds_capture = (
-                automatic_odds_capture_trigger.consider(
-                    future_fixtures=int(
-                        report.future_fixtures
+            run_forward_fixture_catchup_once()
+
+            if self.enable_odds_capture_trigger:
+                odds_capture = (
+                    automatic_odds_capture_trigger.consider(
+                        future_fixtures=int(
+                            report.future_fixtures
+                        )
                     )
                 )
-            )
+            else:
+                odds_capture = type(
+                    "OddsCaptureDisabledResult",
+                    (),
+                    {
+                        "triggered": False,
+                        "ready": True,
+                        "captured_at": None,
+                        "extracted_prices": 0,
+                        "stored_prices": 0,
+                        "message": (
+                            "Odds capture is handled by the "
+                            "unified synchronisation worker."
+                        ),
+                        "error": None,
+                    },
+                )()
 
             now = datetime.utcnow()
 
@@ -302,4 +329,6 @@ class ForwardScheduleMonitor:
             )
 
 
-forward_schedule_monitor = ForwardScheduleMonitor()
+forward_schedule_monitor = ForwardScheduleMonitor(
+    enable_odds_capture_trigger=False,
+)

@@ -10,6 +10,26 @@ from sqlalchemy.orm import Session
 from app.models.canonical_data import ProviderEntityMapping
 from app.models.match import Match
 
+from app.services.current_match_enrichment_discovery_service import (
+    EnrichmentCandidate,
+)
+
+from app.services.current_match_enrichment_workflow_service import (
+    CurrentMatchEnrichmentWorkflowService,
+)
+from app.services.modus_completed_scope_fetcher_service import (
+    ModusCompletedScopeFetcherService,
+)
+from app.services.modus_stale_scope_grouping_service import (
+    group_stale_modus_fixtures_by_scope,
+)
+from app.services.modus_stale_reconciliation_service import (
+    reconcile_stale_scope_groups,
+)
+from app.services.modus_stale_reconciliation_execution_orchestrator import (
+    execute_stale_reconciliation_results,
+)
+
 
 @dataclass(frozen=True)
 class CatchupCandidate:
@@ -238,17 +258,25 @@ def resolve_fixture_refresh_callable(
 
 
 def run_forward_fixture_catchup(
+
     db: Session,
+
     *,
+
     today: Optional[date] = None,
+
     limit: int = 100,
+
+    workflow_service=None,
+
+    completed_scope_fetcher=None,
+
 ) -> CatchupRunReport:
-    candidates = (
-        stale_scheduled_modus_fixtures(
-            db,
-            today=today,
-            limit=limit,
-        )
+
+    candidates = stale_scheduled_modus_fixtures(
+        db,
+        today=today,
+        limit=limit,
     )
 
     canonical = tuple(
@@ -258,6 +286,7 @@ def run_forward_fixture_catchup(
     )
 
     if not canonical:
+
         return CatchupRunReport(
             candidates=len(candidates),
             attempted=0,
@@ -270,39 +299,70 @@ def run_forward_fixture_catchup(
             ),
         )
 
-    resolution = (
-        resolve_fixture_refresh_callable()
+    groups = group_stale_modus_fixtures_by_scope(
+        db,
+        today=today,
     )
 
-    if not resolution.ready:
+    if not groups:
         return CatchupRunReport(
-            candidates=len(
-                candidates
-            ),
+            candidates=len(candidates),
             attempted=0,
             completed=0,
-            unchanged=len(
-                candidates
-            ),
+            unchanged=len(candidates),
             failed=0,
             message=(
-                "Canonical stale fixtures were found, but no compatible "
-                "lifecycle refresh callable is available."
+                f"Deferred {len(canonical)} canonical stale fixture(s); "
+                "no recoverable MODUS import scope was available."
             ),
         )
 
+    workflow = (
+        workflow_service
+        or CurrentMatchEnrichmentWorkflowService()
+    )
+
+    owns_fetcher = completed_scope_fetcher is None
+    fetcher = (
+        completed_scope_fetcher
+        or ModusCompletedScopeFetcherService()
+    )
+
+    try:
+        reconciliation_results = (
+            reconcile_stale_scope_groups(
+                groups,
+                fetch_cards=fetcher.fetch,
+            )
+        )
+
+        execution = (
+            execute_stale_reconciliation_results(
+                db,
+                results=reconciliation_results,
+                workflow_service=workflow,
+            )
+        )
+
+    finally:
+        if owns_fetcher:
+            fetcher.close()
+
+    unchanged = max(
+        0,
+        len(candidates) - execution.attempted,
+    )
+
     return CatchupRunReport(
-        candidates=len(
-            candidates
-        ),
-        attempted=0,
-        completed=0,
-        unchanged=len(
-            candidates
-        ),
-        failed=0,
+        candidates=len(candidates),
+        attempted=execution.attempted,
+        completed=execution.completed,
+        unchanged=unchanged,
+        failed=execution.failed,
         message=(
-            "Canonical lifecycle refresh remains delegated to the live "
-            "current-series feed."
+            "Sequence-aware MODUS stale fixture reconciliation "
+            f"processed {execution.scopes_executed} scope(s); "
+            f"{execution.scopes_deferred} scope(s) were deferred."
         ),
     )
+

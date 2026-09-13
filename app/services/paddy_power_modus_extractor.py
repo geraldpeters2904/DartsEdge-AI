@@ -201,11 +201,26 @@ def visible_text_tokens(
 def normalise_name(
     value: str,
 ) -> str:
-    return " ".join(
+    text = (
         (value or "")
         .strip()
         .casefold()
-        .split()
+    )
+
+    for apostrophe in (
+        "'",
+        "’",
+        "‘",
+        "´",
+        "`",
+    ):
+        text = text.replace(
+            apostrophe,
+            "",
+        )
+
+    return " ".join(
+        text.split()
     )
 
 

@@ -11,12 +11,6 @@ from app.models.match import Match
 from app.services.fixture_edge_service import (
     build_fixture_edge_rows,
 )
-from app.services.paddy_power_live_capture import (
-    build_paddy_power_capture_once,
-)
-from app.services.paddy_power_live_health_service import (
-    check_paddy_power_live_health,
-)
 
 
 @dataclass(frozen=True)
@@ -79,55 +73,9 @@ def run_live_fixture_edge_capture(
             value_rows=0,
             message=(
                 "No current or future scheduled MODUS fixtures are stored; "
-                "live odds capture was not attempted."
+                "Fixture Edge has nothing to evaluate."
             ),
         )
-
-    health = check_paddy_power_live_health()
-
-    if not health.ready:
-        return LiveFixtureEdgeCaptureReport(
-            future_fixtures=fixture_count,
-            bridge_ready=False,
-            capture_attempted=False,
-            extracted_prices=0,
-            stored_prices=0,
-            unchanged_prices=0,
-            skipped_prices=0,
-            challenge_detected=False,
-            edge_rows=0,
-            priced_edge_rows=0,
-            value_rows=0,
-            message="Paddy Power live bridge is not ready.",
-            error=health.error,
-        )
-
-    capture_once, service = build_paddy_power_capture_once()
-
-    try:
-        capture = capture_once(db)
-    except Exception as exc:
-        rollback = getattr(db, "rollback", None)
-        if callable(rollback):
-            rollback()
-
-        return LiveFixtureEdgeCaptureReport(
-            future_fixtures=fixture_count,
-            bridge_ready=True,
-            capture_attempted=True,
-            extracted_prices=0,
-            stored_prices=0,
-            unchanged_prices=0,
-            skipped_prices=0,
-            challenge_detected=False,
-            edge_rows=0,
-            priced_edge_rows=0,
-            value_rows=0,
-            message="Paddy Power live odds capture failed.",
-            error=str(exc),
-        )
-    finally:
-        service.close()
 
     rows = build_fixture_edge_rows(
         db,
@@ -152,17 +100,17 @@ def run_live_fixture_edge_capture(
     return LiveFixtureEdgeCaptureReport(
         future_fixtures=fixture_count,
         bridge_ready=True,
-        capture_attempted=True,
-        extracted_prices=int(capture.extracted_prices),
-        stored_prices=int(capture.stored_prices),
-        unchanged_prices=int(capture.unchanged_prices),
-        skipped_prices=int(capture.skipped_prices),
-        challenge_detected=bool(capture.challenge_detected),
+        capture_attempted=False,
+        extracted_prices=0,
+        stored_prices=0,
+        unchanged_prices=0,
+        skipped_prices=0,
+        challenge_detected=False,
         edge_rows=len(rows),
         priced_edge_rows=priced,
         value_rows=value,
         message=(
-            capture.message
-            + f" Fixture Edge now has {priced} priced selection row(s)."
+            "Fixture Edge refreshed from stored bookmaker prices. "
+            f"{priced} priced selection row(s) available."
         ),
     )
