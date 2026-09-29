@@ -23,8 +23,8 @@ from app.services.modus_completed_scope_fetcher_service import (
 from app.services.modus_stale_scope_grouping_service import (
     group_stale_modus_fixtures_by_scope,
 )
-from app.services.modus_stale_reconciliation_service import (
-    reconcile_stale_scope_groups,
+from app.services.modus_anchor_stale_reconciliation_service import (
+    reconcile_stale_scope_groups_with_verified_anchors,
 )
 from app.services.modus_stale_reconciliation_execution_orchestrator import (
     execute_stale_reconciliation_results,
@@ -330,7 +330,8 @@ def run_forward_fixture_catchup(
 
     try:
         reconciliation_results = (
-            reconcile_stale_scope_groups(
+            reconcile_stale_scope_groups_with_verified_anchors(
+                db,
                 groups,
                 fetch_cards=fetcher.fetch,
             )
