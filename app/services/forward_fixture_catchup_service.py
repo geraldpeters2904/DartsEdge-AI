@@ -29,6 +29,9 @@ from app.services.modus_anchor_stale_reconciliation_service import (
 from app.services.modus_stale_reconciliation_execution_orchestrator import (
     execute_stale_reconciliation_results,
 )
+from app.services.modus_orphan_cancellation_orchestrator import (
+    execute_unmatched_orphan_cancellations,
+)
 
 
 @dataclass(frozen=True)
@@ -328,12 +331,40 @@ def run_forward_fixture_catchup(
         or ModusCompletedScopeFetcherService()
     )
 
+    cards_by_scope = {}
+
+    def scope_key(scope):
+        return (
+            int(scope.series_id),
+            int(scope.week_id),
+            str(scope.group),
+        )
+
+    def cached_fetch(scope):
+        key = scope_key(scope)
+
+        if key not in cards_by_scope:
+            cards_by_scope[key] = tuple(
+                fetcher.fetch(scope)
+            )
+
+        return cards_by_scope[key]
+
+    groups_by_scope = {
+        scope_key(group.scope): group
+        for group in groups
+    }
+
+    orphan_attempted = 0
+    orphan_cancelled = 0
+    orphan_failed = 0
+
     try:
         reconciliation_results = (
             reconcile_stale_scope_groups_with_verified_anchors(
                 db,
                 groups,
-                fetch_cards=fetcher.fetch,
+                fetch_cards=cached_fetch,
             )
         )
 
@@ -345,25 +376,71 @@ def run_forward_fixture_catchup(
             )
         )
 
+        for result in reconciliation_results:
+            if (
+                result.error
+                or not result.plan.resolved
+                or not result.plan.unmatched_fixture_ids
+            ):
+                continue
+
+            group = groups_by_scope.get(
+                scope_key(result.scope)
+            )
+
+            if group is None:
+                continue
+
+            orphan_result = (
+                execute_unmatched_orphan_cancellations(
+                    db,
+                    group=group,
+                    unmatched_fixture_ids=(
+                        result.plan.unmatched_fixture_ids
+                    ),
+                    completed_cards=cached_fetch(
+                        result.scope
+                    ),
+                )
+            )
+
+            orphan_attempted += orphan_result.attempted
+            orphan_cancelled += orphan_result.cancelled
+            orphan_failed += len(orphan_result.errors)
+
     finally:
         if owns_fetcher:
             fetcher.close()
 
+    total_attempted = (
+        execution.attempted
+        + orphan_attempted
+    )
+    total_completed = (
+        execution.completed
+        + orphan_cancelled
+    )
+    total_failed = (
+        execution.failed
+        + orphan_failed
+    )
+
     unchanged = max(
         0,
-        len(candidates) - execution.attempted,
+        len(candidates) - total_attempted,
     )
 
     return CatchupRunReport(
         candidates=len(candidates),
-        attempted=execution.attempted,
-        completed=execution.completed,
+        attempted=total_attempted,
+        completed=total_completed,
         unchanged=unchanged,
-        failed=execution.failed,
+        failed=total_failed,
         message=(
             "Sequence-aware MODUS stale fixture reconciliation "
             f"processed {execution.scopes_executed} scope(s); "
-            f"{execution.scopes_deferred} scope(s) were deferred."
+            f"{execution.scopes_deferred} scope(s) were deferred; "
+            f"{orphan_cancelled} derived orphan fixture(s) were cancelled."
         ),
     )
 

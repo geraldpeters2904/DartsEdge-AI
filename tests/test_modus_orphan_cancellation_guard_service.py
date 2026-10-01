@@ -252,3 +252,65 @@ def test_no_raw_observation_rejects_cancellation():
         assert "No raw MODUS observations" in result.reason
     finally:
         db.close()
+
+
+def test_multiple_strict_mappings_reject_cancellation():
+    db = _database()
+
+    try:
+        _add_candidate(db)
+
+        db.add(
+            ProviderEntityMapping(
+                provider="modus-official",
+                entity_type="fixture",
+                external_id="modus-match-99999999",
+                internal_id=17855,
+                competition_code="MODUS",
+            )
+        )
+        db.commit()
+
+        result = check_orphan_cancellation_eligibility(
+            db,
+            _group(),
+            17855,
+        )
+
+        assert not result.eligible
+        assert result.external_id is None
+        assert "exactly one strict" in result.reason
+    finally:
+        db.close()
+
+
+def test_malformed_raw_observation_rejects_cancellation():
+    db = _database()
+
+    try:
+        _add_candidate(db)
+
+        db.add(
+            RawIngestionRecord(
+                provider="modus-official",
+                entity_type="fixture",
+                external_id="modus-match-74834978",
+                payload_json="{not-valid-json",
+                checksum="malformed-test-record",
+                retrieved_at=datetime(2026, 9, 19, 0, 6, 0),
+                processed=True,
+            )
+        )
+        db.commit()
+
+        result = check_orphan_cancellation_eligibility(
+            db,
+            _group(),
+            17855,
+        )
+
+        assert not result.eligible
+        assert result.external_id == "modus-match-74834978"
+        assert "cannot be parsed safely" in result.reason
+    finally:
+        db.close()
