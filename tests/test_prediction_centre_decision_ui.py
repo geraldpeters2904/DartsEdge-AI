@@ -79,6 +79,21 @@ class PredictionCentreDecisionUITests(
             text,
         )
 
+    def test_card_exposes_strategy_eligibility_badge(self):
+        text = CARD.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "'Qualifies' if card.decision_intelligence.strategy_qualifies else 'Filtered'",
+            text,
+        )
+
+        self.assertIn(
+            "'good' if card.decision_intelligence.strategy_qualifies else 'warning'",
+            text,
+        )
+
     def test_bet_slip_requires_strategy_qualification(self):
         text = CARD.read_text(
             encoding="utf-8"

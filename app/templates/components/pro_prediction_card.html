@@ -40,6 +40,10 @@
       <span class="status-pill {{ 'good' if card.decision_intelligence.score >= 70 else 'warning' }}">
         Decision {{ card.decision_intelligence.score }}
       </span>
+
+      <span class="status-pill {{ 'good' if card.decision_intelligence.strategy_qualifies else 'warning' }}">
+        {{ 'Qualifies' if card.decision_intelligence.strategy_qualifies else 'Filtered' }}
+      </span>
       {% endif %}
 
       <span class="status-pill {{ card.tone }}">
