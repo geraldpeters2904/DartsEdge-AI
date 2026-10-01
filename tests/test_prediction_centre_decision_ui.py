@@ -79,6 +79,49 @@ class PredictionCentreDecisionUITests(
             text,
         )
 
+    def test_value_status_and_strategy_filters_are_separate(self):
+        centre = CENTRE.read_text(
+            encoding="utf-8"
+        )
+        card = CARD.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "Value status",
+            centre,
+        )
+
+        self.assertIn(
+            'id="pc-strategy"',
+            centre,
+        )
+
+        self.assertIn(
+            '<option value="qualifies">Qualifies</option>',
+            centre,
+        )
+
+        self.assertIn(
+            '<option value="filtered">Filtered</option>',
+            centre,
+        )
+
+        self.assertIn(
+            "card.dataset.strategy === strategyValue",
+            centre,
+        )
+
+        self.assertIn(
+            "strategy.value = 'all'",
+            centre,
+        )
+
+        self.assertIn(
+            'data-strategy="{{',
+            card,
+        )
+
     def test_card_exposes_strategy_eligibility_badge(self):
         text = CARD.read_text(
             encoding="utf-8"

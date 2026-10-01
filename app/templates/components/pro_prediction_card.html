@@ -2,6 +2,7 @@
   class="panel prediction-centre-card pro-prediction-card"
   data-competition="{{ card.competition|lower }}"
   data-status="{{ card.status|lower }}"
+  data-strategy="{{ ('qualifies' if card.decision_intelligence.strategy_qualifies else 'filtered') if card.decision_intelligence else 'unavailable' }}"
   data-positive="{{ 'true' if card.assessment and card.assessment.has_value else 'false' }}"
   data-time="{{ card.fixture.date }}"
   data-decision="{{ card.sort_decision|default(-999) }}"

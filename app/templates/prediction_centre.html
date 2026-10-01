@@ -309,13 +309,22 @@
     </label>
 
     <label>
-      Verdict
+      Value status
       <select id="pc-status">
-        <option value="all">All verdicts</option>
+        <option value="all">All value statuses</option>
         <option value="positive ev">Positive EV</option>
         <option value="odds required">Odds required</option>
         <option value="no value">No value</option>
         <option value="analysis unavailable">Unavailable</option>
+      </select>
+    </label>
+
+    <label>
+      Strategy
+      <select id="pc-strategy">
+        <option value="all">All strategy states</option>
+        <option value="qualifies">Qualifies</option>
+        <option value="filtered">Filtered</option>
       </select>
     </label>
 
@@ -359,7 +368,7 @@
   hidden
 >
   <h2>No fixtures match these filters</h2>
-  <p>Reset the filters or widen the competition and verdict selections.</p>
+  <p>Reset the filters or widen the competition, value status and strategy selections.</p>
   <button class="button secondary" type="button" id="pc-empty-reset">
     Reset filters
   </button>
@@ -404,6 +413,7 @@
 
   const competition = document.getElementById('pc-competition');
   const status = document.getElementById('pc-status');
+  const strategy = document.getElementById('pc-strategy');
   const sort = document.getElementById('pc-sort');
   const positiveOnly = document.getElementById('pc-positive-only');
   const count = document.getElementById('pc-visible-count');
@@ -420,6 +430,7 @@
   function apply() {
     const competitionValue = competition.value;
     const statusValue = status.value;
+    const strategyValue = strategy.value;
 
     let visible = cards.filter(card => {
       const competitionMatch =
@@ -430,6 +441,10 @@
         statusValue === 'all' ||
         card.dataset.status === statusValue;
 
+      const strategyMatch =
+        strategyValue === 'all' ||
+        card.dataset.strategy === strategyValue;
+
       const positiveMatch =
         !positiveOnly.checked ||
         card.dataset.positive === 'true';
@@ -437,6 +452,7 @@
       const show =
         competitionMatch &&
         statusMatch &&
+        strategyMatch &&
         positiveMatch;
 
       card.hidden = !show;
@@ -462,12 +478,13 @@
   function reset() {
     competition.value = 'all';
     status.value = 'all';
+    strategy.value = 'all';
     sort.value = 'decision';
     positiveOnly.checked = false;
     apply();
   }
 
-  [competition, status, sort, positiveOnly].forEach(
+  [competition, status, strategy, sort, positiveOnly].forEach(
     control => control.addEventListener('change', apply)
   );
 
