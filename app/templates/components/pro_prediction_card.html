@@ -214,11 +214,7 @@
             card.decision_intelligence.strategy_suggested_stake
           )
           if card.decision_intelligence
-          else (
-            '{:,.2f}'.format(card.assessment.recommended_stake)
-            if card.assessment
-            else '0.00'
-          )
+          else '0.00'
         }}
       </strong>
       <small>

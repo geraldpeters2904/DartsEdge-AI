@@ -124,6 +124,11 @@ class PredictionCentreDecisionUITests(
             text,
         )
 
+        self.assertNotIn(
+            "'{:,.2f}'.format(card.assessment.recommended_stake)",
+            text,
+        )
+
     def test_unpriced_card_explains_missing_score(self):
         text = CARD.read_text(
             encoding="utf-8"
