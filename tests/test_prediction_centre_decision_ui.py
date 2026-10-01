@@ -79,6 +79,36 @@ class PredictionCentreDecisionUITests(
             text,
         )
 
+    def test_bet_slip_requires_strategy_qualification(self):
+        text = CARD.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "card.decision_intelligence.strategy_qualifies",
+            text,
+        )
+
+        self.assertIn(
+            "card.decision_intelligence.strategy_suggested_stake > 0",
+            text,
+        )
+
+        self.assertIn(
+            "Filtered by strategy.",
+            text,
+        )
+
+        self.assertIn(
+            "card.decision_intelligence.strategy_blockers",
+            text,
+        )
+
+        self.assertNotIn(
+            "else 1.00",
+            text,
+        )
+
     def test_unpriced_card_explains_missing_score(self):
         text = CARD.read_text(
             encoding="utf-8"

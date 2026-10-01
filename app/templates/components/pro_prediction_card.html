@@ -319,7 +319,13 @@
       Open intelligence
     </a>
 
-    {% if card.opportunity and card.price %}
+    {% if (
+        card.opportunity
+        and card.price
+        and card.decision_intelligence
+        and card.decision_intelligence.strategy_qualifies
+        and card.decision_intelligence.strategy_suggested_stake > 0
+    ) %}
     <form method="post" action="/bet-slip/add">
       <input type="hidden" name="fixture_id" value="{{ card.fixture.id }}">
       <input type="hidden" name="market" value="Match Winner">
@@ -331,12 +337,6 @@
         name="stake"
         value="{{
           card.decision_intelligence.strategy_suggested_stake
-          if card.decision_intelligence and card.decision_intelligence.strategy_suggested_stake > 0
-          else (
-            card.assessment.recommended_stake
-            if card.assessment and card.assessment.recommended_stake > 0
-            else 1.00
-          )
         }}"
       >
       <input type="hidden" name="model_probability" value="{{ card.opportunity.probability }}">
@@ -360,6 +360,22 @@
         Add to Bet Slip
       </button>
     </form>
+    {% endif %}
+
+    {% if (
+        card.opportunity
+        and card.price
+        and card.decision_intelligence
+        and not card.decision_intelligence.strategy_qualifies
+    ) %}
+    <div class="muted small">
+      <strong>Filtered by strategy.</strong>
+      {% if card.decision_intelligence.strategy_blockers %}
+        {{ card.decision_intelligence.strategy_blockers | join(" · ") }}
+      {% else %}
+        This opportunity does not meet the active strategy rules.
+      {% endif %}
+    </div>
     {% endif %}
 
     <a class="button secondary" href="/expected-value">

@@ -450,6 +450,18 @@ def _decision_intelligence_for_card(
         strategy_decision.status
     )
 
+    payload["strategy_qualifies"] = (
+        strategy_decision.qualifies
+    )
+
+    payload["strategy_blockers"] = list(
+        strategy_decision.blockers
+    )
+
+    payload["strategy_warnings"] = list(
+        strategy_decision.warnings
+    )
+
     payload["strategy_suggested_stake"] = (
         strategy_decision.suggested_stake
     )
