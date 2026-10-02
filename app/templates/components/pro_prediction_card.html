@@ -219,7 +219,9 @@
         }}
       </strong>
       <small>
-        {% if card.decision_intelligence %}
+        {% if card.decision_intelligence and card.decision_intelligence.strategy_stake_capped %}
+          Capped at {{ '%.1f'|format(card.decision_intelligence.strategy_maximum_stake_percent) }}% of bankroll
+        {% elif card.decision_intelligence %}
           {{ card.decision_intelligence.strategy_status }}
         {% else %}
           {{ card.assessment.risk_level if card.assessment else 'No official decision' }}

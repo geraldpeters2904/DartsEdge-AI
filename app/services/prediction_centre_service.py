@@ -466,6 +466,22 @@ def _decision_intelligence_for_card(
         strategy_decision.suggested_stake
     )
 
+    payload["strategy_scaled_stake"] = (
+        strategy_decision.scaled_stake
+    )
+
+    payload["strategy_stake_cap"] = (
+        strategy_decision.stake_cap
+    )
+
+    payload["strategy_maximum_stake_percent"] = (
+        rules["maximum_stake_percent"]
+    )
+
+    payload["strategy_stake_capped"] = (
+        strategy_decision.stake_capped
+    )
+
     return payload
 
 

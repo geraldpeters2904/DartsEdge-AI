@@ -82,6 +82,9 @@ class StrategyRulesTests(unittest.TestCase):
             )
             self.assertTrue(decision.qualifies)
             self.assertEqual(decision.suggested_stake, 30.0)
+            self.assertEqual(decision.scaled_stake, 100.0)
+            self.assertEqual(decision.stake_cap, 30.0)
+            self.assertTrue(decision.stake_capped)
         finally:
             db.close()
 

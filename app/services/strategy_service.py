@@ -108,6 +108,9 @@ class StrategyDecision:
     blockers: tuple[str, ...]
     warnings: tuple[str, ...]
     suggested_stake: float
+    scaled_stake: float
+    stake_cap: float
+    stake_capped: bool
     strategy_name: str
     strategy_version: int
     enforcement_mode: str
@@ -304,6 +307,9 @@ def evaluate_strategy(
         blockers=tuple(blockers),
         warnings=tuple(warnings),
         suggested_stake=suggested_stake,
+        scaled_stake=round(scaled_stake, 2),
+        stake_cap=round(stake_cap, 2),
+        stake_capped=bool(not blockers and scaled_stake > stake_cap),
         strategy_name=strategy.name,
         strategy_version=strategy.version,
         enforcement_mode=rules["enforcement_mode"],
