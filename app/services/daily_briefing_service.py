@@ -4,6 +4,7 @@ from datetime import date
 from typing import Any, Dict, List
 
 from app.models.match import Match
+from app.models.odds_snapshot import OddsSnapshot
 from app.services.ai_coach_service import build_ai_coach_data
 from app.services.data_provider_service import DataProviderService
 from app.services.expected_value_service import assess_value, best_prices, recent_snapshots
@@ -33,13 +34,44 @@ def _match_price(opportunity: Dict[str, Any], prices) -> Any | None:
     return None
 
 
+def _latest_fixture_price(db, opportunity: Dict[str, Any]) -> Any | None:
+    fixture_id = opportunity.get("match_id")
+    selection = opportunity.get("selection")
+
+    if fixture_id is None or not selection:
+        return None
+
+    return (
+        db.query(OddsSnapshot)
+        .filter(
+            OddsSnapshot.fixture_id == int(fixture_id),
+            OddsSnapshot.bookmaker_code == "paddypower",
+            OddsSnapshot.market == "match_winner",
+            OddsSnapshot.selection == selection,
+        )
+        .order_by(
+            OddsSnapshot.captured_at.desc(),
+            OddsSnapshot.id.desc(),
+        )
+        .first()
+    )
+
+
 def _value_opportunities(db, limit: int = 10) -> List[Dict[str, Any]]:
     settings = get_settings(db)
-    prices = best_prices(recent_snapshots(db, limit=500))
     ranked = build_ranked_opportunities(db, limit=100)
+    legacy_prices = None
     results: List[Dict[str, Any]] = []
     for item in ranked:
-        price = _match_price(item, prices)
+        price = _latest_fixture_price(db, item)
+
+        if price is None and item.get("match_id") is None:
+            if legacy_prices is None:
+                legacy_prices = best_prices(
+                    recent_snapshots(db, limit=500)
+                )
+            price = _match_price(item, legacy_prices)
+
         if not price:
             continue
         try:

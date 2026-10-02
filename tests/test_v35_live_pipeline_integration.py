@@ -325,6 +325,81 @@ class V35LivePipelineIntegrationTests(unittest.TestCase):
         )
 
 
+    def test_value_opportunity_keeps_current_fixture_price_beyond_global_snapshot_window(self):
+        captured_at = datetime.utcnow() - timedelta(hours=1)
+
+        context = build_prediction_context(
+            self.db,
+            self.fixture.id,
+        )
+
+        self.db.add(
+            OddsSnapshot(
+                fixture_id=self.fixture.id,
+                bookmaker_code="paddypower",
+                market="match_winner",
+                selection=context.predicted_winner,
+                decimal_odds=3.00,
+                captured_at=captured_at,
+                fixture_date=self.fixture.date,
+                tournament=self.fixture.tournament,
+                player_a=self.fixture.player_a,
+                player_b=self.fixture.player_b,
+                bookmaker="Paddy Power",
+                provider_id="regression-target",
+            )
+        )
+
+        for index in range(501):
+            self.db.add(
+                OddsSnapshot(
+                    fixture_id=10000 + index,
+                    bookmaker_code="paddypower",
+                    market="match_winner",
+                    selection=f"Noise Player {index}",
+                    decimal_odds=2.00,
+                    captured_at=(
+                        captured_at
+                        + timedelta(
+                            minutes=index + 1
+                        )
+                    ),
+                    fixture_date=self.fixture.date,
+                    tournament="Noise Tournament",
+                    player_a=f"Noise Player {index}",
+                    player_b=f"Noise Opponent {index}",
+                    bookmaker="Paddy Power",
+                    provider_id=f"noise-{index}",
+                )
+            )
+
+        self.db.commit()
+
+        values = _value_opportunities(
+            self.db,
+            limit=100,
+        )
+
+        matching = [
+            row
+            for row in values
+            if row.get("match_id") == self.fixture.id
+        ]
+
+        self.assertEqual(
+            len(matching),
+            1,
+        )
+        self.assertEqual(
+            matching[0]["price"].fixture_id,
+            self.fixture.id,
+        )
+        self.assertEqual(
+            matching[0]["price"].provider_id,
+            "regression-target",
+        )
+
+
     def test_real_prediction_odds_value_and_prediction_centre_join(self):
         captured_at = datetime.utcnow()
 
