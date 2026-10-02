@@ -536,6 +536,19 @@ class V35LivePipelineIntegrationTests(unittest.TestCase):
             "Odds required",
         )
 
+        decision = card.get("decision_intelligence")
+        self.assertIsNotNone(decision)
+        self.assertEqual(
+            card["sort_stake"],
+            decision["strategy_suggested_stake"],
+        )
+
+        if not decision["strategy_qualifies"]:
+            self.assertEqual(
+                card["sort_stake"],
+                0.0,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

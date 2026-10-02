@@ -700,9 +700,12 @@ def build_prediction_centre(
             else -999.0
         )
 
+        decision_intelligence = card["decision_intelligence"]
         card["sort_stake"] = (
-            float(assessment.recommended_stake)
-            if assessment
+            float(
+                decision_intelligence["strategy_suggested_stake"]
+            )
+            if decision_intelligence
             else 0.0
         )
 
