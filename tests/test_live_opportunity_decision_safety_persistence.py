@@ -65,7 +65,8 @@ class LiveOpportunityDecisionSafetyPersistenceTests(
             "steam_direction": None,
             "steam_strength": None,
             "coordinated_move": False,
-            "strategy_suggested_stake": 10.0,
+            "strategy_suggested_stake": 0.0,
+            "effective_stake": 10.0,
         }
 
     def tearDown(self):
@@ -124,6 +125,77 @@ class LiveOpportunityDecisionSafetyPersistenceTests(
             row.decision_safety_explanation,
             "High regime risk.",
         )
+
+    def test_persists_effective_stake_not_shadow_strategy_stake(self):
+        safety = {
+            "state": "NORMAL",
+            "sparse_consensus_risk_state": "NORMAL",
+            "explanation": "Normal.",
+            "density": 0.5,
+        }
+
+        written = _persist_if_changed(
+            self.db,
+            fixture=self.fixture,
+            opportunity=self.opportunity,
+            assessment=self.assessment,
+            price=self.price,
+            decision=self.decision,
+            decision_safety=safety,
+            lifecycle_state="NEW",
+        )
+
+        self.assertTrue(written)
+
+        row = self.db.query(OpportunitySnapshot).one()
+
+        self.assertEqual(row.suggested_stake, 10.0)
+
+    def test_effective_stake_change_creates_new_snapshot(self):
+        safety = {
+            "state": "NORMAL",
+            "sparse_consensus_risk_state": "NORMAL",
+            "explanation": "Normal.",
+            "density": 0.5,
+        }
+
+        first = _persist_if_changed(
+            self.db,
+            fixture=self.fixture,
+            opportunity=self.opportunity,
+            assessment=self.assessment,
+            price=self.price,
+            decision=self.decision,
+            decision_safety=safety,
+            lifecycle_state="NEW",
+        )
+
+        changed = dict(self.decision)
+        changed["effective_stake"] = 15.0
+
+        second = _persist_if_changed(
+            self.db,
+            fixture=self.fixture,
+            opportunity=self.opportunity,
+            assessment=self.assessment,
+            price=self.price,
+            decision=changed,
+            decision_safety=safety,
+            lifecycle_state="NEW",
+        )
+
+        self.assertTrue(first)
+        self.assertTrue(second)
+
+        rows = (
+            self.db.query(OpportunitySnapshot)
+            .order_by(OpportunitySnapshot.id.asc())
+            .all()
+        )
+
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0].suggested_stake, 10.0)
+        self.assertEqual(rows[1].suggested_stake, 15.0)
 
     def test_safety_change_creates_new_snapshot(self):
         normal = {

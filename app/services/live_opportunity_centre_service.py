@@ -113,6 +113,14 @@ def _persist_if_changed(
 
     latest = history[-1] if history else None
 
+    effective_stake = float(
+        decision.get(
+            "effective_stake",
+            assessment.recommended_stake,
+        )
+        or 0.0
+    )
+
     comparable = (
         int(decision["score"]),
         str(decision["recommendation"]),
@@ -122,6 +130,7 @@ def _persist_if_changed(
         else None,
         str(decision.get("steam_direction") or ""),
         str(decision.get("steam_strength") or ""),
+        round(effective_stake, 2),
         lifecycle_state,
         str(
             decision_safety.get(
@@ -162,6 +171,7 @@ def _persist_if_changed(
             else None,
             str(latest.steam_direction or ""),
             str(latest.steam_strength or ""),
+            round(float(latest.suggested_stake or 0.0), 2),
             str(latest.lifecycle_state),
             str(
                 latest.decision_safety_state
@@ -252,13 +262,7 @@ def _persist_if_changed(
                 "UNKNOWN",
             )
         ),
-        suggested_stake=float(
-            decision.get(
-                "strategy_suggested_stake",
-                assessment.recommended_stake,
-            )
-            or 0.0
-        ),
+        suggested_stake=effective_stake,
         captured_at=datetime.utcnow(),
     )
 
@@ -526,7 +530,7 @@ def build_live_opportunity_centre(
                 ),
                 suggested_stake=float(
                     decision.get(
-                        "strategy_suggested_stake",
+                        "effective_stake",
                         assessment.recommended_stake,
                     )
                     or 0.0

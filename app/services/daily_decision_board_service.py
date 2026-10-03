@@ -137,7 +137,7 @@ def _decision_from_card(
         suggested_stake=round(
             float(
                 decision.get(
-                    "strategy_suggested_stake",
+                    "effective_stake",
                     assessment
                     .recommended_stake,
                 )
