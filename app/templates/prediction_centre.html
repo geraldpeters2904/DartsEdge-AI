@@ -189,7 +189,7 @@
       EV {{ '%+.2f%%'|format(top_card.assessment.expected_value_percent) }}
       · Edge {{ '%+.2f%%'|format(top_card.assessment.edge_percent) }}
       · Suggested stake
-      £{{ '{:,.2f}'.format(top_card.decision_intelligence.strategy_suggested_stake|default(top_card.assessment.recommended_stake)) }}
+      £{{ '{:,.2f}'.format(top_card.decision_intelligence.effective_stake) }}
     </p>
     {% endif %}
   </div>

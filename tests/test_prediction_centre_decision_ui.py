@@ -79,6 +79,21 @@ class PredictionCentreDecisionUITests(
             text,
         )
 
+    def test_best_decision_panel_uses_effective_stake(self):
+        text = CENTRE.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "top_card.decision_intelligence.effective_stake",
+            text,
+        )
+
+        self.assertNotIn(
+            "top_card.decision_intelligence.strategy_suggested_stake",
+            text,
+        )
+
     def test_value_status_and_strategy_filters_are_separate(self):
         centre = CENTRE.read_text(
             encoding="utf-8"
