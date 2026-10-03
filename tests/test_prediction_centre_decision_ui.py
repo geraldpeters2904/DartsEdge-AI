@@ -137,9 +137,14 @@ class PredictionCentreDecisionUITests(
             text,
         )
 
-    def test_bet_slip_requires_strategy_qualification(self):
+    def test_bet_slip_respects_strategy_enforcement_mode(self):
         text = CARD.read_text(
             encoding="utf-8"
+        )
+
+        self.assertIn(
+            "card.decision_intelligence.strategy_enforced",
+            text,
         )
 
         self.assertIn(
@@ -148,12 +153,22 @@ class PredictionCentreDecisionUITests(
         )
 
         self.assertIn(
-            "card.decision_intelligence.strategy_suggested_stake > 0",
+            "card.decision_intelligence.effective_stake > 0",
+            text,
+        )
+
+        self.assertIn(
+            "card.decision_intelligence.effective_stake",
             text,
         )
 
         self.assertIn(
             "Filtered by strategy.",
+            text,
+        )
+
+        self.assertIn(
+            "Shadow strategy advisory.",
             text,
         )
 

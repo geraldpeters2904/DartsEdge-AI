@@ -382,12 +382,35 @@ def _decision_intelligence_for_card(
         portfolio_exposure_percent=exposure,
     )
 
+    strategy_enforced = (
+        rules["decision_rules_enabled"]
+        and rules["enforcement_mode"] == "active"
+    )
+
+    effective_stake = (
+        strategy_decision.suggested_stake
+        if strategy_enforced
+        else round(
+            max(
+                0.0,
+                float(assessment.recommended_stake),
+            ),
+            2,
+        )
+    )
+
+    effective_strategy_qualifies = (
+        strategy_decision.qualifies
+        if strategy_enforced
+        else True
+    )
+
     report = build_decision_intelligence(
         model_probability=probability,
         model_confidence=confidence,
         expected_value_percent=assessment.expected_value_percent,
         edge_percent=assessment.edge_percent,
-        suggested_stake=strategy_decision.suggested_stake,
+        suggested_stake=effective_stake,
         bankroll=bankroll,
         evidence_score=(
             evidence.get("evidence_score")
@@ -438,12 +461,24 @@ def _decision_intelligence_for_card(
             if market_consensus
             else False
         ),
-        strategy_qualifies=strategy_decision.qualifies,
-        strategy_blockers=strategy_decision.blockers,
+        strategy_qualifies=effective_strategy_qualifies,
+        strategy_blockers=(
+            strategy_decision.blockers
+            if strategy_enforced
+            else ()
+        ),
     )
 
     payload = decision_intelligence_summary(
         report
+    )
+
+    payload["strategy_enforced"] = (
+        strategy_enforced
+    )
+
+    payload["effective_stake"] = (
+        effective_stake
     )
 
     payload["strategy_status"] = (
@@ -719,7 +754,7 @@ def build_prediction_centre(
         decision_intelligence = card["decision_intelligence"]
         card["sort_stake"] = (
             float(
-                decision_intelligence["strategy_suggested_stake"]
+                decision_intelligence["effective_stake"]
             )
             if decision_intelligence
             else 0.0

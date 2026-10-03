@@ -212,17 +212,23 @@
       <strong>
         £{{
           '{:,.2f}'.format(
-            card.decision_intelligence.strategy_suggested_stake
+            card.decision_intelligence.effective_stake
           )
           if card.decision_intelligence
           else '0.00'
         }}
       </strong>
       <small>
-        {% if card.decision_intelligence and card.decision_intelligence.strategy_stake_capped %}
+        {% if (
+          card.decision_intelligence
+          and card.decision_intelligence.strategy_enforced
+          and card.decision_intelligence.strategy_stake_capped
+        ) %}
           Capped at {{ '%.1f'|format(card.decision_intelligence.strategy_maximum_stake_percent) }}% of bankroll
-        {% elif card.decision_intelligence %}
+        {% elif card.decision_intelligence and card.decision_intelligence.strategy_enforced %}
           {{ card.decision_intelligence.strategy_status }}
+        {% elif card.decision_intelligence %}
+          Strategy {{ card.decision_intelligence.strategy_status|lower }} · shadow advisory
         {% else %}
           {{ card.assessment.risk_level if card.assessment else 'No official decision' }}
         {% endif %}
@@ -326,8 +332,11 @@
         card.opportunity
         and card.price
         and card.decision_intelligence
-        and card.decision_intelligence.strategy_qualifies
-        and card.decision_intelligence.strategy_suggested_stake > 0
+        and (
+          not card.decision_intelligence.strategy_enforced
+          or card.decision_intelligence.strategy_qualifies
+        )
+        and card.decision_intelligence.effective_stake > 0
     ) %}
     <form method="post" action="/bet-slip/add">
       <input type="hidden" name="fixture_id" value="{{ card.fixture.id }}">
@@ -339,7 +348,7 @@
         type="hidden"
         name="stake"
         value="{{
-          card.decision_intelligence.strategy_suggested_stake
+          card.decision_intelligence.effective_stake
         }}"
       >
       <input type="hidden" name="model_probability" value="{{ card.opportunity.probability }}">
@@ -372,11 +381,15 @@
         and not card.decision_intelligence.strategy_qualifies
     ) %}
     <div class="muted small">
-      <strong>Filtered by strategy.</strong>
+      {% if card.decision_intelligence.strategy_enforced %}
+        <strong>Filtered by strategy.</strong>
+      {% else %}
+        <strong>Shadow strategy advisory.</strong>
+      {% endif %}
       {% if card.decision_intelligence.strategy_blockers %}
         {{ card.decision_intelligence.strategy_blockers | join(" · ") }}
       {% else %}
-        This opportunity does not meet the active strategy rules.
+        This opportunity does not meet the strategy rules.
       {% endif %}
     </div>
     {% endif %}

@@ -540,10 +540,13 @@ class V35LivePipelineIntegrationTests(unittest.TestCase):
         self.assertIsNotNone(decision)
         self.assertEqual(
             card["sort_stake"],
-            decision["strategy_suggested_stake"],
+            decision["effective_stake"],
         )
 
-        if not decision["strategy_qualifies"]:
+        if (
+            decision["strategy_enforced"]
+            and not decision["strategy_qualifies"]
+        ):
             self.assertEqual(
                 card["sort_stake"],
                 0.0,
