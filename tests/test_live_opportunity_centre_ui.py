@@ -31,6 +31,26 @@ class LiveOpportunityCentreUITests(unittest.TestCase):
         )
         self.assertIn("Add to Bet Slip", text)
 
+    def test_bet_slip_requires_positive_effective_stake(self):
+        with open(
+            "app/templates/live_opportunity_centre.html",
+            encoding="utf-8",
+        ) as handle:
+            text = handle.read()
+
+        self.assertIn(
+            "{% if item.decimal_odds and item.suggested_stake > 0 %}",
+            text,
+        )
+        self.assertIn(
+            'value="{{ item.suggested_stake }}"',
+            text,
+        )
+        self.assertNotIn(
+            "item.suggested_stake if item.suggested_stake > 0 else 1.00",
+            text,
+        )
+
     def test_replay_action_remains_available(self):
         with open(
             "app/templates/live_opportunity_centre.html",
