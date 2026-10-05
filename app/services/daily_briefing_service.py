@@ -7,6 +7,7 @@ from app.models.match import Match
 from app.models.odds_snapshot import OddsSnapshot
 from app.services.ai_coach_service import build_ai_coach_data
 from app.services.data_provider_service import DataProviderService
+from app.services.decision_engine_service import decide
 from app.services.expected_value_service import assess_value, best_prices, recent_snapshots
 from app.services.model_performance_lab_service import build_model_performance_lab
 from app.services.odds_provider_service import OddsProviderService
@@ -59,6 +60,7 @@ def _latest_fixture_price(db, opportunity: Dict[str, Any]) -> Any | None:
 
 def _value_opportunities(db, limit: int = 10) -> List[Dict[str, Any]]:
     settings = get_settings(db)
+    portfolio = build_portfolio_health(db)
     ranked = build_ranked_opportunities(db, limit=100)
     legacy_prices = None
     results: List[Dict[str, Any]] = []
@@ -86,7 +88,36 @@ def _value_opportunities(db, limit: int = 10) -> List[Dict[str, Any]]:
             )
         except ValueError:
             continue
-        results.append({**item, "price": price, "assessment": assessment})
+
+        confidence = float(
+            item.get("model_confidence", item["probability"])
+            or item["probability"]
+        )
+        sample_size = min(
+            int(item.get("player_a_history_matches", 0) or 0),
+            int(item.get("player_b_history_matches", 0) or 0),
+        )
+        decision_engine = decide(
+            db,
+            official_decision=assessment.decision,
+            official_stake=assessment.recommended_stake,
+            model_probability=assessment.model_probability,
+            confidence_percent=confidence,
+            expected_value_percent=assessment.expected_value_percent,
+            edge_percent=assessment.edge_percent,
+            decimal_odds=assessment.decimal_odds,
+            bankroll=settings.bankroll,
+            market="match_winner",
+            competition=str(item.get("tournament", "") or ""),
+            sample_size=sample_size,
+            portfolio_exposure_percent=portfolio.get("exposure_percent"),
+        )
+        results.append({
+            **item,
+            "price": price,
+            "assessment": assessment,
+            "decision_engine": decision_engine,
+        })
     results.sort(key=lambda row: row["assessment"].expected_value_percent, reverse=True)
     return results[:limit]
 

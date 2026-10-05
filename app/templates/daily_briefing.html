@@ -10,7 +10,7 @@
 
 <article class="card mission-coach mission-coach-{{ tone }}" style="margin-bottom: 1.25rem;">
   <div class="section-kicker">Today’s position</div><h2>{{ headline }}</h2>
-  {% if top_opportunity %}<p>{{ top_opportunity.selection }} is priced at {{ '%.2f'|format(top_opportunity.price.decimal_odds) }} with {{ top_opportunity.assessment.edge_percent }}% edge and {{ top_opportunity.assessment.expected_value_percent }}% EV. Suggested stake: £{{ '%.2f'|format(top_opportunity.assessment.suggested_stake) }}.</p>
+  {% if top_opportunity %}<p>{{ top_opportunity.selection }} is priced at {{ '%.2f'|format(top_opportunity.price.decimal_odds) }} with {{ top_opportunity.assessment.edge_percent }}% edge and {{ top_opportunity.assessment.expected_value_percent }}% EV. Suggested stake: £{{ '%.2f'|format(top_opportunity.decision_engine.effective_stake) }}.</p>
   {% elif fixture_count %}<p>{{ fixture_count }} fixture(s) are scheduled. Review prices and confirm positive expected value before creating a position.</p>
   {% else %}<p>Add or import fixtures to create today’s briefing.</p>{% endif %}
 </article>
@@ -25,7 +25,7 @@
 <section class="mission-layout">
 <div class="mission-main-column">
   <article class="card mission-panel"><div class="section-heading-row"><div><div class="section-kicker">Value board</div><h2>Best confirmed opportunities</h2></div><a class="secondary-button" href="/expected-value">Expected Value</a></div>
-  {% if positive_value_opportunities %}<div class="table-wrap"><table><thead><tr><th>Selection</th><th>Fixture</th><th>Bookmaker</th><th>Odds</th><th>Edge</th><th>EV</th><th>Stake</th></tr></thead><tbody>{% for row in positive_value_opportunities[:8] %}<tr><td><strong>{{ row.selection }}</strong></td><td>{{ row.player_a }} v {{ row.player_b }}</td><td>{{ row.price.bookmaker }}</td><td>{{ '%.2f'|format(row.price.decimal_odds) }}</td><td>{{ row.assessment.edge_percent }}%</td><td>{{ row.assessment.expected_value_percent }}%</td><td>£{{ '%.2f'|format(row.assessment.suggested_stake) }}</td></tr>{% endfor %}</tbody></table></div>
+  {% if positive_value_opportunities %}<div class="table-wrap"><table><thead><tr><th>Selection</th><th>Fixture</th><th>Bookmaker</th><th>Odds</th><th>Edge</th><th>EV</th><th>Stake</th></tr></thead><tbody>{% for row in positive_value_opportunities[:8] %}<tr><td><strong>{{ row.selection }}</strong></td><td>{{ row.player_a }} v {{ row.player_b }}</td><td>{{ row.price.bookmaker }}</td><td>{{ '%.2f'|format(row.price.decimal_odds) }}</td><td>{{ row.assessment.edge_percent }}%</td><td>{{ row.assessment.expected_value_percent }}%</td><td>£{{ '%.2f'|format(row.decision_engine.effective_stake) }}</td></tr>{% endfor %}</tbody></table></div>
   {% else %}<div class="empty-state"><p>No stored price currently confirms positive expected value.</p><a class="primary-button" href="/expected-value">Add or assess odds</a></div>{% endif %}</article>
 
   <article class="card mission-panel"><div class="section-heading-row"><div><div class="section-kicker">Schedule</div><h2>Today’s fixtures</h2></div><a class="secondary-button" href="/fixtures">Manage fixtures</a></div>
