@@ -103,6 +103,7 @@ def build_match_intelligence(db, fixture_id: int) -> Dict[str, Any] | None:
         "value": value,
         "assessment": value.get("assessment") if value else None,
         "price": value.get("price") if value else None,
+        "decision_engine": value.get("decision_engine") if value else None,
         "active_strategy": active_strategy,
         "prediction_error": prediction_error,
         "decision_engine_active": (

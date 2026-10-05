@@ -1,6 +1,8 @@
 import os
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 from datetime import date
 
 from fastapi.testclient import TestClient
@@ -52,12 +54,37 @@ class MatchIntelligenceTests(unittest.TestCase):
         self.assertEqual(data['profile_a']['matches'], 10)
         self.assertEqual(data['profile_b']['matches'], 10)
 
+    @patch("app.services.match_intelligence_workspace_service._matched_value")
+    def test_workspace_propagates_decision_engine_result(self, mock_matched_value):
+        decision_engine = SimpleNamespace(
+            effective_stake=0.0,
+            enforced=True,
+            qualifies=False,
+        )
+        mock_matched_value.return_value = {
+            "assessment": SimpleNamespace(recommended_stake=20.0),
+            "price": SimpleNamespace(decimal_odds=2.0),
+            "decision_engine": decision_engine,
+        }
+
+        data = build_match_intelligence(self.db, self.fixture.id)
+
+        self.assertIs(data["decision_engine"], decision_engine)
+        self.assertEqual(data["assessment"].recommended_stake, 20.0)
+        self.assertEqual(data["decision_engine"].effective_stake, 0.0)
+
     def test_template_contains_intelligence_sections(self):
         with open('app/templates/match_intelligence.html', encoding='utf-8') as handle:
             text = handle.read()
         self.assertIn('Why this prediction?', text)
         self.assertIn('Historical matchup', text)
         self.assertIn('Strategy context', text)
+
+    def test_template_uses_effective_stake_not_raw_value_stake(self):
+        with open('app/templates/match_intelligence.html', encoding='utf-8') as handle:
+            text = handle.read()
+        self.assertIn('decision_engine.effective_stake', text)
+        self.assertNotIn('assessment.recommended_stake', text)
 
     def test_route_is_registered(self):
         client = TestClient(app)

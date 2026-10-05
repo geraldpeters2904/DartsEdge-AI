@@ -16,7 +16,7 @@
   <div class="metric-card"><span>Model selection</span><strong>{{ selected_player or 'Unavailable' }}</strong><small>{{ (selected_probability|string + '%') if selected_probability is not none else 'Insufficient data' }}</small></div>
   <div class="metric-card"><span>Best odds</span><strong>{{ '%.2f'|format(price.decimal_odds) if price else '—' }}</strong><small>{{ price.bookmaker if price else 'No matched price' }}</small></div>
   <div class="metric-card"><span>Expected value</span><strong>{{ ('%+.2f%%'|format(assessment.expected_value_percent)) if assessment else '—' }}</strong><small>{{ ('Edge %+.2f%%'|format(assessment.edge_percent)) if assessment else 'Odds required' }}</small></div>
-  <div class="metric-card"><span>Suggested stake</span><strong>£{{ '%.2f'|format(assessment.recommended_stake) if assessment else '0.00' }}</strong><small>{{ assessment.decision if assessment else 'No official decision' }}</small></div>
+  <div class="metric-card"><span>Suggested stake</span><strong>£{{ '%.2f'|format(decision_engine.effective_stake) if decision_engine else '0.00' }}</strong><small>{{ assessment.decision if assessment else 'No official decision' }}</small></div>
 </div>
 
 {% if prediction %}
