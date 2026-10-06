@@ -8,7 +8,14 @@ from app.models.player import Player
 from app.models.player_match_performance import PlayerMatchPerformance
 from app.models.player_career_profile import PlayerCareerProfile
 from app.models.odds_snapshot import OddsSnapshot
+from app.models.strategy_profile import StrategyProfile
+from app.services.strategy_service import (
+    seed_default_strategies,
+    strategy_rules,
+    update_strategy,
+)
 from app.services.value_board_service import (
+    _decision_enrichment,
     _current_handicap_market,
     _current_total_legs_line,
     _handicap_rows,
@@ -1230,12 +1237,36 @@ class ValueBoardServiceTests(unittest.TestCase):
     @patch(
         "app.services.value_board_service.get_scheduled_fixtures"
     )
+    @patch(
+        "app.services.value_board_service.build_portfolio_health",
+        return_value={"exposure_percent": 0.0},
+    )
+    @patch(
+        "app.services.value_board_service.get_settings"
+    )
+    @patch(
+        "app.services.value_board_service.decide"
+    )
     def test_attaches_latest_paddy_power_match_odds(
         self,
+        decide,
+        get_settings,
+        build_portfolio_health,
         get_scheduled_fixtures,
         build_prediction_context,
         context_to_opportunity,
     ):
+        decide.return_value = SimpleNamespace(
+            effective_stake=1.0,
+            effective_decision="Accept",
+        )
+        get_settings.return_value = SimpleNamespace(
+            bankroll=100.0,
+            kelly_fraction=0.5,
+            max_daily_risk=10.0,
+            minimum_edge=0.0,
+        )
+
         fixture = SimpleNamespace(
             id=17620,
             date=None,
@@ -1335,12 +1366,36 @@ class ValueBoardServiceTests(unittest.TestCase):
     @patch(
         "app.services.value_board_service.get_scheduled_fixtures"
     )
+    @patch(
+        "app.services.value_board_service.build_portfolio_health",
+        return_value={"exposure_percent": 0.0},
+    )
+    @patch(
+        "app.services.value_board_service.get_settings"
+    )
+    @patch(
+        "app.services.value_board_service.decide"
+    )
     def test_ranks_stronger_confirmed_value_ahead_of_win_probability(
         self,
+        decide,
+        get_settings,
+        build_portfolio_health,
         get_scheduled_fixtures,
         build_prediction_context,
         context_to_opportunity,
     ):
+        decide.return_value = SimpleNamespace(
+            effective_stake=1.0,
+            effective_decision="Accept",
+        )
+        get_settings.return_value = SimpleNamespace(
+            bankroll=100.0,
+            kelly_fraction=0.5,
+            max_daily_risk=10.0,
+            minimum_edge=0.0,
+        )
+
         fixtures = [
             SimpleNamespace(
                 id=1,
@@ -1405,6 +1460,159 @@ class ValueBoardServiceTests(unittest.TestCase):
             rows[1]["expected_value_percent"],
         )
 
+
+
+    @patch(
+        "app.services.value_board_service.decide"
+    )
+    def test_decision_enrichment_preserves_raw_kelly_when_rejected(
+        self,
+        decide,
+    ):
+        decide.return_value = SimpleNamespace(
+            effective_stake=0.0,
+            effective_decision="Reject",
+        )
+
+        settings = SimpleNamespace(
+            bankroll=100.0,
+            kelly_fraction=0.5,
+            max_daily_risk=10.0,
+            minimum_edge=0.0,
+        )
+
+        row = {
+            "market": "Match Winner",
+            "probability": 60.0,
+            "market_odds": 2.0,
+            "bookmaker": "Paddy Power",
+            "tournament": "MODUS Super Series",
+        }
+
+        result = _decision_enrichment(
+            MagicMock(),
+            row=row,
+            settings=settings,
+            portfolio={"exposure_percent": 0.0},
+            confidence_percent=80.0,
+            sample_size=50,
+        )
+
+        self.assertGreater(
+            result["kelly_stake"],
+            0.0,
+        )
+        self.assertEqual(
+            result["effective_stake"],
+            0.0,
+        )
+        self.assertEqual(
+            result["effective_decision"],
+            "Reject",
+        )
+        self.assertIs(
+            result["decision_engine"],
+            decide.return_value,
+        )
+
+    def test_decision_enrichment_active_strategy_can_reject_positive_kelly(self):
+        db = create_test_session()
+        try:
+            seed_default_strategies(db)
+            active = (
+                db.query(StrategyProfile)
+                .filter_by(is_active=True)
+                .first()
+            )
+            rules = strategy_rules(active)
+            rules["enforcement_mode"] = "active"
+            rules["minimum_model_probability"] = 70.0
+            update_strategy(
+                db,
+                active.id,
+                name=active.name,
+                description=active.description,
+                rules=rules,
+            )
+
+            result = _decision_enrichment(
+                db,
+                row={
+                    "market": "Match Winner",
+                    "probability": 60.0,
+                    "market_odds": 2.0,
+                    "bookmaker": "Paddy Power",
+                    "tournament": "MODUS Super Series",
+                },
+                settings=SimpleNamespace(
+                    bankroll=100.0,
+                    kelly_fraction=0.5,
+                    max_daily_risk=10.0,
+                    minimum_edge=0.0,
+                ),
+                portfolio={"exposure_percent": 0.0},
+                confidence_percent=80.0,
+                sample_size=50,
+            )
+
+            self.assertGreater(result["kelly_stake"], 0.0)
+            self.assertEqual(result["effective_stake"], 0.0)
+            self.assertEqual(result["effective_decision"], "Reject")
+            self.assertTrue(result["decision_engine"].enforced)
+        finally:
+            db.close()
+
+    def test_decision_enrichment_shadow_preserves_raw_kelly_stake(self):
+        db = create_test_session()
+        try:
+            seed_default_strategies(db)
+            active = (
+                db.query(StrategyProfile)
+                .filter_by(is_active=True)
+                .first()
+            )
+            rules = strategy_rules(active)
+            rules["minimum_model_probability"] = 70.0
+            update_strategy(
+                db,
+                active.id,
+                name=active.name,
+                description=active.description,
+                rules=rules,
+            )
+
+            result = _decision_enrichment(
+                db,
+                row={
+                    "market": "Match Winner",
+                    "probability": 60.0,
+                    "market_odds": 2.0,
+                    "bookmaker": "Paddy Power",
+                    "tournament": "MODUS Super Series",
+                },
+                settings=SimpleNamespace(
+                    bankroll=100.0,
+                    kelly_fraction=0.5,
+                    max_daily_risk=10.0,
+                    minimum_edge=0.0,
+                ),
+                portfolio={"exposure_percent": 0.0},
+                confidence_percent=80.0,
+                sample_size=50,
+            )
+
+            self.assertGreater(result["kelly_stake"], 0.0)
+            self.assertEqual(
+                result["effective_stake"],
+                result["kelly_stake"],
+            )
+            self.assertEqual(
+                result["effective_decision"],
+                result["decision_engine"].official_decision,
+            )
+            self.assertFalse(result["decision_engine"].enforced)
+        finally:
+            db.close()
 
 
 class ValueBoardPlayer180IntegrationTests(unittest.TestCase):

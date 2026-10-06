@@ -27,6 +27,26 @@ class ValueBoardUITests(unittest.TestCase):
         self.assertIn('name="odds"', text)
         self.assertIn('name="model_probability"', text)
         self.assertIn('name="expected_value"', text)
+        self.assertIn('name="stake"', text)
+        self.assertIn(
+            'value="{{ row.effective_stake }}"',
+            text,
+        )
+        self.assertIn('name="kelly_stake"', text)
+        self.assertIn(
+            'value="{{ row.kelly_stake }}"',
+            text,
+        )
+        self.assertIn(
+            'row.effective_stake | default(0, true) | float > 0',
+            text,
+        )
+        self.assertNotIn('value="1.00"', text)
+        self.assertNotIn(
+            'name="kelly_stake"\n'
+            '                            value="0"',
+            text,
+        )
         self.assertIn("Add to Bet Slip", text)
         self.assertIn("<th>Model %</th>", text)
         self.assertNotIn("<th>Win %</th>", text)

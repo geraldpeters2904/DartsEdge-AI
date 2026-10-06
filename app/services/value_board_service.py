@@ -11,6 +11,10 @@ from app.services.markets_service import (
     probability_over,
 )
 from app.services.opportunity_ranking_service import _value_metrics
+from app.services.expected_value_service import assess_value
+from app.services.decision_engine_service import decide
+from app.services.settings_service import get_settings
+from app.services.portfolio_health_service import build_portfolio_health
 from app.services.match_engine import leg_win_probability
 from app.services.leg_market_calibration_service import (
     calibrate_handicap_probability,
@@ -27,6 +31,98 @@ from app.services.prediction_context_service import (
     build_prediction_context,
     context_to_opportunity,
 )
+
+
+
+_VALUE_BOARD_MARKET_CODES = {
+    "Match Winner": "match_winner",
+    "Most 180s": "most_180s",
+    "Leg Handicap": "handicap",
+    "Total Legs": "total_legs",
+    "Total 180s": "total_180s",
+    "Player Total 180s": "player_total_180s",
+}
+
+
+def _decision_enrichment(
+    db,
+    *,
+    row,
+    settings,
+    portfolio,
+    confidence_percent,
+    sample_size,
+):
+    market_odds = row.get("market_odds")
+    market_code = _VALUE_BOARD_MARKET_CODES.get(
+        row.get("market")
+    )
+
+    if (
+        market_odds is None
+        or market_code is None
+    ):
+        return {
+            "kelly_stake": 0.0,
+            "effective_stake": 0.0,
+            "effective_decision": "Reject",
+            "decision_engine": None,
+        }
+
+    try:
+        assessment = assess_value(
+            model_probability=float(row["probability"]),
+            decimal_odds=float(market_odds),
+            bookmaker=str(row.get("bookmaker") or ""),
+            bankroll=settings.bankroll,
+            kelly_fraction=settings.kelly_fraction,
+            max_daily_risk_percent=settings.max_daily_risk,
+            minimum_edge_percent=settings.minimum_edge,
+        )
+    except (TypeError, ValueError):
+        return {
+            "kelly_stake": 0.0,
+            "effective_stake": 0.0,
+            "effective_decision": "Reject",
+            "decision_engine": None,
+        }
+
+    decision_engine = decide(
+        db,
+        official_decision=assessment.decision,
+        official_stake=assessment.recommended_stake,
+        model_probability=assessment.model_probability,
+        confidence_percent=float(
+            confidence_percent or 0.0
+        ),
+        expected_value_percent=(
+            assessment.expected_value_percent
+        ),
+        edge_percent=assessment.edge_percent,
+        decimal_odds=assessment.decimal_odds,
+        bankroll=settings.bankroll,
+        market=market_code,
+        competition=str(
+            row.get("tournament", "") or ""
+        ),
+        sample_size=int(sample_size or 0),
+        portfolio_exposure_percent=portfolio.get(
+            "exposure_percent"
+        ),
+    )
+
+    return {
+        "kelly_stake": float(
+            assessment.recommended_stake or 0.0
+        ),
+        "effective_stake": float(
+            decision_engine.effective_stake or 0.0
+        ),
+        "effective_decision": (
+            decision_engine.effective_decision
+        ),
+        "decision_engine": decision_engine,
+    }
 
 
 def _player_180_expectation(db, player_name):
@@ -556,6 +652,33 @@ def _best_of_from_match_format(match_format):
         return None
 
     return best_of
+
+
+
+def _profile_decision_evidence(db, fixture):
+    profile_a = get_player_profile(
+        db,
+        fixture.player_a,
+    )
+    profile_b = get_player_profile(
+        db,
+        fixture.player_b,
+    )
+
+    if profile_a is None or profile_b is None:
+        return 0.0, 0
+
+    confidence = (
+        float(profile_a.get("confidence") or 0.0)
+        + float(profile_b.get("confidence") or 0.0)
+    ) / 2.0
+
+    sample_size = min(
+        int(profile_a.get("matches") or 0),
+        int(profile_b.get("matches") or 0),
+    )
+
+    return confidence, sample_size
 
 
 def _match_leg_simulation(db, fixture):
@@ -1347,6 +1470,8 @@ def _player_total_180_rows(db, fixture, player_name):
 
 
 def build_value_board(db):
+    settings = get_settings(db)
+    portfolio = build_portfolio_health(db)
     fixtures = get_scheduled_fixtures(db)
     rows = []
 
@@ -1409,50 +1534,86 @@ def build_value_board(db):
             market_odds,
         )
 
-        rows.append(
-            {
-                "fixture_id": fixture.id,
-                "fixture_date": fixture.date,
-                "tournament": fixture.tournament,
-                "stage": fixture.stage,
-                "match_format": fixture.match_format,
-                "player_a": fixture.player_a,
-                "player_b": fixture.player_b,
-                "match": (
-                    f"{fixture.player_a} vs "
-                    f"{fixture.player_b}"
-                ),
-                "market": "Match Winner",
-                "selection": selection,
-                "opponent": opponent,
-                "probability": selected_probability,
-                "fair_odds": fair_odds,
-                "market_odds": value["market_odds"],
-                "bookmaker": (
-                    "Paddy Power"
-                    if price is not None
-                    else None
-                ),
-                "edge": value["edge_percent"],
-                "expected_value_percent": value.get(
-                    "expected_value_percent"
-                ),
-                "is_value_confirmed": value[
-                    "is_value_confirmed"
-                ],
-                "status": value["status"],
-                "status_tone": value["status_tone"],
-                "action": (
-                    "Consider"
-                    if value["is_value_confirmed"]
-                    else (
-                        "Awaiting Odds"
-                        if value["market_odds"] is None
-                        else "Pass"
-                    )
-                ),
-            }
+        row = {
+            "fixture_id": fixture.id,
+            "fixture_date": fixture.date,
+            "tournament": fixture.tournament,
+            "stage": fixture.stage,
+            "match_format": fixture.match_format,
+            "player_a": fixture.player_a,
+            "player_b": fixture.player_b,
+            "match": (
+                f"{fixture.player_a} vs "
+                f"{fixture.player_b}"
+            ),
+            "market": "Match Winner",
+            "selection": selection,
+            "opponent": opponent,
+            "probability": selected_probability,
+            "fair_odds": fair_odds,
+            "market_odds": value["market_odds"],
+            "bookmaker": (
+                "Paddy Power"
+                if price is not None
+                else None
+            ),
+            "edge": value["edge_percent"],
+            "expected_value_percent": value.get(
+                "expected_value_percent"
+            ),
+            "is_value_confirmed": value[
+                "is_value_confirmed"
+            ],
+            "status": value["status"],
+            "status_tone": value["status_tone"],
+            "action": (
+                "Consider"
+                if value["is_value_confirmed"]
+                else (
+                    "Awaiting Odds"
+                    if value["market_odds"] is None
+                    else "Pass"
+                )
+            ),
+            "model_confidence": opportunity.get(
+                "model_confidence"
+            ),
+            "player_a_history_matches": opportunity.get(
+                "player_a_history_matches",
+                0,
+            ),
+            "player_b_history_matches": opportunity.get(
+                "player_b_history_matches",
+                0,
+            ),
+        }
+
+        sample_size = min(
+            int(
+                row["player_a_history_matches"]
+                or 0
+            ),
+            int(
+                row["player_b_history_matches"]
+                or 0
+            ),
         )
+
+        row.update(
+            _decision_enrichment(
+                db,
+                row=row,
+                settings=settings,
+                portfolio=portfolio,
+                confidence_percent=row[
+                    "model_confidence"
+                ],
+                sample_size=sample_size,
+            )
+        )
+        rows.append(row)
+
+        secondary_start = len(rows)
 
         rows.extend(
             _player_total_180_rows(
@@ -1496,6 +1657,70 @@ def build_value_board(db):
                 fixture,
             )
         )
+
+        profile_evidence = None
+
+        for secondary_row in rows[secondary_start:]:
+            market = secondary_row.get("market")
+
+            if market == "Player Total 180s":
+                confidence = 0.0
+                sample_size = int(
+                    secondary_row.get(
+                        "history_matches",
+                        0,
+                    )
+                    or 0
+                )
+            elif market in {
+                "Total 180s",
+                "Most 180s",
+            }:
+                confidence = 0.0
+                sample_size = min(
+                    int(
+                        secondary_row.get(
+                            "player_a_history_matches",
+                            0,
+                        )
+                        or 0
+                    ),
+                    int(
+                        secondary_row.get(
+                            "player_b_history_matches",
+                            0,
+                        )
+                        or 0
+                    ),
+                )
+            elif market in {
+                "Leg Handicap",
+                "Total Legs",
+            }:
+                if profile_evidence is None:
+                    profile_evidence = (
+                        _profile_decision_evidence(
+                            db,
+                            fixture,
+                        )
+                    )
+                confidence, sample_size = (
+                    profile_evidence
+                )
+            else:
+                confidence = 0.0
+                sample_size = 0
+
+            secondary_row.update(
+                _decision_enrichment(
+                    db,
+                    row=secondary_row,
+                    settings=settings,
+                    portfolio=portfolio,
+                    confidence_percent=confidence,
+                    sample_size=sample_size,
+                )
+            )
 
 
     rows.sort(

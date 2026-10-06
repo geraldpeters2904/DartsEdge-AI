@@ -140,7 +140,7 @@
                     View Prediction
                 </a>
 
-                {% if row.action == "Consider" and row.market_odds is not none %}
+                {% if row.market_odds is not none and row.effective_stake | default(0, true) | float > 0 %}
                     <form method="post" action="/bet-slip/add">
                         <input
                             type="hidden"
@@ -170,7 +170,7 @@
                         <input
                             type="hidden"
                             name="stake"
-                            value="1.00"
+                            value="{{ row.effective_stake }}"
                         >
                         <input
                             type="hidden"
@@ -185,7 +185,7 @@
                         <input
                             type="hidden"
                             name="kelly_stake"
-                            value="0"
+                            value="{{ row.kelly_stake }}"
                         >
                         <input
                             type="hidden"
