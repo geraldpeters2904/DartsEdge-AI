@@ -43,7 +43,7 @@ class LiveOpportunityLifecycleTests(unittest.TestCase):
                     "assessment": SimpleNamespace(
                         expected_value_percent=10.0,
                         edge_percent=6.0,
-                        recommended_stake=12.0,
+                        recommended_stake=18.0,
                     ),
                     "price": SimpleNamespace(
                         bookmaker="Paddy Power",
@@ -72,6 +72,10 @@ class LiveOpportunityLifecycleTests(unittest.TestCase):
         self.assertEqual(
             result["opportunities"][0].suggested_stake,
             12.0,
+        )
+        self.assertEqual(
+            result["opportunities"][0].kelly_stake,
+            18.0,
         )
 
     def test_new_state(self):

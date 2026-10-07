@@ -46,6 +46,14 @@ class LiveOpportunityCentreUITests(unittest.TestCase):
             'value="{{ item.suggested_stake }}"',
             text,
         )
+        self.assertIn(
+            'value="{{ item.kelly_stake }}"',
+            text,
+        )
+        self.assertNotIn(
+            'name="kelly_stake"\n          value="{{ item.suggested_stake }}"',
+            text,
+        )
         self.assertNotIn(
             "item.suggested_stake if item.suggested_stake > 0 else 1.00",
             text,

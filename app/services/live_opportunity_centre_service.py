@@ -52,6 +52,10 @@ class LiveOpportunity:
     decision_safety_trust_score: Optional[float] = None
     decision_safety_explanation: Optional[str] = None
 
+    # Raw/reference Kelly stake retained separately from the
+    # Decision Engine effective/actionable suggested_stake.
+    kelly_stake: float = 0.0
+
 
 def _state(
     *,
@@ -536,6 +540,10 @@ def build_live_opportunity_centre(
                     or 0.0
                 ),
                 lifecycle_state=lifecycle,
+                kelly_stake=float(
+                    assessment.recommended_stake
+                    or 0.0
+                ),
                 age_minutes=age_minutes,
                 sparse_consensus_density=(
                     sparse_consensus_risk[
