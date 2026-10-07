@@ -91,13 +91,19 @@
                         </span>
                     </td>
 
-                    <td>{{ opportunity.kelly_percent }}%</td>
+                    <td class="kelly-percent">
+                        {{ opportunity.kelly_percent }}%
+                    </td>
 
-                    <td>£{{ "%.2f"|format(opportunity.recommended_stake) }}</td>
+                    <td class="effective-stake">—</td>
 
-                    <td>{{ opportunity.expected_value }}%</td>
+                    <td class="expected-value">
+                        {{ opportunity.expected_value }}%
+                    </td>
 
-                    <td>{{ opportunity.risk_level }}</td>
+                    <td class="risk-level">
+                        {{ opportunity.risk_level }}
+                    </td>
 
                     <td>{{ opportunity.value_score }}</td>
 
@@ -112,7 +118,12 @@
                             disabled
                             data-prediction-id="{{ opportunity.prediction_id }}"
                             data-market="{{ opportunity.market }}"
+                            data-decision-market="{{ opportunity.decision_market }}"
                             data-selection="{{ opportunity.selection }}"
+                            data-probability="{{ opportunity.probability }}"
+                            data-confidence="{{ opportunity.confidence_percent }}"
+                            data-sample-size="{{ opportunity.sample_size }}"
+                            data-competition="{{ opportunity.competition }}"
                             data-fair="{{ opportunity.fair_odds }}"
                             data-minimum="{{ opportunity.minimum_odds }}"
                         >

@@ -167,6 +167,52 @@ class DailyDecisionBoardTests(
             12.0,
         )
 
+    @patch(
+        "app.services.daily_decision_board_service.build_prediction_centre"
+    )
+    def test_zero_effective_stake_does_not_fall_back_to_positive_kelly(
+        self,
+        centre,
+    ):
+        card = self.card(
+            fixture_id=1,
+            score=72,
+            ev=15.0,
+            edge=10.0,
+        )
+        card["decision_intelligence"]["effective_stake"] = 0.0
+
+        centre.return_value = {
+            "centre_date": "2026-08-07",
+            "fixture_scope": "today",
+            "fixture_count": 1,
+            "decision_scored_count": 1,
+            "cards": [card],
+            "portfolio": {
+                "available_bankroll": 1000.0,
+                "open_exposure": 0.0,
+                "exposure_percent": 0.0,
+            },
+            "active_strategy": {
+                "name": "Paper Trading",
+                "version": 4,
+            },
+            "decision_engine_active": True,
+        }
+
+        board = build_daily_decision_board(
+            object()
+        )
+
+        self.assertEqual(
+            card["assessment"].recommended_stake,
+            12.0,
+        )
+        self.assertEqual(
+            board["decisions"][0].suggested_stake,
+            0.0,
+        )
+
     def test_template_contains_decision_queue(self):
         text = TEMPLATE.read_text(
             encoding="utf-8"

@@ -178,6 +178,13 @@ def predict_v2_result(
         max_daily_risk = _setting(settings, "max_daily_risk", 5.0)
 
         opportunities = result.get("trading_opportunities", [])
+        confidence_percent = float(
+            result.get("confidence", {}).get("overall", 0) or 0
+        )
+        sample_size = min(
+            int(result.get("profile_a", {}).get("matches", 0) or 0),
+            int(result.get("profile_b", {}).get("matches", 0) or 0),
+        )
 
         for opportunity in opportunities:
             rating = calculate_trade_rating(opportunity)
@@ -197,6 +204,14 @@ def predict_v2_result(
             opportunity["expected_value"] = kelly["expected_value_percent"]
             opportunity["risk_level"] = kelly["risk_level"]
             opportunity["prediction_id"] = saved_prediction.id
+            opportunity["confidence_percent"] = confidence_percent
+            opportunity["sample_size"] = sample_size
+            opportunity["competition"] = ""
+            opportunity["decision_market"] = (
+                "match_winner"
+                if opportunity["market"] == "Match Winner"
+                else "first_180"
+            )
 
         result["trading_opportunities"] = rank_opportunities(opportunities)
         result["value_bet"] = None
