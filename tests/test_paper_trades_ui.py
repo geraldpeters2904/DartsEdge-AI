@@ -16,8 +16,8 @@ class PaperTradesUITests(unittest.TestCase):
 
         self.assertIn("<th>Model %</th>", text)
         self.assertIn("<th>EV</th>", text)
-        self.assertIn("<th>Suggested Stake</th>", text)
-        self.assertIn("<th>Stake</th>", text)
+        self.assertIn("<th>Kelly Reference</th>", text)
+        self.assertIn("<th>Trade Stake</th>", text)
         self.assertIn("<th>Strategy</th>", text)
 
         self.assertIn("trade.model_probability", text)
@@ -73,7 +73,7 @@ class PaperTradesUITests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Paper Trades", response.text)
         self.assertIn("Model %", response.text)
-        self.assertIn("Suggested Stake", response.text)
+        self.assertIn("Kelly Reference", response.text)
         self.assertIn("Strategy", response.text)
 
 
