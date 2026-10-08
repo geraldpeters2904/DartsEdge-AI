@@ -178,6 +178,16 @@ class PredictionCentreDecisionUITests(
         )
 
         self.assertIn(
+            'name="kelly_stake"',
+            text,
+        )
+
+        self.assertIn(
+            "card.assessment.recommended_stake if card.assessment else 0",
+            text,
+        )
+
+        self.assertIn(
             "Filtered by strategy.",
             text,
         )
