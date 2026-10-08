@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
             row.querySelector(".add-paper-trade");
 
         let evaluationTimer = null;
+        let evaluationVersion = 0;
 
         button.addEventListener("click", async () => {
             if (button.disabled) {
@@ -113,6 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         input.addEventListener("input", () => {
+            const version = ++evaluationVersion;
             const bookmakerOdds =
                 parseFloat(input.value);
 
@@ -201,6 +203,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const result = await response.json();
 
+                    if (version !== evaluationVersion) {
+                        return;
+                    }
+
                     if (!response.ok) {
                         throw new Error(
                             result.detail ||
@@ -251,6 +257,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                 } catch (error) {
+                    if (version !== evaluationVersion) {
+                        return;
+                    }
+
                     console.error(
                         "Opportunity evaluation error:",
                         error
