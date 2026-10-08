@@ -291,6 +291,29 @@ class DecisionSafetyOutcomeEvidenceTests(
             caution.roi_percent
         )
 
+    def test_zero_stake_outcome_counts_but_has_no_financial_return(self):
+        self.add_match(40, "Alpha")
+        self.add_snapshot(
+            40,
+            state="HIGH_CAUTION",
+            stake=0.0,
+            odds=2.0,
+        )
+
+        self.db.commit()
+
+        evidence = build_decision_safety_outcome_evidence(self.db)
+        metric = self.metric(evidence, "HIGH_CAUTION")
+
+        self.assertEqual(metric.snapshots, 1)
+        self.assertEqual(metric.settled, 1)
+        self.assertEqual(metric.wins, 1)
+        self.assertEqual(metric.losses, 0)
+        self.assertEqual(metric.win_rate_percent, 100.0)
+        self.assertEqual(metric.total_staked, 0.0)
+        self.assertEqual(metric.profit_loss, 0.0)
+        self.assertIsNone(metric.roi_percent)
+
     def test_old_unknown_rows_are_supported(self):
         self.add_match(
             30,
