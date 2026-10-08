@@ -66,6 +66,23 @@ class StrategyAnalyticsTests(unittest.TestCase):
         self.assertIsNone(metric.roi_percent)
         self.assertIsNone(metric.win_rate_percent)
 
+    def test_zero_stake_rejection_does_not_distort_performance(self):
+        winning = self._record(stake=20)
+        settle_decision(self.db, winning.id, 'win')
+
+        rejected = self._record(stake=0)
+        settle_decision(self.db, rejected.id, 'loss')
+
+        metric = analytics(self.db)['metrics'][0]
+
+        self.assertEqual(metric.decisions, 2)
+        self.assertEqual(metric.settled, 1)
+        self.assertEqual(metric.wins, 1)
+        self.assertEqual(metric.win_rate_percent, 100.0)
+        self.assertEqual(metric.total_staked, 20.0)
+        self.assertEqual(metric.profit_loss, 20.0)
+        self.assertEqual(metric.roi_percent, 100.0)
+
     def test_strategy_analytics_routes_render(self):
         client = TestClient(app)
         response = client.get('/strategy-analytics')

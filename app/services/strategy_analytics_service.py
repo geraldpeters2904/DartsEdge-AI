@@ -113,10 +113,13 @@ def _metric(name: str, version: int, rows: list[StrategyDecision]) -> StrategyMe
     accepted_rows = [r for r in rows if r.effective_decision.lower() in {"accept", "consider"}]
     rejected = sum(r.effective_decision.lower() == "reject" for r in rows)
     paper_only = sum(r.effective_decision.lower() == "paper only" for r in rows)
-    settled_rows = [r for r in rows if r.outcome in {"win", "loss", "void"}]
+    settled_rows = [
+        r for r in rows
+        if r.outcome in {"win", "loss", "void"}
+        and float(r.effective_stake or 0) > 0
+    ]
     wins = sum(r.outcome == "win" for r in settled_rows)
-    staked_rows = [r for r in settled_rows if float(r.effective_stake or 0) > 0]
-    total_staked = sum(float(r.effective_stake or 0) for r in staked_rows)
+    total_staked = sum(float(r.effective_stake or 0) for r in settled_rows)
     pnl = sum(float(r.profit_loss or 0) for r in settled_rows)
     roi = (pnl / total_staked * 100) if total_staked > 0 else None
     win_denominator = sum(r.outcome in {"win", "loss"} for r in settled_rows)
