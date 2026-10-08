@@ -52,6 +52,22 @@ class PortfolioHealthServiceTests(unittest.TestCase):
         self.db.commit()
         return trade
 
+    def test_zero_stake_rejections_do_not_distort_portfolio(self):
+        for _ in range(11):
+            self.add_trade("OPEN", 0, odds=3.0)
+
+        result = build_portfolio_health(self.db)
+
+        self.assertEqual(self.db.query(PaperTrade).count(), 11)
+        self.assertEqual(result["open_exposure"], 0.0)
+        self.assertEqual(result["open_positions"], 0)
+        self.assertEqual(result["health_score"], 100)
+        self.assertEqual(result["average_stake"], 0.0)
+        self.assertEqual(result["average_odds"], 0.0)
+        self.assertEqual(result["exposure_by_market"], [])
+        self.assertEqual(result["exposure_by_player"], [])
+        self.assertEqual(result["exposure_by_bookmaker"], [])
+
     def test_empty_portfolio_uses_settings_bankroll(self):
         result = build_portfolio_health(self.db)
         self.assertEqual(result["current_bankroll"], 1000.0)

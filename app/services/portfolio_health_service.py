@@ -138,7 +138,11 @@ def build_portfolio_health(db) -> Dict[str, Any]:
     max_daily_risk = float(settings.max_daily_risk or 0)
     kelly_fraction = float(settings.kelly_fraction or 0)
 
-    trades = db.query(PaperTrade).order_by(PaperTrade.created_at.desc()).all()
+    all_trades = db.query(PaperTrade).order_by(PaperTrade.created_at.desc()).all()
+    trades = [
+        trade for trade in all_trades
+        if float(trade.stake or 0) > 0
+    ]
     open_trades = [trade for trade in trades if trade.status == "OPEN"]
     settled_trades = [trade for trade in trades if trade.status in SETTLED_STATUSES]
     decided_trades = [trade for trade in trades if trade.status in DECIDED_STATUSES]
