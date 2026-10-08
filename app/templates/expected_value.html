@@ -30,7 +30,7 @@
     <div class="mission-kpi-card"><span>Implied</span><strong>{{ assessment.implied_probability }}%</strong><small>{{ assessment.bookmaker }} @ {{ assessment.decimal_odds }}</small></div>
     <div class="mission-kpi-card"><span>Edge</span><strong>{{ '%+.2f'|format(assessment.edge_percent) }}%</strong><small>Model minus market</small></div>
     <div class="mission-kpi-card"><span>Expected value</span><strong>{{ '%+.2f'|format(assessment.expected_value_percent) }}%</strong><small>{{ assessment.decision }}</small></div>
-    <div class="mission-kpi-card"><span>Kelly stake</span><strong>£{{ '%.2f'|format(assessment.recommended_stake) }}</strong><small>{{ assessment.kelly_percent }}% bankroll · {{ assessment.risk_level }}</small></div>
+    <div class="mission-kpi-card"><span>Kelly Reference</span><strong>£{{ '%.2f'|format(assessment.recommended_stake) }}</strong><small>{{ assessment.kelly_percent }}% bankroll · {{ assessment.risk_level }}</small></div>
   </div>
   {% endif %}
   {% if strategy_decision %}
