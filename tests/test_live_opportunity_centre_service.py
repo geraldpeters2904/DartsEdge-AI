@@ -78,6 +78,61 @@ class LiveOpportunityLifecycleTests(unittest.TestCase):
             18.0,
         )
 
+    @patch(
+        "app.services.live_opportunity_centre_service.build_prediction_centre"
+    )
+    @patch(
+        "app.services.live_opportunity_centre_service._history",
+        return_value=[],
+    )
+    def test_missing_effective_stake_does_not_fall_back_to_kelly(
+        self,
+        history,
+        centre,
+    ):
+        centre.return_value = {
+            "centre_date": "2026-10-03",
+            "portfolio": {},
+            "active_strategy": None,
+            "cards": [{
+                "fixture": SimpleNamespace(
+                    id=2,
+                    date="2026-10-03",
+                    tournament="MODUS",
+                    player_a="Player A",
+                    player_b="Player B",
+                ),
+                "opportunity": {
+                    "selection": "Player A",
+                    "probability": 62.0,
+                    "model_confidence": 78.0,
+                },
+                "assessment": SimpleNamespace(
+                    expected_value_percent=10.0,
+                    edge_percent=6.0,
+                    recommended_stake=18.0,
+                ),
+                "price": SimpleNamespace(
+                    bookmaker="Paddy Power",
+                    decimal_odds=2.0,
+                ),
+                "decision_intelligence": {
+                    "score": 55,
+                    "grade": "Caution",
+                    "recommendation": "NO BET",
+                },
+            }],
+        }
+
+        result = build_live_opportunity_centre(
+            object(),
+            persist=False,
+        )
+
+        opportunity = result["opportunities"][0]
+        self.assertEqual(opportunity.suggested_stake, 0.0)
+        self.assertEqual(opportunity.kelly_stake, 18.0)
+
     def test_new_state(self):
         self.assertEqual(
             _state(

@@ -120,7 +120,7 @@ def _persist_if_changed(
     effective_stake = float(
         decision.get(
             "effective_stake",
-            assessment.recommended_stake,
+            0.0,
         )
         or 0.0
     )
@@ -535,7 +535,7 @@ def build_live_opportunity_centre(
                 suggested_stake=float(
                     decision.get(
                         "effective_stake",
-                        assessment.recommended_stake,
+                        0.0,
                     )
                     or 0.0
                 ),

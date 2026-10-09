@@ -151,6 +151,34 @@ class LiveOpportunityDecisionSafetyPersistenceTests(
 
         self.assertEqual(row.suggested_stake, 10.0)
 
+    def test_missing_effective_stake_persists_zero_not_kelly(self):
+        safety = {
+            "state": "NORMAL",
+            "sparse_consensus_risk_state": "NORMAL",
+            "explanation": "Normal.",
+            "density": 0.5,
+        }
+
+        decision = dict(self.decision)
+        decision.pop("effective_stake")
+
+        written = _persist_if_changed(
+            self.db,
+            fixture=self.fixture,
+            opportunity=self.opportunity,
+            assessment=self.assessment,
+            price=self.price,
+            decision=decision,
+            decision_safety=safety,
+            lifecycle_state="NEW",
+        )
+
+        self.assertTrue(written)
+
+        row = self.db.query(OpportunitySnapshot).one()
+        self.assertEqual(row.suggested_stake, 0.0)
+        self.assertEqual(self.assessment.recommended_stake, 10.0)
+
     def test_effective_stake_change_creates_new_snapshot(self):
         safety = {
             "state": "NORMAL",

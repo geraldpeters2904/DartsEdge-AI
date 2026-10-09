@@ -3,6 +3,9 @@ import unittest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.db import SessionLocal
+from app.models.prediction import Prediction
+from app.models.paper_trade import PaperTrade
 
 
 class PaperTradesUITests(unittest.TestCase):
@@ -68,13 +71,55 @@ class PaperTradesUITests(unittest.TestCase):
         self.assertIn("—", text)
 
     def test_route_still_renders_with_historical_trades(self):
-        response = TestClient(app).get("/paper-trades")
+        db = SessionLocal()
+        prediction = None
+        trade = None
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Paper Trades", response.text)
-        self.assertIn("Model %", response.text)
-        self.assertIn("Kelly Reference", response.text)
-        self.assertIn("Strategy", response.text)
+        try:
+            prediction = Prediction(
+                player_a="Historical Test Alpha",
+                player_b="Historical Test Beta",
+                predicted_winner="Historical Test Alpha",
+                win_prob_a=60.0,
+                win_prob_b=40.0,
+            )
+            db.add(prediction)
+            db.flush()
+
+            trade = PaperTrade(
+                prediction_id=prediction.id,
+                market="Match Winner",
+                selection="Historical Test Alpha",
+                bookmaker="Test Bookmaker",
+                odds=2.0,
+                stake=5.0,
+                model_probability=60.0,
+                expected_value=20.0,
+                suggested_stake=7.5,
+                strategy_name="test-strategy",
+            )
+            db.add(trade)
+            db.commit()
+
+            response = TestClient(app).get("/paper-trades")
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("Paper Trades", response.text)
+            self.assertIn("Model %", response.text)
+            self.assertIn("Kelly Reference", response.text)
+            self.assertIn("Strategy", response.text)
+        finally:
+            db.rollback()
+            if trade is not None and trade.id is not None:
+                db.query(PaperTrade).filter(
+                    PaperTrade.id == trade.id
+                ).delete()
+            if prediction is not None and prediction.id is not None:
+                db.query(Prediction).filter(
+                    Prediction.id == prediction.id
+                ).delete()
+            db.commit()
+            db.close()
 
 
 if __name__ == "__main__":
