@@ -138,8 +138,7 @@ def _decision_from_card(
             float(
                 decision.get(
                     "effective_stake",
-                    assessment
-                    .recommended_stake,
+                    0.0,
                 )
                 or 0.0
             ),
