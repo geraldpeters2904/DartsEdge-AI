@@ -69,10 +69,11 @@ def add_to_bet_slip(
                         and row.get("market") == market
                         and row.get("selection") == selection
                         and abs(float(row.get("market_odds") or 0) - odds) < 0.000001
-                        and abs(float(row.get("effective_stake") or 0) - stake) < 0.000001
+                        and abs(float(row.get("authorised_stake") or 0) - stake) < 0.000001
                         and stake > 0
                         and decision is not None
                         and decision.qualifies is True
+                        and float(decision.strategy_stake) >= stake
                     ):
                         authorised_row = row
                         break

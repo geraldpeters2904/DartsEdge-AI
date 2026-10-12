@@ -29,7 +29,7 @@ class ValueBoardUITests(unittest.TestCase):
         self.assertIn('name="expected_value"', text)
         self.assertIn('name="stake"', text)
         self.assertIn(
-            'value="{{ row.effective_stake }}"',
+            'value="{{ row.authorised_stake }}"',
             text,
         )
         self.assertIn('name="kelly_stake"', text)
@@ -38,7 +38,7 @@ class ValueBoardUITests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            'row.effective_stake | default(0, true) | float > 0',
+            'row.authorised_stake | default(0, true) | float > 0',
             text,
         )
         self.assertNotIn('value="1.00"', text)

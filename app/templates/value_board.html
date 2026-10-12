@@ -140,7 +140,7 @@
                     View Prediction
                 </a>
 
-                {% if row.market_odds is not none and row.effective_stake | default(0, true) | float > 0 %}
+                {% if row.market_odds is not none and row.authorised_stake | default(0, true) | float > 0 and row.recommendation_token %}
                     <form method="post" action="/bet-slip/add">
                         <input
                             type="hidden"
@@ -170,7 +170,7 @@
                         <input
                             type="hidden"
                             name="stake"
-                            value="{{ row.effective_stake }}"
+                            value="{{ row.authorised_stake }}"
                         >
                         <input
                             type="hidden"

@@ -1259,6 +1259,8 @@ class ValueBoardServiceTests(unittest.TestCase):
         decide.return_value = SimpleNamespace(
             effective_stake=1.0,
             effective_decision="Accept",
+            qualifies=True,
+            strategy_stake=1.0,
         )
         get_settings.return_value = SimpleNamespace(
             bankroll=100.0,
@@ -1388,6 +1390,8 @@ class ValueBoardServiceTests(unittest.TestCase):
         decide.return_value = SimpleNamespace(
             effective_stake=1.0,
             effective_decision="Accept",
+            qualifies=True,
+            strategy_stake=1.0,
         )
         get_settings.return_value = SimpleNamespace(
             bankroll=100.0,
@@ -1472,6 +1476,8 @@ class ValueBoardServiceTests(unittest.TestCase):
         decide.return_value = SimpleNamespace(
             effective_stake=0.0,
             effective_decision="Reject",
+            qualifies=False,
+            strategy_stake=0.0,
         )
 
         settings = SimpleNamespace(
@@ -1557,6 +1563,7 @@ class ValueBoardServiceTests(unittest.TestCase):
 
             self.assertGreater(result["kelly_stake"], 0.0)
             self.assertEqual(result["effective_stake"], 0.0)
+            self.assertEqual(result["authorised_stake"], 0.0)
             self.assertEqual(result["effective_decision"], "Reject")
             self.assertTrue(result["decision_engine"].enforced)
         finally:
@@ -1611,6 +1618,45 @@ class ValueBoardServiceTests(unittest.TestCase):
                 result["decision_engine"].official_decision,
             )
             self.assertFalse(result["decision_engine"].enforced)
+            self.assertFalse(result["decision_engine"].qualifies)
+            self.assertEqual(result["authorised_stake"], 0.0)
+        finally:
+            db.close()
+
+    def test_decision_enrichment_shadow_caps_authorised_stake(self):
+        db = create_test_session()
+        try:
+            seed_default_strategies(db)
+
+            result = _decision_enrichment(
+                db,
+                row={
+                    "market": "Match Winner",
+                    "probability": 80.0,
+                    "market_odds": 2.0,
+                    "bookmaker": "Paddy Power",
+                    "tournament": "MODUS Super Series",
+                },
+                settings=SimpleNamespace(
+                    bankroll=100.0,
+                    kelly_fraction=0.5,
+                    max_daily_risk=10.0,
+                    minimum_edge=0.0,
+                ),
+                portfolio={"exposure_percent": 0.0},
+                confidence_percent=90.0,
+                sample_size=50,
+            )
+
+            self.assertTrue(result["decision_engine"].qualifies)
+            self.assertFalse(result["decision_engine"].enforced)
+            self.assertGreater(result["kelly_stake"], 3.0)
+            self.assertEqual(
+                result["effective_stake"],
+                result["kelly_stake"],
+            )
+            self.assertEqual(result["authorised_stake"], 3.0)
+            self.assertEqual(result["decision_engine"].strategy_stake, 3.0)
         finally:
             db.close()
 

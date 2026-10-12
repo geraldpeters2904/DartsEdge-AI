@@ -122,6 +122,11 @@ def _decision_enrichment(
         "effective_decision": (
             decision_engine.effective_decision
         ),
+        "authorised_stake": (
+            round(max(0.0, float(decision_engine.strategy_stake)), 2)
+            if decision_engine.qualifies is True
+            else 0.0
+        ),
         "decision_engine": decision_engine,
     }
 
@@ -1727,13 +1732,13 @@ def build_value_board(db):
     for row in rows:
         row["recommendation_token"] = None
 
-        if float(row.get("effective_stake") or 0) > 0:
+        if float(row.get("authorised_stake") or 0) > 0:
             row["recommendation_token"] = sign_recommendation(
                 fixture_id=row["fixture_id"],
                 market=row["market"],
                 selection=row["selection"],
                 odds=row["market_odds"],
-                effective_stake=row["effective_stake"],
+                effective_stake=row["authorised_stake"],
             )
 
     rows.sort(

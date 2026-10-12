@@ -557,6 +557,7 @@ class BetSlipAuthorisationTests(unittest.TestCase):
                 "selection": "Slip Alpha",
                 "market_odds": 2.1,
                 "effective_stake": 5.0,
+                "authorised_stake": 0.0,
                 "decision_engine": SimpleNamespace(
                     qualifies=False,
                     enforced=False,
@@ -615,10 +616,11 @@ class BetSlipAuthorisationTests(unittest.TestCase):
                 "bookmaker": "Paddy Power",
                 "market_odds": 2.1,
                 "effective_stake": 5.0,
+                "authorised_stake": 5.0,
                 "probability": 65.0,
                 "expected_value_percent": 12.5,
                 "kelly_stake": 6.0,
-                "decision_engine": SimpleNamespace(qualifies=True),
+                "decision_engine": SimpleNamespace(qualifies=True, strategy_stake=5.0),
             }
 
             with patch(
@@ -685,7 +687,8 @@ class BetSlipAuthorisationTests(unittest.TestCase):
                 "selection": "Slip Alpha",
                 "market_odds": 2.1,
                 "effective_stake": 5.0,
-                "decision_engine": SimpleNamespace(qualifies=True),
+                "authorised_stake": 5.0,
+                "decision_engine": SimpleNamespace(qualifies=True, strategy_stake=5.0),
             }
 
             with patch(
@@ -740,7 +743,8 @@ class BetSlipAuthorisationTests(unittest.TestCase):
                 "selection": "Slip Alpha",
                 "market_odds": 2.1,
                 "effective_stake": 5.0,
-                "decision_engine": SimpleNamespace(qualifies=True),
+                "authorised_stake": 5.0,
+                "decision_engine": SimpleNamespace(qualifies=True, strategy_stake=5.0),
             }
 
             with patch(
@@ -794,11 +798,13 @@ class BetSlipAuthorisationTests(unittest.TestCase):
                 "bookmaker": "Paddy Power",
                 "market_odds": 2.1,
                 "effective_stake": 5.0,
+                "authorised_stake": 5.0,
                 "probability": 65.0,
                 "expected_value_percent": 36.5,
                 "kelly_stake": 5.0,
                 "decision_engine": SimpleNamespace(
                     qualifies=True,
+                    strategy_stake=5.0,
                     effective_stake=5.0,
                     effective_decision="Accept",
                 ),
@@ -830,6 +836,64 @@ class BetSlipAuthorisationTests(unittest.TestCase):
 
         self.assertEqual(item.stake_source, "authorised")
         self.assertEqual(item.stake, 5.0)
+
+
+    def test_signed_stake_above_current_strategy_cap_is_not_authorised(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from app.services.recommendation_signing_service import sign_recommendation
+
+        with patch.dict(
+            "os.environ",
+            {"DARTSEDGE_RECOMMENDATION_SIGNING_KEY": "test-key-" * 8},
+        ):
+            token = sign_recommendation(
+                fixture_id=self.fixture.id,
+                market="Match Winner",
+                selection="Slip Alpha",
+                odds=2.1,
+                effective_stake=5.0,
+            )
+            self.assertIsNotNone(token)
+
+            current_row = {
+                "fixture_id": self.fixture.id,
+                "market": "Match Winner",
+                "selection": "Slip Alpha",
+                "market_odds": 2.1,
+                "effective_stake": 5.0,
+                "authorised_stake": 5.0,
+                "decision_engine": SimpleNamespace(
+                    qualifies=True,
+                    strategy_stake=3.0,
+                ),
+            }
+
+            with patch(
+                "app.services.value_board_service.build_value_board",
+                return_value=[current_row],
+            ):
+                response = self.client.post(
+                    "/bet-slip/add",
+                    data={
+                        "fixture_id": self.fixture.id,
+                        "market": "Match Winner",
+                        "selection": "Slip Alpha",
+                        "odds": 2.1,
+                        "stake": 5.0,
+                        "recommendation_token": token,
+                    },
+                    follow_redirects=False,
+                )
+
+        self.assertEqual(response.status_code, 303)
+
+        item = self.db.query(BetSlipItem).filter(
+            BetSlipItem.fixture_id == self.fixture.id
+        ).one()
+
+        self.assertEqual(item.stake, 5.0)
+        self.assertEqual(item.stake_source, "unverified")
 
     def test_signed_recommendation_requires_current_approval(self):
         from unittest.mock import patch
