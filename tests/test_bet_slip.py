@@ -238,6 +238,65 @@ class BetSlipTests(unittest.TestCase):
         self.db.delete(trade)
         self.db.commit()
 
+    def test_bet_slip_authorisation_saved_with_item(self):
+        item, created = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection=self.fixture.player_a,
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+            stake_source="authorised",
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(item.stake_source, "authorised")
+
+        self.db.refresh(item)
+        self.assertEqual(item.stake_source, "authorised")
+
+    def test_manual_bet_slip_defaults_to_unverified(self):
+        item, created = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection=self.fixture.player_a,
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(item.stake_source, "unverified")
+
+    def test_manual_update_resets_previous_authorisation(self):
+        item, _ = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection=self.fixture.player_a,
+            bookmaker="A",
+            odds=2.0,
+            stake=4,
+            stake_source="authorised",
+        )
+
+        updated, created = add_bet_slip_item(
+            self.db,
+            fixture_id=self.fixture.id,
+            market="Match Winner",
+            selection=self.fixture.player_a,
+            bookmaker="B",
+            odds=2.1,
+            stake=5,
+        )
+
+        self.assertFalse(created)
+        self.assertEqual(updated.id, item.id)
+        self.assertEqual(updated.stake, 5)
+        self.assertEqual(updated.stake_source, "unverified")
+
     def test_handicap_selection_without_line_rejected(self):
         with self.assertRaises(ValueError):
             add_bet_slip_item(

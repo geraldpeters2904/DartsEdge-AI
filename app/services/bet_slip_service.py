@@ -28,7 +28,11 @@ def add_bet_slip_item(
     expected_value: float | None = None,
     kelly_stake: float | None = None,
     strategy_name: str | None = None,
+    stake_source: str = "unverified",
 ):
+    if stake_source not in {"unverified", "authorised"}:
+        raise ValueError("Invalid Bet Slip stake source")
+
     fixture = db.query(Match).filter(Match.id == fixture_id).first()
     if fixture is None:
         raise ValueError("Fixture not found")
@@ -116,7 +120,7 @@ def add_bet_slip_item(
         existing.expected_value = expected_value
         existing.kelly_stake = kelly_stake
         existing.strategy_name = strategy_name
-        existing.stake_source = "unverified"
+        existing.stake_source = stake_source
         db.commit()
         db.refresh(existing)
         return existing, False
@@ -132,6 +136,7 @@ def add_bet_slip_item(
         expected_value=expected_value,
         kelly_stake=kelly_stake,
         strategy_name=strategy_name,
+        stake_source=stake_source,
     )
     db.add(item)
     db.commit()

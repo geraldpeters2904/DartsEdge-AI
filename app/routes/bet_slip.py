@@ -96,10 +96,10 @@ def add_to_bet_slip(
             expected_value=expected_value,
             kelly_stake=kelly_stake,
             strategy_name=strategy_name,
+            stake_source=(
+                "authorised" if authorised_row is not None else "unverified"
+            ),
         )
-        if authorised_row is not None:
-            item.stake_source = "authorised"
-            db.commit()
 
         message = "Selection added to bet slip" if created else "Bet slip selection updated"
         return RedirectResponse(f"/bet-slip?message={message}", status_code=303)
