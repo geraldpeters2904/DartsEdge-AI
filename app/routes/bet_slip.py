@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Form, HTTPException, Request
+from app.services.recommendation_signing_service import verify_recommendation
 from fastapi.responses import RedirectResponse
 
 from app.db import SessionLocal
@@ -44,10 +45,46 @@ def add_to_bet_slip(
     expected_value: float = Form(0),
     kelly_stake: float = Form(0),
     strategy_name: str = Form(""),
+    recommendation_token: str = Form(""),
 ):
     db = SessionLocal()
     try:
-        _, created = add_bet_slip_item(
+        authorised_row = None
+        payload = verify_recommendation(recommendation_token) if recommendation_token else None
+
+        if payload is not None:
+            from app.services.value_board_service import build_value_board
+
+            if (
+                payload["fixture_id"] == fixture_id
+                and payload["market"] == market
+                and payload["selection"] == selection
+                and abs(float(payload["odds"]) - odds) < 0.000001
+                and abs(float(payload["effective_stake"]) - stake) < 0.000001
+            ):
+                for row in build_value_board(db):
+                    decision = row.get("decision_engine")
+                    if (
+                        row.get("fixture_id") == fixture_id
+                        and row.get("market") == market
+                        and row.get("selection") == selection
+                        and abs(float(row.get("market_odds") or 0) - odds) < 0.000001
+                        and abs(float(row.get("effective_stake") or 0) - stake) < 0.000001
+                        and stake > 0
+                        and decision is not None
+                        and decision.qualifies is True
+                    ):
+                        authorised_row = row
+                        break
+
+        if authorised_row is not None:
+            bookmaker = str(authorised_row.get("bookmaker") or "Best available")
+            model_probability = float(authorised_row.get("probability") or 0)
+            expected_value = float(authorised_row.get("expected_value_percent") or 0)
+            kelly_stake = float(authorised_row.get("kelly_stake") or 0)
+            strategy_name = "Daily Value Board"
+
+        item, created = add_bet_slip_item(
             db,
             fixture_id=fixture_id,
             market=market,
@@ -60,6 +97,10 @@ def add_to_bet_slip(
             kelly_stake=kelly_stake,
             strategy_name=strategy_name,
         )
+        if authorised_row is not None:
+            item.stake_source = "authorised"
+            db.commit()
+
         message = "Selection added to bet slip" if created else "Bet slip selection updated"
         return RedirectResponse(f"/bet-slip?message={message}", status_code=303)
     except ValueError as exc:

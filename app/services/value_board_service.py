@@ -13,6 +13,7 @@ from app.services.markets_service import (
 from app.services.opportunity_ranking_service import _value_metrics
 from app.services.expected_value_service import assess_value
 from app.services.decision_engine_service import decide
+from app.services.recommendation_signing_service import sign_recommendation
 from app.services.settings_service import get_settings
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.match_engine import leg_win_probability
@@ -1722,6 +1723,18 @@ def build_value_board(db):
                 )
             )
 
+
+    for row in rows:
+        row["recommendation_token"] = None
+
+        if float(row.get("effective_stake") or 0) > 0:
+            row["recommendation_token"] = sign_recommendation(
+                fixture_id=row["fixture_id"],
+                market=row["market"],
+                selection=row["selection"],
+                odds=row["market_odds"],
+                effective_stake=row["effective_stake"],
+            )
 
     rows.sort(
         key=lambda row: (

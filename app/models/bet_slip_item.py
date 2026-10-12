@@ -22,4 +22,5 @@ class BetSlipItem(Base):
     expected_value = Column(Float, nullable=True)
     kelly_stake = Column(Float, nullable=True)
     strategy_name = Column(String, nullable=True)
+    stake_source = Column(String, nullable=False, default="unverified")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

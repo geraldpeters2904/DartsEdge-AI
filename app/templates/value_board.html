@@ -192,6 +192,11 @@
                             name="strategy_name"
                             value="Daily Value Board"
                         >
+                        <input
+                            type="hidden"
+                            name="recommendation_token"
+                            value="{{ row.recommendation_token or '' }}"
+                        >
                         <button
                             class="small-button"
                             type="submit"

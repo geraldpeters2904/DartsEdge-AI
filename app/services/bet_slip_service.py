@@ -32,7 +32,7 @@ def add_bet_slip_item(
     fixture = db.query(Match).filter(Match.id == fixture_id).first()
     if fixture is None:
         raise ValueError("Fixture not found")
-    if market == "Handicap":
+    if market in {"Handicap", "Leg Handicap"}:
         valid_selection = False
 
         for player in (fixture.player_a, fixture.player_b):
@@ -61,6 +61,37 @@ def add_bet_slip_item(
                 "Handicap selection must be a fixture player "
                 "followed by a signed half-leg line"
             )
+    elif market == "Most 180s":
+        if selection not in {
+            f"{fixture.player_a} Most 180s",
+            f"{fixture.player_b} Most 180s",
+        }:
+            raise ValueError("Most 180s selection must identify a fixture player")
+
+    elif market in {"Total Legs", "Total 180s", "Player Total 180s"}:
+        import re
+
+        if market == "Player Total 180s":
+            valid_selection = False
+            for player in (fixture.player_a, fixture.player_b):
+                prefix = f"{player} "
+                if selection.startswith(prefix):
+                    remainder = selection[len(prefix):]
+                    if re.fullmatch(r"(Over|Under) [0-9]+(?:\.5) 180s", remainder):
+                        valid_selection = True
+                        break
+        else:
+            suffix = "Total Legs" if market == "Total Legs" else "Total 180s"
+            valid_selection = bool(
+                re.fullmatch(
+                    rf"(Over|Under) [0-9]+(?:\.5) {suffix}",
+                    selection,
+                )
+            )
+
+        if not valid_selection:
+            raise ValueError("Invalid total market selection")
+
     elif selection not in {fixture.player_a, fixture.player_b}:
         raise ValueError("Selection must be one of the fixture players")
     if odds <= 1:
@@ -85,6 +116,7 @@ def add_bet_slip_item(
         existing.expected_value = expected_value
         existing.kelly_stake = kelly_stake
         existing.strategy_name = strategy_name
+        existing.stake_source = "unverified"
         db.commit()
         db.refresh(existing)
         return existing, False
@@ -124,6 +156,7 @@ def update_bet_slip_stake(
         raise ValueError("Bet slip item not found")
 
     item.stake = stake
+    item.stake_source = "manual_override"
     db.commit()
     db.refresh(item)
     return item
@@ -199,6 +232,7 @@ def confirm_as_paper_trade(db, item_id: int) -> PaperTrade:
         expected_value=item.expected_value,
         suggested_stake=item.kelly_stake,
         strategy_name=item.strategy_name,
+        stake_source=item.stake_source or "unverified",
         status="OPEN",
     )
     db.add(trade)

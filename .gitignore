@@ -68,3 +68,6 @@ dartsedge_cleanup.sh
 
 # Timestamped database backups
 *.db.backup-*
+
+# Local environment secrets
+.env

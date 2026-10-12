@@ -44,6 +44,7 @@ class PaperTrade(Base):
     expected_value = Column(Float, nullable=True)
     suggested_stake = Column(Float, nullable=True)
     strategy_name = Column(String, nullable=True)
+    stake_source = Column(String, nullable=False, default="unverified")
 
     status = Column(String, nullable=False, default="OPEN")
     profit_loss = Column(Float, nullable=True)
