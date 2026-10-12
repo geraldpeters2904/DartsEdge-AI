@@ -20,7 +20,7 @@ class PaperTrade(Base):
     prediction_id = Column(
         Integer,
         ForeignKey("predictions.id"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 

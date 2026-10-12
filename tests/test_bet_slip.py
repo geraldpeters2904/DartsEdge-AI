@@ -210,14 +210,10 @@ class BetSlipTests(unittest.TestCase):
         ).delete()
         self.db.commit()
 
-    def test_handicap_confirmation_fallback_prediction_uses_fixture_player(self):
+    def test_handicap_confirmation_does_not_create_synthetic_prediction(self):
         from app.models.prediction import Prediction
 
-        self.db.query(Prediction).filter(
-            Prediction.player_a == self.fixture.player_a,
-            Prediction.player_b == self.fixture.player_b,
-        ).delete()
-        self.db.commit()
+        before_count = self.db.query(Prediction).count()
 
         item, _ = add_bet_slip_item(
             self.db,
@@ -231,25 +227,15 @@ class BetSlipTests(unittest.TestCase):
         )
 
         trade = confirm_as_paper_trade(self.db, item.id)
-        prediction = self.db.query(Prediction).filter(
-            Prediction.id == trade.prediction_id
-        ).first()
 
-        self.assertIn(
-            prediction.predicted_winner,
-            {self.fixture.player_a, self.fixture.player_b},
-        )
-        self.assertNotEqual(
-            prediction.predicted_winner,
-            "Slip Beta +2.5",
-        )
+        self.assertIsNone(trade.prediction_id)
+        self.assertEqual(trade.fixture_id, self.fixture.id)
+        self.assertEqual(trade.market, "Handicap")
+        self.assertEqual(trade.selection, "Slip Beta +2.5")
+        self.assertEqual(trade.stake, 3)
+        self.assertEqual(self.db.query(Prediction).count(), before_count)
 
-        self.db.query(PaperTrade).filter(
-            PaperTrade.id == trade.id
-        ).delete()
-        self.db.query(Prediction).filter(
-            Prediction.id == prediction.id
-        ).delete()
+        self.db.delete(trade)
         self.db.commit()
 
     def test_handicap_selection_without_line_rejected(self):

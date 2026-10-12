@@ -171,44 +171,6 @@ def remove_bet_slip_item(db, item_id: int) -> bool:
     return True
 
 
-def _prediction_for_fixture(db, fixture: Match, item: BetSlipItem) -> Prediction:
-    prediction = (
-        db.query(Prediction)
-        .filter(Prediction.player_a == fixture.player_a, Prediction.player_b == fixture.player_b)
-        .order_by(Prediction.created_at.desc())
-        .first()
-    )
-    if prediction:
-        return prediction
-
-    prediction_selection = item.selection
-    if item.market == "Handicap":
-        for player in (fixture.player_a, fixture.player_b):
-            if item.selection.startswith(f"{player} "):
-                prediction_selection = player
-                break
-
-    probability = float(item.model_probability or 50.0)
-    if probability > 1:
-        probability /= 100.0
-    probability = min(max(probability, 0.0), 1.0)
-    prediction = Prediction(
-        player_a=fixture.player_a,
-        player_b=fixture.player_b,
-        predicted_winner=prediction_selection,
-        win_prob_a=probability if prediction_selection == fixture.player_a else 1 - probability,
-        win_prob_b=probability if prediction_selection == fixture.player_b else 1 - probability,
-        confidence=int(round(abs(probability - 0.5) * 20)),
-        rating_a=0,
-        rating_b=0,
-        first_180_a=0,
-        first_180_b=0,
-    )
-    db.add(prediction)
-    db.flush()
-    return prediction
-
-
 def confirm_as_paper_trade(db, item_id: int) -> PaperTrade:
     row = (
         db.query(BetSlipItem, Match)
@@ -219,9 +181,8 @@ def confirm_as_paper_trade(db, item_id: int) -> PaperTrade:
     if row is None:
         raise ValueError("Bet slip item not found")
     item, fixture = row
-    prediction = _prediction_for_fixture(db, fixture, item)
     trade = PaperTrade(
-        prediction_id=prediction.id,
+        prediction_id=None,
         fixture_id=item.fixture_id,
         market=item.market,
         selection=item.selection,
