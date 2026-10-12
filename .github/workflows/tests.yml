@@ -29,4 +29,4 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run regression suite
-        run: python -m unittest discover -s tests -p 'test_*.py'
+        run: python run_tests.py
