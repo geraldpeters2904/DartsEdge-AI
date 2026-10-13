@@ -83,6 +83,24 @@ class StrategyAnalyticsTests(unittest.TestCase):
         self.assertEqual(metric.profit_loss, 20.0)
         self.assertEqual(metric.roi_percent, 100.0)
 
+    def test_void_settlement_excluded_from_financial_performance(self):
+        winning = self._record(stake=20)
+        settle_decision(self.db, winning.id, 'win')
+
+        voided = self._record(stake=100)
+        settle_decision(self.db, voided.id, 'void')
+        voided.profit_loss = 50.0
+        self.db.commit()
+
+        metric = analytics(self.db)['metrics'][0]
+
+        self.assertEqual(metric.settled, 2)
+        self.assertEqual(metric.wins, 1)
+        self.assertEqual(metric.win_rate_percent, 100.0)
+        self.assertEqual(metric.total_staked, 20.0)
+        self.assertEqual(metric.profit_loss, 20.0)
+        self.assertEqual(metric.roi_percent, 100.0)
+
     def test_strategy_analytics_routes_render(self):
         client = TestClient(app)
         response = client.get('/strategy-analytics')

@@ -118,9 +118,10 @@ def _metric(name: str, version: int, rows: list[StrategyDecision]) -> StrategyMe
         if r.outcome in {"win", "loss", "void"}
         and float(r.effective_stake or 0) > 0
     ]
-    wins = sum(r.outcome == "win" for r in settled_rows)
-    total_staked = sum(float(r.effective_stake or 0) for r in settled_rows)
-    pnl = sum(float(r.profit_loss or 0) for r in settled_rows)
+    decided_rows = [r for r in settled_rows if r.outcome in {"win", "loss"}]
+    wins = sum(r.outcome == "win" for r in decided_rows)
+    total_staked = sum(float(r.effective_stake or 0) for r in decided_rows)
+    pnl = sum(float(r.profit_loss or 0) for r in decided_rows)
     roi = (pnl / total_staked * 100) if total_staked > 0 else None
     win_denominator = sum(r.outcome in {"win", "loss"} for r in settled_rows)
     win_rate = (wins / win_denominator * 100) if win_denominator else None
@@ -140,7 +141,7 @@ def _metric(name: str, version: int, rows: list[StrategyDecision]) -> StrategyMe
         acceptance_rate_percent=round((len(accepted_rows) + paper_only) / len(rows) * 100, 2) if rows else 0.0,
         average_ev_percent=round(sum(r.expected_value_percent for r in rows) / len(rows), 2) if rows else 0.0,
         average_edge_percent=round(sum(r.edge_percent for r in rows) / len(rows), 2) if rows else 0.0,
-        maximum_drawdown=_max_drawdown(settled_rows),
+        maximum_drawdown=_max_drawdown(decided_rows),
     )
 
 

@@ -1,3 +1,4 @@
+import threading
 import time
 import unittest
 from dataclasses import dataclass
@@ -229,6 +230,51 @@ class ModusFixtureWorkerTests(unittest.TestCase):
         self.assertEqual(status.last_error, "Safari failed.")
         self.assertTrue(self.sessions[0].rolled_back)
         self.assertTrue(self.sessions[0].closed)
+
+    def test_stop_during_discovery_preserves_stopped_status(self):
+        discovery_started = threading.Event()
+        release_discovery = threading.Event()
+
+        def blocked_discover(db, *, series_id, week_id, group):
+            discovery_started.set()
+            if not release_discovery.wait(timeout=5):
+                raise TimeoutError("Discovery was not released.")
+            return FakeDiscoveryResult(
+                action="unchanged",
+                message="No change.",
+            )
+
+        self.discovery.discover = blocked_discover
+
+        self.worker.start(
+            series_id=15,
+            week_id=178,
+            group="Group A",
+        )
+
+        try:
+            self.assertTrue(discovery_started.wait(timeout=5))
+
+            stopped = self.worker.stop(
+                series_id=15,
+                week_id=178,
+                group="Group A",
+            )
+            self.assertFalse(stopped.running)
+            self.assertIn("stopped", stopped.last_message.lower())
+        finally:
+            release_discovery.set()
+            for thread in list(self.worker._threads.values()):
+                thread.join(timeout=5)
+
+        final_status = self.worker.status(
+            series_id=15,
+            week_id=178,
+            group="Group A",
+        )
+        self.assertFalse(final_status.running)
+        self.assertIn("stopped", final_status.last_message.lower())
+        self.assertEqual(final_status.checks, 0)
 
     def test_stop_marks_worker_stopped(self):
         self.worker.start(

@@ -238,6 +238,9 @@ class ModusFixtureWorker:
                 )
 
                 with self._lock:
+                    if stop_event.is_set():
+                        break
+
                     current = self._statuses[target]
 
                     self._statuses[target] = (
