@@ -101,6 +101,16 @@ class PortfolioHealthServiceTests(unittest.TestCase):
         self.assertEqual(result["total_profit_loss"], 20.0)
         self.assertEqual(result["roi"], 100.0)
 
+    def test_void_profit_does_not_distort_portfolio_health(self):
+        self.add_trade("WON", 20, profit_loss=20)
+        self.add_trade("VOID", 100, profit_loss=50)
+
+        result = build_portfolio_health(self.db)
+
+        self.assertEqual(result["total_profit_loss"], 20.0)
+        self.assertEqual(result["current_bankroll"], 1020.0)
+        self.assertEqual(result["roi"], 100.0)
+
     def test_empty_portfolio_has_zero_drawdown(self):
         result = build_portfolio_health(self.db)
         self.assertEqual(result["max_drawdown_amount"], 0.0)

@@ -79,7 +79,7 @@ def get_portfolio_summary(
     settled_trades = [
         trade
         for trade in trades
-        if trade.status in VALID_SETTLEMENT_STATUSES
+        if trade.status in {"WON", "LOST"}
         and float(trade.stake or 0) > 0
     ]
 

@@ -165,7 +165,7 @@ def build_portfolio_health(db) -> Dict[str, Any]:
         max_drawdown_amount = max(max_drawdown_amount, drawdown_amount)
         max_drawdown_percent = max(max_drawdown_percent, drawdown_percent)
 
-    total_profit_loss = _money(sum(float(trade.profit_loss or 0) for trade in settled_trades))
+    total_profit_loss = _money(sum(float(trade.profit_loss or 0) for trade in decided_trades))
     current_bankroll = _money(starting_bankroll + total_profit_loss)
     open_exposure = _money(sum(float(trade.stake or 0) for trade in open_trades))
     available_bankroll = _money(max(0, current_bankroll - open_exposure))
