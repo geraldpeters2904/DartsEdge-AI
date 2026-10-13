@@ -172,7 +172,10 @@ def build_portfolio_health(db) -> Dict[str, Any]:
     exposure_percent = _percentage(open_exposure, current_bankroll)
     risk_utilisation = _percentage(exposure_percent, max_daily_risk)
 
-    total_settled_stake = _money(sum(float(trade.stake or 0) for trade in settled_trades))
+    total_settled_stake = _money(sum(
+        float(trade.stake or 0)
+        for trade in decided_trades
+    ))
     roi = _percentage(total_profit_loss, total_settled_stake)
     wins = sum(1 for trade in decided_trades if trade.status == "WON")
     losses = sum(1 for trade in decided_trades if trade.status == "LOST")

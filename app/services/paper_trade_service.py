@@ -94,6 +94,7 @@ def get_portfolio_summary(
         sum(
             float(trade.stake or 0)
             for trade in settled_trades
+            if trade.status in {"WON", "LOST"} and float(trade.stake or 0) > 0
         ),
         2,
     )
