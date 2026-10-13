@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, Iterable, List
 
 from app.models.paper_trade import PaperTrade
+from app.services.equity_service import get_equity_curve
 from app.services.settings_service import get_settings
 
 
@@ -147,6 +148,23 @@ def build_portfolio_health(db) -> Dict[str, Any]:
     settled_trades = [trade for trade in trades if trade.status in SETTLED_STATUSES]
     decided_trades = [trade for trade in trades if trade.status in DECIDED_STATUSES]
 
+    equity_curve = get_equity_curve(db, starting_bankroll=starting_bankroll)
+    peak_bankroll = starting_bankroll
+    max_drawdown_amount = 0.0
+    max_drawdown_percent = 0.0
+
+    for point in equity_curve:
+        bankroll_at_point = float(point["bankroll"])
+        peak_bankroll = max(peak_bankroll, bankroll_at_point)
+        drawdown_amount = peak_bankroll - bankroll_at_point
+        drawdown_percent = (
+            (drawdown_amount / peak_bankroll) * 100
+            if peak_bankroll > 0 else 0.0
+        )
+
+        max_drawdown_amount = max(max_drawdown_amount, drawdown_amount)
+        max_drawdown_percent = max(max_drawdown_percent, drawdown_percent)
+
     total_profit_loss = _money(sum(float(trade.profit_loss or 0) for trade in settled_trades))
     current_bankroll = _money(starting_bankroll + total_profit_loss)
     open_exposure = _money(sum(float(trade.stake or 0) for trade in open_trades))
@@ -216,6 +234,8 @@ def build_portfolio_health(db) -> Dict[str, Any]:
         "max_daily_risk": round(max_daily_risk, 2),
         "kelly_fraction": round(kelly_fraction, 2),
         "total_profit_loss": total_profit_loss,
+        "max_drawdown_amount": _money(max_drawdown_amount),
+        "max_drawdown_percent": round(max_drawdown_percent, 2),
         "today_profit_loss": today_profit_loss,
         "week_profit_loss": week_profit_loss,
         "month_profit_loss": month_profit_loss,

@@ -117,6 +117,8 @@
                 <div><span>Open positions</span><strong>{{ open_positions }}</strong></div>
                 <div><span>Settled positions</span><strong>{{ settled_positions }}</strong></div>
                 <div><span>Win rate</span><strong>{{ win_rate }}%</strong></div>
+                <div><span>Maximum drawdown (£)</span><strong>£{{ '%.2f'|format(max_drawdown_amount) }}</strong></div>
+                <div><span>Maximum drawdown (%)</span><strong>{{ '%.2f'|format(max_drawdown_percent) }}%</strong></div>
                 <div><span>Average odds</span><strong>{{ '%.2f'|format(average_odds) }}</strong></div>
                 <div><span>Average stake</span><strong>£{{ '%.2f'|format(average_stake) }}</strong></div>
                 <div><span>Kelly setting</span><strong>{{ kelly_fraction }}×</strong></div>

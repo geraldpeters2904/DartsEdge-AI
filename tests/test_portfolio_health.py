@@ -91,6 +91,42 @@ class PortfolioHealthServiceTests(unittest.TestCase):
         self.assertEqual(result["roi"], 33.33)
         self.assertEqual(result["win_rate"], 50.0)
 
+    def test_empty_portfolio_has_zero_drawdown(self):
+        result = build_portfolio_health(self.db)
+        self.assertEqual(result["max_drawdown_amount"], 0.0)
+        self.assertEqual(result["max_drawdown_percent"], 0.0)
+
+    def test_maximum_drawdown_after_initial_loss(self):
+        self.add_trade("LOST", 100, profit_loss=-100)
+        result = build_portfolio_health(self.db)
+        self.assertEqual(result["max_drawdown_amount"], 100.0)
+        self.assertEqual(result["max_drawdown_percent"], 10.0)
+
+    def test_maximum_drawdown_from_previous_peak(self):
+        self.add_trade("WON", 100, profit_loss=100)
+        self.add_trade("LOST", 150, profit_loss=-150)
+        self.add_trade("WON", 30, profit_loss=30)
+
+        result = build_portfolio_health(self.db)
+
+        self.assertEqual(result["max_drawdown_amount"], 150.0)
+        self.assertEqual(result["max_drawdown_percent"], 13.64)
+
+    def test_drawdown_uses_settlement_not_creation_order(self):
+        from datetime import timedelta
+
+        first = self.add_trade("WON", 100, profit_loss=100)
+        second = self.add_trade("LOST", 150, profit_loss=-150)
+
+        first.settled_at = datetime(2026, 10, 12, 14, 0)
+        second.settled_at = datetime(2026, 10, 12, 12, 0)
+        self.db.commit()
+
+        result = build_portfolio_health(self.db)
+
+        self.assertEqual(result["max_drawdown_amount"], 150.0)
+        self.assertEqual(result["max_drawdown_percent"], 15.0)
+
     def test_risk_limit_breach_is_flagged(self):
         self.add_trade("OPEN", 120)
         result = build_portfolio_health(self.db)
