@@ -196,17 +196,17 @@ def build_portfolio_health(db) -> Dict[str, Any]:
 
     today_profit_loss = _money(sum(
         float(trade.profit_loss or 0)
-        for trade in settled_trades
+        for trade in decided_trades
         if _settled_on_or_after(trade, today_start)
     ))
     week_profit_loss = _money(sum(
         float(trade.profit_loss or 0)
-        for trade in settled_trades
+        for trade in decided_trades
         if _settled_on_or_after(trade, week_start)
     ))
     month_profit_loss = _money(sum(
         float(trade.profit_loss or 0)
-        for trade in settled_trades
+        for trade in decided_trades
         if _settled_on_or_after(trade, month_start)
     ))
 
