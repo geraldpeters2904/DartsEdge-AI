@@ -80,6 +80,7 @@ def get_portfolio_summary(
         trade
         for trade in trades
         if trade.status in VALID_SETTLEMENT_STATUSES
+        and float(trade.stake or 0) > 0
     ]
 
     total_profit_loss = round(

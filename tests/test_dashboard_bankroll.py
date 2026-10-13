@@ -81,5 +81,40 @@ class DashboardBankrollTests(unittest.TestCase):
         self.assertEqual(result["portfolio_roi"], 100.0)
 
 
+    def test_zero_stake_settled_trade_does_not_distort_summary(self):
+        from app.models.paper_trade import PaperTrade
+        from app.services.paper_trade_service import get_portfolio_summary
+
+        self.db.add_all([
+            PaperTrade(
+                market="Match Winner", selection="Player A",
+                odds=2.0, stake=20.0, status="WON",
+                profit_loss=20.0,
+            ),
+            PaperTrade(
+                market="Match Winner", selection="Player B",
+                odds=2.0, stake=0.0, status="WON",
+                profit_loss=50.0,
+            ),
+            PaperTrade(
+                market="Match Winner", selection="Player C",
+                odds=2.0, stake=10.0, status="LOST",
+                profit_loss=-10.0,
+            ),
+        ])
+        self.db.commit()
+
+        result = get_portfolio_summary(
+            self.db, starting_bankroll=1234.0
+        )
+
+        self.assertEqual(result["total_profit_loss"], 10.0)
+        self.assertEqual(result["current_bankroll"], 1244.0)
+        self.assertEqual(result["settled_stake"], 30.0)
+        self.assertEqual(result["portfolio_roi"], 33.33)
+        self.assertEqual(result["biggest_win"], 20.0)
+        self.assertEqual(result["biggest_loss"], -10.0)
+
+
 if __name__ == "__main__":
     unittest.main()
