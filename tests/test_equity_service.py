@@ -99,5 +99,31 @@ class EquityServiceTests(unittest.TestCase):
         self.assertEqual(curve[0]["bankroll"], 1010.0)
 
 
+    def test_zero_stake_settled_trades_are_excluded(self):
+        settled_at = datetime(2026, 10, 12, 12, 0)
+
+        winner = self.add_trade("WON", 10.0, settled_at)
+        rejected = self.add_trade(
+            "WON", 0.0, settled_at + timedelta(minutes=1)
+        )
+        loser = self.add_trade(
+            "LOST", -10.0, settled_at + timedelta(minutes=2)
+        )
+
+        rejected.stake = 0.0
+        self.db.commit()
+
+        curve = get_equity_curve(self.db, starting_bankroll=1000.0)
+
+        self.assertEqual(
+            [row["trade"] for row in curve],
+            [winner.id, loser.id],
+        )
+        self.assertEqual(
+            [row["bankroll"] for row in curve],
+            [1010.0, 1000.0],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
