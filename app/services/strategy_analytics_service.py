@@ -102,7 +102,14 @@ def _max_drawdown(rows: Iterable[StrategyDecision]) -> float:
     equity = 0.0
     peak = 0.0
     max_drawdown = 0.0
-    for row in sorted(rows, key=lambda item: item.created_at):
+    for row in sorted(
+        rows,
+        key=lambda item: (
+            item.settled_at is not None,
+            item.settled_at if item.settled_at is not None else item.created_at,
+            item.id or 0,
+        ),
+    ):
         equity += float(row.profit_loss or 0.0)
         peak = max(peak, equity)
         max_drawdown = max(max_drawdown, peak - equity)

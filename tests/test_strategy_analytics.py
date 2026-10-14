@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -100,6 +101,26 @@ class StrategyAnalyticsTests(unittest.TestCase):
         self.assertEqual(metric.total_staked, 20.0)
         self.assertEqual(metric.profit_loss, 20.0)
         self.assertEqual(metric.roi_percent, 100.0)
+
+    def test_drawdown_follows_settlement_order(self):
+        first = self._record(stake=20)
+        second = self._record(stake=20)
+        third = self._record(stake=20)
+
+        settle_decision(self.db, first.id, 'win')
+        settle_decision(self.db, second.id, 'loss')
+        settle_decision(self.db, third.id, 'loss')
+
+        base = datetime(2026, 1, 1, 12, 0)
+        first.settled_at = base + timedelta(minutes=1)
+        second.settled_at = base
+        third.settled_at = base + timedelta(minutes=2)
+        self.db.commit()
+
+        metric = analytics(self.db)['metrics'][0]
+
+        self.assertEqual(metric.profit_loss, -20.0)
+        self.assertEqual(metric.maximum_drawdown, 20.0)
 
     def test_strategy_analytics_routes_render(self):
         client = TestClient(app)
