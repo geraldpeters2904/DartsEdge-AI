@@ -527,25 +527,9 @@ def build_model_health(
         else 0
     )
 
-    # Only strategy results are sufficiently linked to the decision engine
-    # to influence model health. Portfolio ROI is displayed for context but
-    # must not inflate model health until it is reliably linked to a model
-    # version and settled prediction audit.
-    trading_roi = (
-        strategy_roi
-        if (
-            strategy_roi is not None
-            and settled_strategy_decisions > 0
-        )
-        else None
-    )
-
-    trading_health = _scale(
-        trading_roi,
-        poor=-10.0,
-        strong=15.0,
-        unavailable=50.0,
-    )
+    # Strategy decisions do not currently record prediction-model
+    # provenance. Their ROI is contextual, not model-version evidence.
+    trading_health = 50.0
 
     weighted = (
         accuracy_health * 0.25
@@ -636,26 +620,20 @@ def build_model_health(
                 "Recent accuracy is below the previous window."
             )
 
-    if trading_roi is not None:
-        if trading_roi > 0:
-            positives.append(
-                "Settled strategy ROI is positive."
-            )
-        elif trading_roi < 0:
-            warnings.append(
-                "Settled strategy ROI is negative."
-            )
+    if strategy_roi is not None and settled_strategy_decisions > 0:
+        warnings.append(
+            "Settled strategy ROI is shown for context but is not attributable "
+            "to this prediction-model version."
+        )
     else:
         warnings.append(
             "There are not enough settled strategy results for model-linked ROI."
         )
 
-    if (
-        portfolio_roi is not None
-        and settled_strategy_decisions == 0
-    ):
+    if portfolio_roi is not None:
         warnings.append(
-            "Portfolio ROI is shown for context but is not linked closely enough to this model version to affect health."
+            "Portfolio ROI is shown for context but is not linked closely "
+            "enough to this model version to affect health."
         )
 
     model_version = (

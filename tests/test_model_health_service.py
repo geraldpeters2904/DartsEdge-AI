@@ -215,6 +215,48 @@ class ModelHealthServiceTests(
             report.positive_findings,
         )
 
+    def test_unattributed_strategy_roi_does_not_affect_model_health(self):
+        def report_for_roi(roi):
+            def strategy_data(db):
+                return {
+                    "active_strategy": {"name": "Current", "version": 2},
+                    "metrics": [
+                        SimpleNamespace(
+                            strategy_name="Current",
+                            strategy_version=2,
+                            settled=20,
+                            roi_percent=roi,
+                            profit_loss=roi * 10,
+                            maximum_drawdown=15.0,
+                        ),
+                    ],
+                }
+
+            return build_model_health(
+                object(),
+                performance_builder=performance_builder,
+                trust_builder=trust_builder,
+                strategy_builder=strategy_data,
+                portfolio_builder=portfolio_builder,
+            )
+
+        profitable = report_for_roi(25.0)
+        unprofitable = report_for_roi(-25.0)
+
+        self.assertEqual(profitable.strategy_roi_percent, 25.0)
+        self.assertEqual(unprofitable.strategy_roi_percent, -25.0)
+        self.assertEqual(profitable.trading_health, 50.0)
+        self.assertEqual(unprofitable.trading_health, 50.0)
+        self.assertEqual(profitable.health_score, unprofitable.health_score)
+        self.assertNotIn(
+            "Settled strategy ROI is positive.",
+            profitable.positive_findings,
+        )
+        self.assertIn(
+            "not attributable",
+            " ".join(profitable.warnings).lower(),
+        )
+
     def test_summary_is_json_ready(self):
         payload = model_health_summary(
             self.build()
