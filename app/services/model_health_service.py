@@ -261,6 +261,18 @@ def _top_strategy_metric(
     if not metrics:
         return None
 
+    active = strategy_report.get("active_strategy") or {}
+    active_name = active.get("name")
+    active_version = active.get("version")
+
+    if active_name is not None and active_version is not None:
+        for metric in metrics:
+            if (
+                metric.strategy_name == active_name
+                and metric.strategy_version == active_version
+            ):
+                return metric
+
     return metrics[0]
 
 

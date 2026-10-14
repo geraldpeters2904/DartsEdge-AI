@@ -138,6 +138,40 @@ class ModelHealthServiceTests(
             20.0,
         )
 
+    def test_uses_active_strategy_instead_of_highest_roi(self):
+        def multiple_strategies(db):
+            return {
+                "active_strategy": {"name": "Current", "version": 2},
+                "metrics": [
+                    SimpleNamespace(
+                        strategy_name="Historical",
+                        strategy_version=1,
+                        roi_percent=25.0,
+                        profit_loss=250.0,
+                        maximum_drawdown=10.0,
+                    ),
+                    SimpleNamespace(
+                        strategy_name="Current",
+                        strategy_version=2,
+                        roi_percent=8.0,
+                        profit_loss=80.0,
+                        maximum_drawdown=15.0,
+                    ),
+                ],
+            }
+
+        report = build_model_health(
+            object(),
+            performance_builder=performance_builder,
+            trust_builder=trust_builder,
+            strategy_builder=multiple_strategies,
+            portfolio_builder=portfolio_builder,
+        )
+
+        self.assertEqual(report.strategy_roi_percent, 8.0)
+        self.assertEqual(report.strategy_profit_loss, 80.0)
+        self.assertEqual(report.maximum_drawdown, 15.0)
+
     def test_summary_is_json_ready(self):
         payload = model_health_summary(
             self.build()
