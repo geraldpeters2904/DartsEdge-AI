@@ -349,5 +349,51 @@ class DecisionSafetyOutcomeEvidenceTests(
         )
 
 
+    def test_non_winner_market_does_not_replace_match_winner(self):
+        now = datetime.utcnow()
+
+        self.add_match(50, "Alpha")
+        self.add_snapshot(
+            50,
+            state="NORMAL",
+            selection="Alpha",
+            odds=2.0,
+            stake=10.0,
+            captured_at=now - timedelta(minutes=5),
+        )
+        self.add_snapshot(
+            50,
+            state="HIGH_CAUTION",
+            selection="Bravo",
+            odds=3.0,
+            stake=20.0,
+            captured_at=now,
+        )
+
+        self.db.flush()
+
+        latest = (
+            self.db.query(OpportunitySnapshot)
+            .filter(OpportunitySnapshot.fixture_id == 50)
+            .order_by(OpportunitySnapshot.id.desc())
+            .first()
+        )
+        latest.market = "most_180s"
+        self.db.commit()
+
+        evidence = build_decision_safety_outcome_evidence(self.db)
+        normal = self.metric(evidence, "NORMAL")
+        high = self.metric(evidence, "HIGH_CAUTION")
+
+        self.assertEqual(evidence.total_fixtures, 1)
+        self.assertEqual(normal.snapshots, 1)
+        self.assertEqual(normal.settled, 1)
+        self.assertEqual(normal.wins, 1)
+        self.assertEqual(normal.total_staked, 10.0)
+        self.assertEqual(normal.profit_loss, 10.0)
+        self.assertEqual(normal.roi_percent, 100.0)
+        self.assertEqual(high.snapshots, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

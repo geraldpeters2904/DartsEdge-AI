@@ -61,6 +61,7 @@ def _latest_snapshots(
     """
     rows = (
         db.query(OpportunitySnapshot)
+        .filter(OpportunitySnapshot.market == "match_winner")
         .order_by(
             OpportunitySnapshot.fixture_id.asc(),
             OpportunitySnapshot.captured_at.asc(),
