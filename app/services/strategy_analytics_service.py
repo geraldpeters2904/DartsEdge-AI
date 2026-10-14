@@ -177,7 +177,8 @@ def analytics(db: Session, days: Optional[int] = None) -> dict:
         competitions[key]["decisions"] += 1
         if row.outcome:
             competitions[key]["settled"] += 1
-            competitions[key]["profit_loss"] += float(row.profit_loss or 0)
+            if row.outcome in {"win", "loss"} and float(row.effective_stake or 0) > 0:
+                competitions[key]["profit_loss"] += float(row.profit_loss or 0)
 
     active = get_active_strategy(db)
     active_rules = strategy_rules(active)

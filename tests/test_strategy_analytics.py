@@ -102,6 +102,29 @@ class StrategyAnalyticsTests(unittest.TestCase):
         self.assertEqual(metric.profit_loss, 20.0)
         self.assertEqual(metric.roi_percent, 100.0)
 
+    def test_competition_profit_excludes_void_and_zero_stake(self):
+        winner = self._record(stake=20)
+        voided = self._record(stake=100)
+        zero_stake = self._record(stake=0)
+
+        settle_decision(self.db, winner.id, 'win')
+        settle_decision(self.db, voided.id, 'void')
+        settle_decision(self.db, zero_stake.id, 'win')
+
+        voided.profit_loss = 50.0
+        zero_stake.profit_loss = 30.0
+        self.db.commit()
+
+        report = analytics(self.db)
+        competition = next(
+            item for item in report["competitions"]
+            if item["name"] == "modus"
+        )
+
+        self.assertEqual(competition["decisions"], 3)
+        self.assertEqual(competition["settled"], 3)
+        self.assertEqual(competition["profit_loss"], 20.0)
+
     def test_drawdown_follows_settlement_order(self):
         first = self._record(stake=20)
         second = self._record(stake=20)
