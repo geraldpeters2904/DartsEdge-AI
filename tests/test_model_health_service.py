@@ -172,6 +172,49 @@ class ModelHealthServiceTests(
         self.assertEqual(report.strategy_profit_loss, 80.0)
         self.assertEqual(report.maximum_drawdown, 15.0)
 
+    def test_historical_settlements_do_not_qualify_active_strategy_roi(self):
+        def mixed_strategy_report(db):
+            return {
+                "active_strategy": {"name": "Current", "version": 2},
+                "settled_decisions": 50,
+                "metrics": [
+                    SimpleNamespace(
+                        strategy_name="Historical",
+                        strategy_version=1,
+                        settled=50,
+                        roi_percent=25.0,
+                        profit_loss=250.0,
+                        maximum_drawdown=10.0,
+                    ),
+                    SimpleNamespace(
+                        strategy_name="Current",
+                        strategy_version=2,
+                        settled=0,
+                        roi_percent=8.0,
+                        profit_loss=80.0,
+                        maximum_drawdown=15.0,
+                    ),
+                ],
+            }
+
+        report = build_model_health(
+            object(),
+            performance_builder=performance_builder,
+            trust_builder=trust_builder,
+            strategy_builder=mixed_strategy_report,
+            portfolio_builder=portfolio_builder,
+        )
+
+        self.assertEqual(report.trading_health, 50.0)
+        self.assertIn(
+            "There are not enough settled strategy results",
+            " ".join(report.warnings),
+        )
+        self.assertNotIn(
+            "Settled strategy ROI is positive.",
+            report.positive_findings,
+        )
+
     def test_summary_is_json_ready(self):
         payload = model_health_summary(
             self.build()

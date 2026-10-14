@@ -522,11 +522,9 @@ def build_model_health(
     )
 
     settled_strategy_decisions = int(
-        strategy.get(
-            "settled_decisions",
-            0,
-        )
-        or 0
+        getattr(strategy_metric, "settled", 0)
+        if strategy_metric is not None
+        else 0
     )
 
     # Only strategy results are sufficiently linked to the decision engine
