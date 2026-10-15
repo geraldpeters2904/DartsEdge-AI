@@ -6,7 +6,6 @@ from typing import Dict, Iterable, List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.prediction_audit import PredictionAudit
-from app.services.shadow_comparison_service import latest_outcomes
 
 
 def _safe_rate(numerator: float, denominator: int) -> Optional[float]:
@@ -45,8 +44,33 @@ def _evaluate(rows: Iterable[dict], probability_key: str) -> dict:
 
 
 def _settled_rows(db: Session, limit: int = 5000) -> List[dict]:
-    outcomes = latest_outcomes(db)
     audits = db.query(PredictionAudit).order_by(PredictionAudit.created_at.desc()).limit(limit).all()
+    audit_ids = [audit.id for audit in audits]
+    outcomes = {}
+    if audit_ids:
+        from app.models.prediction_audit_outcome import PredictionAuditOutcome
+
+        for start in range(0, len(audit_ids), 500):
+            batch = audit_ids[start:start + 500]
+            outcome_rows = (
+                db.query(PredictionAuditOutcome)
+                .filter(PredictionAuditOutcome.audit_id.in_(batch))
+                .order_by(
+                    PredictionAuditOutcome.recorded_at.asc(),
+                    PredictionAuditOutcome.id.asc(),
+                )
+                .all()
+            )
+            for outcome in outcome_rows:
+                previous = outcomes.get(outcome.audit_id)
+                if previous is None or (
+                    outcome.recorded_at,
+                    outcome.id,
+                ) > (
+                    previous.recorded_at,
+                    previous.id,
+                ):
+                    outcomes[outcome.audit_id] = outcome
     rows = []
     for audit in audits:
         outcome = outcomes.get(audit.id)

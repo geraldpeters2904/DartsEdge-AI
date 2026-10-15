@@ -54,5 +54,44 @@ class ModelPerformanceLabTests(unittest.TestCase):
         self.assertTrue(build_model_performance_lab(self.db)['sample_ready'])
 
 
+    def test_outcome_query_is_limited_to_selected_audits(self):
+        from sqlalchemy import event
+        from app.models.prediction_audit_outcome import PredictionAuditOutcome
+
+        self.add_audit(1, .6, .7, 'A')
+        self.add_audit(2, .6, .7, 'B')
+
+        audit = self.db.query(PredictionAudit).filter(
+            PredictionAudit.audit_uuid == '00000000-0000-0000-0000-000000000001'
+        ).one()
+
+        self.db.add(PredictionAuditOutcome(
+            audit_id=audit.id,
+            actual_winner='B',
+            source='correction',
+        ))
+        self.db.commit()
+
+        statements = []
+        engine = self.db.get_bind()
+
+        def capture_sql(conn, cursor, statement, parameters, context, executemany):
+            if 'FROM prediction_audit_outcomes' in statement:
+                statements.append(statement.lower())
+
+        event.listen(engine, 'before_cursor_execute', capture_sql)
+        try:
+            lab = build_model_performance_lab(self.db)
+        finally:
+            event.remove(engine, 'before_cursor_execute', capture_sql)
+
+        self.assertEqual(lab['settled_count'], 2)
+        self.assertTrue(statements, 'Expected an outcome query')
+        self.assertTrue(
+            all('audit_id' in statement and ' in ' in statement for statement in statements),
+            'Outcome queries must be restricted to selected audit IDs',
+        )
+
+
 if __name__ == '__main__':
     unittest.main()
