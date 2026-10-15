@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from app.models.paper_trade import PaperTrade
 from app.services.ai_coach_service import build_ai_coach_data
 from app.services.dashboard_service import build_dashboard_data
+from app.services.model_health_service import build_model_health, model_health_summary
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.strategy_service import get_active_strategy, strategy_summary
@@ -147,6 +148,11 @@ def build_mission_control_data(db) -> Dict[str, Any]:
         _status("Portfolio health", portfolio_health["health_score"], 80, 60),
     ]
 
+    try:
+        prediction_model_health = model_health_summary(build_model_health(db))
+    except Exception:
+        prediction_model_health = None
+
     return {
         **dashboard,
         "mission_control_date": date.today(),
@@ -156,6 +162,7 @@ def build_mission_control_data(db) -> Dict[str, Any]:
         "exposure_percent": portfolio_health["exposure_percent"],
         "portfolio_health": portfolio_health,
         "model_health": model_health,
+        "prediction_model_health": prediction_model_health,
         "alerts": _build_alerts(dashboard),
         "ai_coach": coach_data["primary"],
         "coach_recommendation_count": coach_data["recommendation_count"],

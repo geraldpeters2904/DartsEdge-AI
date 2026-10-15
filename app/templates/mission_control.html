@@ -108,7 +108,36 @@
         </article>
 
         <article class="card mission-panel">
-            <div class="section-kicker">Model health</div>
+            <div class="section-kicker">Prediction Model Health</div>
+            <h2>Model reliability</h2>
+            {% if prediction_model_health %}
+                <p>{{ prediction_model_health.model_name }} — {{ prediction_model_health.model_version }}</p>
+                <div class="mission-health-list">
+                    <div class="mission-health-row">
+                        <span>Health score</span>
+                        <strong>{{ prediction_model_health.health_score }}/100</strong>
+                    </div>
+                    <div class="mission-health-row">
+                        <span>Health grade</span>
+                        <strong>{{ prediction_model_health.health_grade }}</strong>
+                    </div>
+                </div>
+                <p><strong>Recommendation:</strong> {{ prediction_model_health.recommendation }}</p>
+                {% if prediction_model_health.warnings %}
+                    <h3>Warnings</h3>
+                    <ul>
+                        {% for warning in prediction_model_health.warnings %}
+                            <li>{{ warning }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% else %}
+                <p>Model Health unavailable. The remaining Mission Control indicators are still available.</p>
+            {% endif %}
+        </article>
+
+        <article class="card mission-panel">
+            <div class="section-kicker">System operating status</div>
             <h2>Operating status</h2>
             <div class="mission-health-list">
                 {% for item in model_health %}
