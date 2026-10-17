@@ -127,9 +127,10 @@ def build_live_unified_manager(
 
             finally:
 
-                db.close()
-
-                capture_service.close()
+                try:
+                    db.close()
+                finally:
+                    capture_service.close()
 
     return UnifiedSynchronisationManager(
         current_series_sync=current_series,

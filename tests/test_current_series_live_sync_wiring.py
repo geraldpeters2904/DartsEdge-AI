@@ -211,6 +211,36 @@ class CurrentSeriesLiveSyncWiringTests(unittest.TestCase):
         capture_service.close.assert_called_once()
 
 
+
+    def test_browser_closes_when_database_close_fails(self):
+        capture_once = MagicMock(
+            side_effect=TimeoutError("MODUS markets unavailable.")
+        )
+        capture_service = MagicMock()
+        fake_db = MagicMock()
+        fake_db.close.side_effect = RuntimeError("Database close failed.")
+
+        with patch(
+            "app.services.live_unified_sync_builder."
+            "build_paddy_power_capture_once",
+            return_value=(capture_once, capture_service),
+        ):
+            with patch(
+                "app.db.SessionLocal",
+                return_value=fake_db,
+            ):
+                manager = build_live_unified_manager(
+                    poll_seconds=1,
+                )
+
+                with self.assertRaisesRegex(
+                    RuntimeError, "Database close failed"
+                ):
+                    manager.bookmaker_capture()
+
+        fake_db.close.assert_called_once()
+        capture_service.close.assert_called_once()
+
     def test_manager_builds_with_current_series_sync(self):
         manager = build_live_unified_manager(poll_seconds=1)
         self.assertIsNotNone(manager)
