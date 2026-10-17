@@ -80,15 +80,18 @@ class PaddyPowerCaptureService:
 
         self.browser_session.wait_for(
             lambda: (
-                page_ready(
-                    self.browser_session
-                    .html()
+                any(
+                    marker in self.browser_session.html().casefold()
+                    for marker in self.CHALLENGE_MARKERS
                 )
-                if page_ready
-                else bool(
-                    self.browser_session
-                    .html()
-                    .strip()
+                or (
+                    page_ready(
+                        self.browser_session.html()
+                    )
+                    if page_ready
+                    else bool(
+                        self.browser_session.html().strip()
+                    )
                 )
             ),
             timeout_seconds=(

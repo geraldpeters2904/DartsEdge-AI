@@ -368,5 +368,32 @@ class BookmakerCaptureTests(
         )
 
 
+    def test_challenge_during_page_readiness(self):
+        db = FakeDb()
+        browser = FakeBrowser(
+            "<html>Verify you are human</html>"
+        )
+        service = PaddyPowerCaptureService(
+            browser_session=browser
+        )
+
+        report = service.capture(
+            db,
+            source_url="https://example.test/darts",
+            extractor=FakeExtractor(),
+            page_ready=lambda html: (
+                "MODUS Super Series" in html
+            ),
+        )
+
+        self.assertTrue(report.challenge_detected)
+        self.assertEqual(report.stored_prices, 0)
+        self.assertEqual(len(db.rows), 0)
+        self.assertIn(
+            "challenge",
+            report.message.casefold(),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
