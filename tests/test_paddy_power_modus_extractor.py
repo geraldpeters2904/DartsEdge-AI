@@ -246,5 +246,33 @@ class PaddyPowerModusExtractorTests(
         )
 
 
+    def test_rejects_non_darts_event_urls(self):
+        from app.services.paddy_power_modus_extractor import (
+            discover_fixture_event_url,
+        )
+
+        unsafe_urls = (
+            "/football/event/steve-west-v-andreas-harrysson",
+            "https://example.com/darts/event/steve-west-v-andreas-harrysson",
+            "https://www.paddypower.com.evil.example/darts/event/steve-west-v-andreas-harrysson",
+        )
+
+        for href in unsafe_urls:
+            with self.subTest(href=href):
+                html = (
+                    f'<a href="{href}">'
+                    '<div>Steve West</div>'
+                    '<div>Andreas Harrysson</div>'
+                    '</a>'
+                )
+
+                self.assertIsNone(
+                    discover_fixture_event_url(
+                        html,
+                        self.fixture(),
+                    )
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 from dataclasses import dataclass
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -177,10 +177,22 @@ def discover_fixture_event_url(
             player_a in normalised_tokens
             and player_b in normalised_tokens
         ):
-            return urljoin(
-                "https:" + "//www.paddypower.com",
+            event_url = urljoin(
+                "https://www.paddypower.com",
                 href,
             )
+
+            parsed = urlsplit(event_url)
+
+            if (
+                parsed.scheme == "https"
+                and parsed.hostname == "www.paddypower.com"
+                and parsed.port is None
+                and parsed.username is None
+                and parsed.password is None
+                and parsed.path.startswith("/darts/event/")
+            ):
+                return event_url
 
     return None
 
