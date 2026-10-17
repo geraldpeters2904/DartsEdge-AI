@@ -87,6 +87,34 @@ class ModelHealthServiceTests(
             ),
         )
 
+
+    def test_cached_trust_report_avoids_historical_recalculation(self):
+        cached_report = trust_builder(
+            object(),
+            model_name="Player Intelligence",
+            offset=500,
+            limit=3000,
+        )
+        calls = []
+
+        def cached_trust_builder(db, *, model_name, offset, limit):
+            calls.append((model_name, offset, limit))
+            return cached_report
+
+        report = build_model_health(
+            object(),
+            performance_builder=performance_builder,
+            trust_builder=cached_trust_builder,
+            strategy_builder=strategy_builder,
+            portfolio_builder=portfolio_builder,
+        )
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1:], (500, 3000))
+        self.assertEqual(report.trust_score, 74)
+        self.assertEqual(report.trust_grade, "High")
+        self.assertEqual(report.model_version, "transparent-v3.3")
+
     def test_builds_health_report(self):
         report = self.build()
 

@@ -166,14 +166,27 @@ class ModelSegmentLaboratory:
             include_records=True,
         )
 
+        return self._summarise_validation(
+            registered.name,
+            registered.version,
+            report,
+        )
+
+    @classmethod
+    def _summarise_validation(
+        cls,
+        model_name,
+        model_version,
+        report,
+    ) -> ModelSegmentSummary:
         records = report.records
 
         return ModelSegmentSummary(
-            model_name=registered.name,
-            model_version=registered.version,
+            model_name=model_name,
+            model_version=model_version,
             matches_evaluated=report.matches_evaluated,
             favourite_bands=tuple(
-                self._metric(
+                cls._metric(
                     records,
                     segment_type="favourite",
                     segment_label=label,
@@ -184,10 +197,10 @@ class ModelSegmentLaboratory:
                     ),
                 )
                 for label, lower, upper
-                in self.FAVOURITE_BANDS
+                in cls.FAVOURITE_BANDS
             ),
             confidence_bands=tuple(
-                self._metric(
+                cls._metric(
                     records,
                     segment_type="confidence",
                     segment_label=label,
@@ -196,10 +209,10 @@ class ModelSegmentLaboratory:
                     ),
                 )
                 for label, lower, upper
-                in self.CONFIDENCE_BANDS
+                in cls.CONFIDENCE_BANDS
             ),
             stages=tuple(
-                self._metric(
+                cls._metric(
                     records,
                     segment_type="stage",
                     segment_label=stage,

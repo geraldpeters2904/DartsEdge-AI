@@ -1229,6 +1229,90 @@ class Total180ValueRowsTests(unittest.TestCase):
 
 class ValueBoardServiceTests(unittest.TestCase):
     @patch(
+        "app.services.value_board_service.get_scheduled_fixtures"
+    )
+    @patch(
+        "app.services.value_board_service.build_prediction_context"
+    )
+    @patch(
+        "app.services.value_board_service.build_portfolio_health",
+        return_value={"exposure_percent": 0.0},
+    )
+    @patch("app.services.value_board_service.get_settings")
+    def test_failed_prediction_does_not_populate_context_cache(
+        self,
+        get_settings,
+        _portfolio,
+        build_prediction_context,
+        get_scheduled_fixtures,
+    ):
+        get_settings.return_value = SimpleNamespace()
+        get_scheduled_fixtures.return_value = [
+            SimpleNamespace(id=123)
+        ]
+        build_prediction_context.side_effect = LookupError(
+            "Prediction unavailable"
+        )
+
+        cache = {}
+        rows = build_value_board(
+            MagicMock(),
+            prediction_contexts=cache,
+        )
+
+        self.assertEqual(rows, [])
+        self.assertEqual(cache, {})
+        build_prediction_context.assert_called_once()
+
+    @patch(
+        "app.services.value_board_service.get_scheduled_fixtures"
+    )
+    @patch(
+        "app.services.value_board_service.build_prediction_context"
+    )
+    @patch(
+        "app.services.value_board_service.build_portfolio_health",
+        return_value={"exposure_percent": 0.0},
+    )
+    @patch("app.services.value_board_service.get_settings")
+    def test_successful_prediction_populates_context_cache(
+        self,
+        get_settings,
+        _portfolio,
+        build_prediction_context,
+        get_scheduled_fixtures,
+    ):
+        fixture = SimpleNamespace(
+            id=123,
+            date=None,
+            tournament="MODUS Super Series",
+        )
+        context = SimpleNamespace(model_name="transparent-v3.5")
+
+        get_settings.return_value = SimpleNamespace()
+        get_scheduled_fixtures.return_value = [fixture]
+        build_prediction_context.return_value = context
+
+        cache = {}
+
+        with patch(
+            "app.services.value_board_service.context_to_opportunity",
+            side_effect=RuntimeError("Stop after context creation"),
+        ):
+            with self.assertRaises(RuntimeError):
+                build_value_board(
+                    MagicMock(),
+                    prediction_contexts=cache,
+                )
+
+        build_prediction_context.assert_called_once_with(
+            MagicMock.ANY if hasattr(MagicMock, "ANY") else
+            build_prediction_context.call_args.args[0],
+            fixture.id,
+        )
+        self.assertIs(cache[fixture.id], context)
+
+    @patch(
         "app.services.value_board_service.context_to_opportunity"
     )
     @patch(
@@ -1453,7 +1537,11 @@ class ValueBoardServiceTests(unittest.TestCase):
             ),
         ]
 
-        rows = build_value_board(db)
+        with patch(
+            "app.services.value_board_service.get_active_strategy",
+            return_value=SimpleNamespace(),
+        ):
+            rows = build_value_board(db)
 
         self.assertEqual(
             [row["fixture_id"] for row in rows],

@@ -385,49 +385,96 @@ def build_model_trust_report(
         for (match_id,) in selected_ids
     ]
 
-    performance = (
-        performance_lab.evaluate_model(
+    if (
+        type(performance_lab) is ModelPerformanceLaboratory
+        and type(segment_lab) is ModelSegmentLaboratory
+    ):
+        from app.services.advanced_historical_snapshot_engine import (
+            AdvancedHistoricalSnapshotEngine,
+        )
+        from app.services.prediction_validation_engine import (
+            PredictionValidationEngine,
+        )
+
+        snapshot_engine = (
+            AdvancedHistoricalSnapshotEngine()
+            if registered.version in {
+                "transparent-v2",
+                "transparent-v3",
+                "transparent-v3.1",
+                "transparent-v3.2",
+                "transparent-v3.3",
+                "transparent-v3.4",
+                "transparent-v3.5",
+            }
+            else performance_lab.snapshot_engine
+        )
+
+        validation_report = PredictionValidationEngine(
+            snapshot_engine=snapshot_engine,
+            prediction_engine=registered.model,
+        ).validate_matches(
             db,
-            model_name=model_name,
             match_ids=match_ids,
-            competition_code=(
-                competition_code
-            ),
+            competition_code=competition_code,
+            include_records=True,
         )
-    )
 
-    segments = (
-        segment_lab.compare(
-            db,
-            model_names=(
-                model_name,
-            ),
-            offset=max(
-                int(offset),
-                0,
-            ),
-            limit=max(
-                int(limit),
-                1,
-            ),
-            competition_code=(
-                competition_code
-            ),
+        performance = performance_lab._summarise(
+            registered.name,
+            registered.version,
+            validation_report,
         )
-    )
 
-    segment_summary = (
-        segments.model_summaries[0]
-        if segments.model_summaries
-        else ModelSegmentSummary(
-            model_name=registered.name,
-            model_version=registered.version,
-            matches_evaluated=0,
-            favourite_bands=(),
-            confidence_bands=(),
-            stages=(),
+        segment_summary = segment_lab._summarise_validation(
+            registered.name,
+            registered.version,
+            validation_report,
         )
-    )
+    else:
+        performance = (
+            performance_lab.evaluate_model(
+                db,
+                model_name=model_name,
+                match_ids=match_ids,
+                competition_code=(
+                    competition_code
+                ),
+            )
+        )
+
+        segments = (
+            segment_lab.compare(
+                db,
+                model_names=(
+                    model_name,
+                ),
+                offset=max(
+                    int(offset),
+                    0,
+                ),
+                limit=max(
+                    int(limit),
+                    1,
+                ),
+                competition_code=(
+                    competition_code
+                ),
+            )
+        )
+
+        segment_summary = (
+            segments.model_summaries[0]
+            if segments.model_summaries
+            else ModelSegmentSummary(
+                model_name=registered.name,
+                model_version=registered.version,
+                matches_evaluated=0,
+                favourite_bands=(),
+                confidence_bands=(),
+                stages=(),
+            )
+        )
 
     accuracy_score = _scale(
         performance.accuracy,

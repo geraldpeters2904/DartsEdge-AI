@@ -207,8 +207,10 @@ def decide(
     competition: str = "",
     sample_size: int = 0,
     portfolio_exposure_percent: Optional[float] = None,
+    strategy=None,
 ) -> DecisionEngineResult:
-    strategy = get_active_strategy(db)
+    if strategy is None:
+        strategy = get_active_strategy(db)
     rules = strategy_rules(strategy)
     evaluation = evaluate_strategy(
         strategy,

@@ -222,11 +222,22 @@ def _data_advice(dashboard: Dict[str, Any]) -> List[Dict[str, Any]]:
     return advice
 
 
-def build_ai_coach_data(db) -> Dict[str, Any]:
-    dashboard = build_dashboard_data(db)
-    portfolio = build_portfolio_health(db)
-    opportunities = build_ranked_opportunities(db, limit=20)
-    active_strategy = strategy_summary(get_active_strategy(db))
+def build_ai_coach_data(
+    db,
+    *,
+    dashboard=None,
+    portfolio=None,
+    opportunities=None,
+    active_strategy=None,
+) -> Dict[str, Any]:
+    if dashboard is None:
+        dashboard = build_dashboard_data(db)
+    if portfolio is None:
+        portfolio = build_portfolio_health(db)
+    if opportunities is None:
+        opportunities = build_ranked_opportunities(db, limit=20)
+    if active_strategy is None:
+        active_strategy = strategy_summary(get_active_strategy(db))
     strategy_advice = [_advice(
         priority=55 if active_strategy["enforcement_mode"] == "active" else 20,
         tone="warning" if active_strategy["enforcement_mode"] == "active" else "neutral",

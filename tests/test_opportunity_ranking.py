@@ -62,5 +62,41 @@ class OpportunityRankingTests(unittest.TestCase):
         self.assertEqual([row["rank"] for row in ranked], [1, 2])
 
 
+    def test_forwards_prediction_contexts_to_best_bets(self):
+        from unittest.mock import patch
+        from app.services.opportunity_ranking_service import (
+            build_ranked_opportunities,
+        )
+
+        contexts = {123: object()}
+        candidates = [
+            {
+                "selection": "Player A",
+                "probability": 70,
+                "stars": 4,
+                "confidence": "Good",
+            }
+        ]
+
+        with patch(
+            "app.services.opportunity_ranking_service.build_best_bets",
+            return_value=candidates,
+        ) as best_bets_mock:
+            result = build_ranked_opportunities(
+                object(),
+                limit=5,
+                prediction_contexts=contexts,
+            )
+
+        best_bets_mock.assert_called_once_with(
+            best_bets_mock.call_args.args[0],
+            limit=50,
+            prediction_contexts=contexts,
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["selection"], "Player A")
+        self.assertEqual(result[0]["rank"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -162,6 +162,18 @@ def rank_opportunities(
     return ranked
 
 
-def build_ranked_opportunities(db, limit: int = 20) -> List[Dict[str, Any]]:
-    candidates = build_best_bets(db, limit=max(limit, 50))
+def build_ranked_opportunities(
+    db,
+    limit: int = 20,
+    *,
+    prediction_contexts=None,
+) -> List[Dict[str, Any]]:
+    if prediction_contexts is None:
+        candidates = build_best_bets(db, limit=max(limit, 50))
+    else:
+        candidates = build_best_bets(
+            db,
+            limit=max(limit, 50),
+            prediction_contexts=prediction_contexts,
+        )
     return rank_opportunities(candidates, limit=limit)

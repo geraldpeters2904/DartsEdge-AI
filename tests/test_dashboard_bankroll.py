@@ -46,6 +46,32 @@ class DashboardBankrollTests(unittest.TestCase):
         self.assertEqual(result["equity_curve"], [])
 
 
+    @patch(
+        "app.services.dashboard_service.get_data_quality",
+        return_value={"health_score": 100},
+    )
+    @patch(
+        "app.services.dashboard_service.build_value_board",
+        return_value=[],
+    )
+    def test_dashboard_forwards_prediction_contexts(
+        self,
+        value_board_mock,
+        _data_quality,
+    ):
+        contexts = {}
+        result = build_dashboard_data(
+            self.db,
+            prediction_contexts=contexts,
+        )
+
+        value_board_mock.assert_called_once_with(
+            self.db,
+            prediction_contexts=contexts,
+        )
+        self.assertEqual(result["starting_bankroll"], 1234.0)
+        self.assertEqual(result["best_bets"], [])
+
     def test_void_trade_excluded_from_roi_turnover(self):
         from app.models.paper_trade import PaperTrade
         from app.services.paper_trade_service import get_portfolio_summary

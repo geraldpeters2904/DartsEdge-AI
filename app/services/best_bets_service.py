@@ -108,6 +108,7 @@ def build_best_bets(
     model_registry: Optional[
         PredictionModelRegistry
     ] = None,
+    prediction_contexts=None,
 ):
     """
     Build match-winner opportunities using the shared Prediction Context.
@@ -149,13 +150,27 @@ def build_best_bets(
 
     for match in scheduled_matches:
         try:
-            context = build_prediction_context(
-                db,
-                match.id,
-                model_name=model_name,
-                snapshot_engine=snapshots,
-                model_registry=registry,
-            )
+            context = None
+            if (
+                prediction_contexts is not None
+                and snapshot_engine is None
+                and model_registry is None
+            ):
+                candidate = prediction_contexts.get(match.id)
+                if (
+                    candidate is not None
+                    and candidate.model_name == model_name
+                ):
+                    context = candidate
+
+            if context is None:
+                context = build_prediction_context(
+                    db,
+                    match.id,
+                    model_name=model_name,
+                    snapshot_engine=snapshots,
+                    model_registry=registry,
+                )
         except (
             LookupError,
             RuntimeError,

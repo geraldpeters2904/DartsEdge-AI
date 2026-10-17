@@ -34,7 +34,7 @@ def _star_rating(probability):
         return 1
 
 
-def build_dashboard_data(db):
+def build_dashboard_data(db, *, prediction_contexts=None):
     today = date.today()
 
     player_count = db.query(Player).count()
@@ -134,7 +134,13 @@ def build_dashboard_data(db):
     best_bets = []
 
     try:
-        value_rows = build_value_board(db)
+        if prediction_contexts is None:
+            value_rows = build_value_board(db)
+        else:
+            value_rows = build_value_board(
+                db,
+                prediction_contexts=prediction_contexts,
+            )
 
         for row in value_rows:
             probability = round(

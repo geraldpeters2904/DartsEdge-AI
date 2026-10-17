@@ -2,6 +2,7 @@ from datetime import date
 from typing import Any, Dict, List
 
 from app.models.paper_trade import PaperTrade
+from app.services.model_trust_monitor_service import model_trust_monitor
 from app.services.ai_coach_service import build_ai_coach_data
 from app.services.dashboard_service import build_dashboard_data
 from app.services.model_health_service import build_model_health, model_health_summary
@@ -136,11 +137,27 @@ def _build_ai_coach(dashboard: Dict[str, Any]) -> Dict[str, str]:
 
 
 def build_mission_control_data(db) -> Dict[str, Any]:
-    dashboard = build_dashboard_data(db)
-    ranked_opportunities = build_ranked_opportunities(db, limit=5)
+    prediction_contexts = {}
+
+    dashboard = build_dashboard_data(
+        db,
+        prediction_contexts=prediction_contexts,
+    )
+    all_opportunities = build_ranked_opportunities(
+        db,
+        limit=20,
+        prediction_contexts=prediction_contexts,
+    )
+    ranked_opportunities = all_opportunities[:5]
     portfolio_health = build_portfolio_health(db)
-    coach_data = build_ai_coach_data(db)
     active_strategy = strategy_summary(get_active_strategy(db))
+    coach_data = build_ai_coach_data(
+        db,
+        dashboard=dashboard,
+        portfolio=portfolio_health,
+        opportunities=all_opportunities,
+        active_strategy=active_strategy,
+    )
 
     model_health = [
         _status("Winner accuracy", dashboard["winner_accuracy"], 65, 55),
@@ -149,7 +166,14 @@ def build_mission_control_data(db) -> Dict[str, Any]:
     ]
 
     try:
-        prediction_model_health = model_health_summary(build_model_health(db))
+        prediction_model_health = model_health_summary(
+            build_model_health(
+                db,
+                trust_builder=lambda db, *, model_name, offset, limit: (
+                    model_trust_monitor.latest_report()
+                ),
+            )
+        )
     except Exception:
         prediction_model_health = None
 

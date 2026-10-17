@@ -15,6 +15,7 @@ from app.services.expected_value_service import assess_value
 from app.services.decision_engine_service import decide
 from app.services.recommendation_signing_service import sign_recommendation
 from app.services.settings_service import get_settings
+from app.services.strategy_service import get_active_strategy
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.match_engine import leg_win_probability
 from app.services.leg_market_calibration_service import (
@@ -53,6 +54,7 @@ def _decision_enrichment(
     portfolio,
     confidence_percent,
     sample_size,
+    strategy=None,
 ):
     market_odds = row.get("market_odds")
     market_code = _VALUE_BOARD_MARKET_CODES.get(
@@ -110,6 +112,7 @@ def _decision_enrichment(
         portfolio_exposure_percent=portfolio.get(
             "exposure_percent"
         ),
+        strategy=strategy,
     )
 
     return {
@@ -1475,9 +1478,10 @@ def _player_total_180_rows(db, fixture, player_name):
     return rows
 
 
-def build_value_board(db):
+def build_value_board(db, *, prediction_contexts=None):
     settings = get_settings(db)
     portfolio = build_portfolio_health(db)
+    strategy = get_active_strategy(db)
     fixtures = get_scheduled_fixtures(db)
     rows = []
 
@@ -1488,6 +1492,8 @@ def build_value_board(db):
                 db,
                 fixture.id,
             )
+            if prediction_contexts is not None:
+                prediction_contexts[fixture.id] = context
         except (
             LookupError,
             RuntimeError,
@@ -1611,6 +1617,7 @@ def build_value_board(db):
                 row=row,
                 settings=settings,
                 portfolio=portfolio,
+                strategy=strategy,
                 confidence_percent=row[
                     "model_confidence"
                 ],
@@ -1723,6 +1730,7 @@ def build_value_board(db):
                     row=secondary_row,
                     settings=settings,
                     portfolio=portfolio,
+                    strategy=strategy,
                     confidence_percent=confidence,
                     sample_size=sample_size,
                 )

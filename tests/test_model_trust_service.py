@@ -253,3 +253,71 @@ class ModelTrustServiceTests(
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModelTrustSharedValidationTests(unittest.TestCase):
+    def test_real_laboratories_validate_historical_matches_once(self):
+        from unittest.mock import patch
+
+        from app.services.model_performance_laboratory import (
+            ModelPerformanceLaboratory,
+        )
+        from app.services.model_segment_laboratory import (
+            ModelSegmentLaboratory,
+        )
+
+        registered = SimpleNamespace(
+            name="transparent",
+            version="transparent-v3.5",
+            model=object(),
+        )
+        registry = SimpleNamespace(
+            get_registered=lambda name: registered,
+        )
+
+        validation_report = SimpleNamespace(
+            model_version="transparent-v3.5",
+            matches_considered=0,
+            matches_evaluated=0,
+            matches_skipped=0,
+            correct_predictions=0,
+            accuracy=None,
+            average_brier_score=None,
+            average_log_loss=None,
+            calibration=(),
+            confidence_bands=(),
+            accuracy_by_tournament={},
+            accuracy_by_stage={},
+            records=(),
+        )
+
+        performance_lab = ModelPerformanceLaboratory(
+            model_registry=registry
+        )
+        segment_lab = ModelSegmentLaboratory(
+            model_registry=registry
+        )
+
+        with patch(
+            "app.services.prediction_validation_engine."
+            "PredictionValidationEngine.validate_matches",
+            return_value=validation_report,
+        ) as validate, patch.object(
+            ModelSegmentLaboratory,
+            "_select_match_ids",
+            return_value=[],
+        ):
+            build_model_trust_report(
+                FakeDb(),
+                model_name="transparent",
+                limit=20,
+                model_registry=registry,
+                performance_laboratory=performance_lab,
+                segment_laboratory=segment_lab,
+            )
+
+        self.assertEqual(
+            validate.call_count,
+            1,
+            "Model Trust should reuse one historical validation report.",
+        )

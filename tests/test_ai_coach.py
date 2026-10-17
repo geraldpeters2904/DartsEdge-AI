@@ -130,5 +130,58 @@ class AiCoachServiceTests(unittest.TestCase):
         self.assertTrue(any(item["category"] == "Data quality" and item["tone"] == "risk" for item in result["recommendations"]))
 
 
+    def test_precomputed_inputs_preserve_recommendations_without_rebuilding(self):
+        dashboard = {
+            "database_health": 90,
+            "results_awaiting": [],
+            "prediction_count": 30,
+        }
+        portfolio = {
+            "health_score": 90,
+            "open_exposure": 0,
+            "exposure_percent": 0,
+            "bankroll": 1000,
+            "risk_level": "good",
+            "open_positions": 0,
+            "largest_position_percent": 0,
+        }
+        opportunities = []
+        strategy = {
+            "name": "Default",
+            "enforcement_mode": "shadow",
+            "decision_rules_enabled": False,
+        }
+
+        with (
+            patch("app.services.ai_coach_service.build_dashboard_data",
+                  return_value=dashboard) as dashboard_mock,
+            patch("app.services.ai_coach_service.build_portfolio_health",
+                  return_value=portfolio) as portfolio_mock,
+            patch("app.services.ai_coach_service.build_ranked_opportunities",
+                  return_value=opportunities) as opportunities_mock,
+            patch("app.services.ai_coach_service.get_active_strategy",
+                  return_value=object()),
+            patch("app.services.ai_coach_service.strategy_summary",
+                  return_value=strategy),
+        ):
+            expected = build_ai_coach_data(self.db)
+            dashboard_mock.reset_mock()
+            portfolio_mock.reset_mock()
+            opportunities_mock.reset_mock()
+
+            actual = build_ai_coach_data(
+                self.db,
+                dashboard=dashboard,
+                portfolio=portfolio,
+                opportunities=opportunities,
+                active_strategy=strategy,
+            )
+
+            self.assertEqual(actual, expected)
+            dashboard_mock.assert_not_called()
+            portfolio_mock.assert_not_called()
+            opportunities_mock.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

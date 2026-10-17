@@ -267,5 +267,48 @@ class BestBetsServiceV33Tests(
         )
 
 
+    def test_reuses_supplied_prediction_context(self):
+        from app.services.prediction_context_service import (
+            build_prediction_context,
+        )
+
+        match = SimpleNamespace(
+            id=123,
+            date=date(2026, 8, 6),
+            tournament="MODUS",
+            player_a="Player A",
+            player_b="Player B",
+            status="scheduled",
+        )
+        db = FakeDb([match])
+
+        context = build_prediction_context(
+            db,
+            match.id,
+            snapshot_engine=FakeSnapshotEngine(),
+            model_registry=FakeRegistry(),
+        )
+        contexts = {match.id: context}
+
+        with patch(
+            "app.services.best_bets_service.build_prediction_context",
+            side_effect=AssertionError(
+                "Prediction context was recalculated"
+            ),
+        ):
+            result = build_best_bets(
+                db,
+                limit=5,
+                prediction_contexts=contexts,
+            )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["selection"], "Player A")
+        self.assertEqual(result[0]["probability"], 62.4)
+        self.assertEqual(result[0]["confidence"], "Good")
+        self.assertEqual(result[0]["stars"], 4)
+        self.assertEqual(result[0]["fair_odds"], 1.6)
+
+
 if __name__ == "__main__":
     unittest.main()

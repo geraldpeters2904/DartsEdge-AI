@@ -51,51 +51,47 @@ def get_data_quality(db):
         .count()
     )
 
-    missing_players = 0
+    # Preserve the original per-match missing-player semantics
+    # while avoiding two database lookups for every scheduled match.
+    player_names = {
+        name for (name,) in db.query(Player.name).all()
+    }
 
     scheduled_matches = (
-        db.query(Match)
+        db.query(Match.player_a, Match.player_b)
         .filter(Match.status == "scheduled")
         .all()
     )
 
-    for match in scheduled_matches:
-
-        a = (
-            db.query(Player)
-            .filter(Player.name == match.player_a)
-            .first()
-        )
-
-        b = (
-            db.query(Player)
-            .filter(Player.name == match.player_b)
-            .first()
-        )
-
-        if a is None or b is None:
-            missing_players += 1
-
-    completed_matches = (
-        db.query(Match)
-        .filter(Match.status == "completed")
-        .all()
+    missing_players = sum(
+        1
+        for player_a, player_b in scheduled_matches
+        if player_a not in player_names or player_b not in player_names
     )
 
-    missing_match_stats = 0
-
-    for match in completed_matches:
-
-        count = (
-            db.query(MatchPlayerStats)
-            .filter(
-                MatchPlayerStats.match_id == match.id
-            )
-            .count()
+    # Count completed matches with fewer than two stats rows
+    # in the database rather than issuing one query per match.
+    stats_counts = (
+        db.query(
+            MatchPlayerStats.match_id,
+            func.count(MatchPlayerStats.id).label("stats_count"),
         )
+        .group_by(MatchPlayerStats.match_id)
+        .subquery()
+    )
 
-        if count < 2:
-            missing_match_stats += 1
+    missing_match_stats = (
+        db.query(Match.id)
+        .outerjoin(
+            stats_counts,
+            Match.id == stats_counts.c.match_id,
+        )
+        .filter(
+            Match.status == "completed",
+            func.coalesce(stats_counts.c.stats_count, 0) < 2,
+        )
+        .count()
+    )
     health_score = 100
 
     health_score -= duplicate_players * 10
