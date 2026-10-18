@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, timedelta
 
 from app.db import SessionLocal
@@ -29,6 +30,8 @@ from app.services.paddy_power_event_extractor import (
     PaddyPowerEventExtractor,
 )
 
+
+logger = logging.getLogger(__name__)
 
 PADDY_POWER_MODUS_URL = (
     "https://www.paddypower.com/darts/"
@@ -498,7 +501,15 @@ def capture_discovered_paddy_power_events(
                 fixture
             )
 
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "Paddy Power event capture failed for "
+                "%s vs %s: %s",
+                fixture.player_a,
+                fixture.player_b,
+                exc,
+            )
+
             rollback = getattr(
                 db,
                 "rollback",

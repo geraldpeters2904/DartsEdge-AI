@@ -658,6 +658,9 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
 
         with patch(
             "app.services.paddy_power_live_capture."
+            "logger"
+        ) as failure_logger, patch(
+            "app.services.paddy_power_live_capture."
             "build_paddy_power_event_capture_once",
             side_effect=builder_results,
         ):
@@ -675,6 +678,15 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
         self.assertEqual(
             reports,
             [second_report],
+        )
+
+        self.assertTrue(
+            any(
+                "event page timed out" in (
+                    call.args[0] % call.args[1:]
+                )
+                for call in failure_logger.warning.call_args_list
+            )
         )
 
         db.rollback.assert_called_once()
