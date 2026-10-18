@@ -44,6 +44,56 @@ class PaddyPowerCategoryReadyTests(
         )
 
 
+
+class PaddyPowerCookieConsentTests(unittest.TestCase):
+    def test_detects_cookie_consent_screen(self):
+        from app.services.paddy_power_live_capture import (
+            paddy_power_cookie_consent_detected,
+        )
+
+        consent_html = (
+            "<html><div role='dialog'>"
+            "We use cookies to improve your experience. "
+            "<button>Accept all cookies</button>"
+            "<button>Manage cookies</button>"
+            "</div></html>"
+        )
+
+        self.assertTrue(
+            paddy_power_cookie_consent_detected(consent_html)
+        )
+
+        self.assertFalse(
+            paddy_power_cookie_consent_detected(
+                "<html>Sports Darts Login Sign Up</html>"
+            )
+        )
+
+
+    def test_cookie_notice_does_not_hide_ready_fixtures(self):
+        from app.services.paddy_power_live_capture import (
+            paddy_power_cookie_consent_detected,
+            paddy_power_modus_category_ready,
+        )
+
+        html = (
+            "<html>"
+            "<div>We use cookies "
+            "<button>Manage cookies</button></div>"
+            '<a href="/darts/modus-super-series/'
+            'alpha-v-bravo-12345">'
+            "Alpha v Bravo</a>"
+            "</html>"
+        )
+
+        self.assertTrue(
+            paddy_power_cookie_consent_detected(html)
+        )
+        self.assertTrue(
+            paddy_power_modus_category_ready(html)
+        )
+
+
 class PaddyPowerCategoryLoadTests(
     unittest.TestCase
 ):
@@ -108,6 +158,42 @@ class PaddyPowerCategoryLoadTests(
             result,
             rendered_html,
         )
+
+        browser.close.assert_called_once()
+
+
+    def test_cookie_consent_interruption_closes_browser(self):
+        from app.services.paddy_power_live_capture import (
+            load_paddy_power_modus_category_html,
+        )
+
+        consent_html = (
+            "<html><div role='dialog'>"
+            "We use cookies to improve your experience. "
+            "<button>Accept all cookies</button>"
+            "<button>Manage cookies</button>"
+            "</div></html>"
+        )
+
+        browser = MagicMock()
+        browser.html.return_value = consent_html
+
+        def simulate_wait(predicate, **kwargs):
+            if not predicate():
+                raise TimeoutError(kwargs["description"])
+
+        browser.wait_for.side_effect = simulate_wait
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "ChromeBrowserSession",
+            return_value=browser,
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "cookie.consent",
+            ):
+                load_paddy_power_modus_category_html()
 
         browser.close.assert_called_once()
 

@@ -395,5 +395,35 @@ class BookmakerCaptureTests(
         )
 
 
+    def test_cookie_consent_timeout_does_not_store_prices(self):
+        db = FakeDb()
+        browser = FakeBrowser(
+            "<html><div role='dialog'>"
+            "We use cookies to improve your experience. "
+            "<button>Accept all cookies</button>"
+            "<button>Manage cookies</button>"
+            "</div></html>"
+        )
+        service = PaddyPowerCaptureService(
+            browser_session=browser
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "cookie.consent",
+        ):
+            service.capture(
+                db,
+                source_url="https://example.test/darts/event/test",
+                extractor=FakeExtractor(),
+                page_ready=lambda html: (
+                    'class="event-card--item' in html.casefold()
+                ),
+            )
+
+        self.assertEqual(len(db.rows), 0)
+        self.assertEqual(db.commits, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

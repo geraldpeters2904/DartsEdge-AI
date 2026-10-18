@@ -78,29 +78,51 @@ class PaddyPowerCaptureService:
             ),
         )
 
-        self.browser_session.wait_for(
-            lambda: (
-                any(
-                    marker in self.browser_session.html().casefold()
-                    for marker in self.CHALLENGE_MARKERS
-                )
-                or (
-                    page_ready(
-                        self.browser_session.html()
+        try:
+            self.browser_session.wait_for(
+                lambda: (
+                    any(
+                        marker in self.browser_session.html().casefold()
+                        for marker in self.CHALLENGE_MARKERS
                     )
-                    if page_ready
-                    else bool(
-                        self.browser_session.html().strip()
+                    or (
+                        page_ready(
+                            self.browser_session.html()
+                        )
+                        if page_ready
+                        else bool(
+                            self.browser_session.html().strip()
+                        )
                     )
+                ),
+                timeout_seconds=(
+                    self.timeout_seconds
+                ),
+                description=(
+                    "Paddy Power page content"
+                ),
+            )
+        except (TimeoutError, RuntimeError) as exc:
+            from app.services.paddy_power_live_capture import (
+                paddy_power_cookie_consent_detected,
+            )
+
+            html = self.browser_session.html()
+
+            if (
+                paddy_power_cookie_consent_detected(html)
+                and (
+                    not page_ready(html)
+                    if page_ready is not None
+                    else not bool(html.strip())
                 )
-            ),
-            timeout_seconds=(
-                self.timeout_seconds
-            ),
-            description=(
-                "Paddy Power page content"
-            ),
-        )
+            ):
+                raise RuntimeError(
+                    "Paddy Power cookie-consent interruption: "
+                    "expected odds content did not become available."
+                ) from exc
+
+            raise
 
         html = (
             self.browser_session

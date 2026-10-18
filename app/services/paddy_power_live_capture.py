@@ -205,6 +205,29 @@ def _mark_event_fixture_polled(
     )
 
 
+
+def paddy_power_cookie_consent_detected(
+    html: str,
+) -> bool:
+    lowered = (html or "").casefold()
+
+    consent_controls = (
+        "accept all cookies",
+        "reject all cookies",
+        "manage cookies",
+        "cookie preferences",
+        "cookie settings",
+    )
+
+    return (
+        "cookie" in lowered
+        and any(
+            control in lowered
+            for control in consent_controls
+        )
+    )
+
+
 def paddy_power_modus_category_ready(
     html: str,
 ) -> bool:
@@ -246,6 +269,20 @@ def load_paddy_power_modus_category_html(
         )
 
         return browser.html()
+
+    except TimeoutError as exc:
+        html = browser.html()
+
+        if (
+            paddy_power_cookie_consent_detected(html)
+            and not paddy_power_modus_category_ready(html)
+        ):
+            raise RuntimeError(
+                "Paddy Power cookie-consent interruption: "
+                "MODUS fixtures did not become available."
+            ) from exc
+
+        raise
 
     finally:
         browser.close()
