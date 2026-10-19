@@ -9,6 +9,7 @@ from app.services.model_health_service import build_model_health, model_health_s
 from app.services.opportunity_ranking_service import build_ranked_opportunities
 from app.services.portfolio_health_service import build_portfolio_health
 from app.services.strategy_service import get_active_strategy, strategy_summary
+from app.services.unified_sync_worker import unified_sync_worker
 
 
 def _status(label: str, value: float, good: float, warning: float) -> Dict[str, Any]:
@@ -26,8 +27,25 @@ def _status(label: str, value: float, good: float, warning: float) -> Dict[str, 
     }
 
 
-def _build_alerts(dashboard: Dict[str, Any]) -> List[Dict[str, str]]:
+def _build_alerts(
+    dashboard: Dict[str, Any],
+    sync_status=None,
+) -> List[Dict[str, str]]:
     alerts = []
+
+    if sync_status is not None:
+        for result in getattr(sync_status, "last_results", ()):
+            if result.name == "bookmaker-capture" and not result.success:
+                alerts.append(
+                    {
+                        "level": "warning",
+                        "title": "Paddy Power capture failure",
+                        "message": result.message,
+                        "url": "/diagnostics",
+                        "action": "Review diagnostics",
+                    }
+                )
+                break
 
     if dashboard["results_awaiting"]:
         alerts.append(
@@ -187,7 +205,7 @@ def build_mission_control_data(db) -> Dict[str, Any]:
         "portfolio_health": portfolio_health,
         "model_health": model_health,
         "prediction_model_health": prediction_model_health,
-        "alerts": _build_alerts(dashboard),
+        "alerts": _build_alerts(dashboard, sync_status=unified_sync_worker.status()),
         "ai_coach": coach_data["primary"],
         "coach_recommendation_count": coach_data["recommendation_count"],
         "active_strategy": active_strategy,

@@ -211,6 +211,35 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 <section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Odds acquisition</p>
+            <h2>Bookmaker Capture Status</h2>
+        </div>
+    </div>
+
+    {% set monitors = diagnostics.get("monitors", {}) %}
+    {% set sync = monitors.get("unified_sync", {}) %}
+    {% set capture = namespace(result=none) %}
+
+    {% for result in sync.get("last_results", []) %}
+        {% if result.name == "bookmaker-capture" %}
+            {% set capture.result = result %}
+        {% endif %}
+    {% endfor %}
+
+    {% if capture.result is none %}
+        <p>No capture result available</p>
+    {% elif capture.result.success %}
+        <p><span class="status-pill status-good">Capture successful</span></p>
+        <p>{{ capture.result.message }}</p>
+    {% else %}
+        <p><span class="status-pill status-bad">Capture failed</span></p>
+        <p>{{ capture.result.message }}</p>
+    {% endif %}
+</section>
+
+<section class="panel">
     <div class="panel-heading"><div><p class="eyebrow">Health checks</p><h2>Core services</h2></div></div>
     <div class="table-wrap">
         <table>

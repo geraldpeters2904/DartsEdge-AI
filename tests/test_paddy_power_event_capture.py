@@ -320,7 +320,11 @@ class PaddyPowerDiscoveredAggregateCaptureTests(
                 )
             )
 
-        capture_events.assert_called_once_with(db)
+        capture_events.assert_called_once()
+        args, kwargs = capture_events.call_args
+        self.assertEqual(args, (db,))
+        self.assertEqual(kwargs["failure_collector"], [])
+        self.assertEqual(report.failed_events, 0)
 
         self.assertEqual(
             report.bookmaker,
@@ -346,6 +350,49 @@ class PaddyPowerDiscoveredAggregateCaptureTests(
             report.challenge_detected
         )
 
+
+
+    def test_aggregate_reports_partial_event_failures(self):
+        from app.services.bookmaker_capture_types import (
+            BookmakerCaptureReport,
+        )
+        from app.services.paddy_power_live_capture import (
+            capture_paddy_power_discovered_events_report_once,
+        )
+
+        successful_report = BookmakerCaptureReport(
+            bookmaker="Paddy Power",
+            source_url="event-one",
+            captured_at=datetime(2026, 9, 4, 10, 0),
+            extracted_prices=13,
+            stored_prices=10,
+            unchanged_prices=3,
+            skipped_prices=0,
+            challenge_detected=False,
+            message="captured",
+        )
+
+        def capture_with_failure(db, **kwargs):
+            kwargs["failure_collector"].append(
+                TimeoutError("event page timed out")
+            )
+            return [successful_report]
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "capture_paddy_power_discovered_events_once",
+            side_effect=capture_with_failure,
+        ):
+            report = (
+                capture_paddy_power_discovered_events_report_once(
+                    object()
+                )
+            )
+
+        self.assertEqual(report.stored_prices, 10)
+        self.assertEqual(report.failed_events, 1)
+        self.assertIn("1", report.message)
+        self.assertIn("failed", report.message.lower())
 
 
 class PaddyPowerLiveRunnerTests(
@@ -599,6 +646,61 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
         event_service.close.assert_called_once()
 
 
+
+    def test_counts_event_capture_failures_without_stopping(self):
+        from app.services.paddy_power_live_capture import (
+            capture_discovered_paddy_power_events,
+        )
+
+        fixtures = [
+            KnownBookmakerFixture(
+                fixture_date=date(2026, 9, 4),
+                tournament="MODUS Super Series",
+                player_a="Player One",
+                player_b="Player Two",
+            ),
+            KnownBookmakerFixture(
+                fixture_date=date(2026, 9, 4),
+                tournament="MODUS Super Series",
+                player_a="Player Three",
+                player_b="Player Four",
+            ),
+        ]
+
+        category_html = """
+        <a href="/darts/event/player-one-v-player-two">
+          <div>Player One</div>
+          <div>Player Two</div>
+        </a>
+        <a href="/darts/event/player-three-v-player-four">
+          <div>Player Three</div>
+          <div>Player Four</div>
+        </a>
+        """
+
+        successful_report = object()
+        failures = []
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "build_paddy_power_event_capture_once",
+            side_effect=[
+                (MagicMock(side_effect=TimeoutError("timed out")), MagicMock()),
+                (MagicMock(return_value=successful_report), MagicMock()),
+            ],
+        ), patch(
+            "app.services.paddy_power_live_capture.logger"
+        ):
+            reports = capture_discovered_paddy_power_events(
+                MagicMock(),
+                fixtures=fixtures,
+                category_html=category_html,
+                failure_collector=failures,
+            )
+
+        self.assertEqual(reports, [successful_report])
+        self.assertEqual(len(failures), 1)
+        self.assertIn("timed out", str(failures[0]))
 
     def test_continues_after_event_capture_failure(self):
         from app.services.paddy_power_live_capture import (

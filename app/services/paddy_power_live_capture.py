@@ -429,6 +429,7 @@ def capture_paddy_power_discovered_events_once(
     *,
     category_html=None,
     service=None,
+    failure_collector=None,
 ):
     fixtures = (
         _scheduled_modus_fixtures(
@@ -446,6 +447,9 @@ def capture_paddy_power_discovered_events_once(
     if service is not None:
         kwargs["service"] = service
 
+    if failure_collector is not None:
+        kwargs["failure_collector"] = failure_collector
+
     return capture_discovered_paddy_power_events(
         db,
         fixtures=fixtures,
@@ -460,6 +464,7 @@ def capture_discovered_paddy_power_events(
     fixtures,
     category_html: str,
     service=None,
+    failure_collector=None,
 ):
     reports = []
 
@@ -502,6 +507,9 @@ def capture_discovered_paddy_power_events(
             )
 
         except Exception as exc:
+            if failure_collector is not None:
+                failure_collector.append(exc)
+
             logger.warning(
                 "Paddy Power event capture failed for "
                 "%s vs %s: %s",
@@ -539,6 +547,9 @@ def capture_paddy_power_discovered_events_report_once(
 
     if service is not None:
         kwargs["service"] = service
+
+    failures = []
+    kwargs["failure_collector"] = failures
 
     reports = (
         capture_paddy_power_discovered_events_once(
@@ -580,8 +591,12 @@ def capture_paddy_power_discovered_events_report_once(
             for report in reports
         ),
         message=(
-            "Paddy Power discovered event capture completed."
+            f"Paddy Power event capture partially completed: "
+            f"{len(failures)} event(s) failed."
+            if failures
+            else "Paddy Power discovered event capture completed."
         ),
+        failed_events=len(failures),
     )
 
 

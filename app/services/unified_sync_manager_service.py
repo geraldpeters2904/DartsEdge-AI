@@ -190,11 +190,22 @@ class UnifiedSynchronisationManager:
                 or "Completed."
             )
 
+            failed_events = getattr(
+                result,
+                "failed_events",
+                0,
+            )
+
             return SyncJobResult(
                 name=name,
                 ran=True,
-                success=True,
+                success=(failed_events == 0),
                 message=message,
+                error=(
+                    message
+                    if failed_events > 0
+                    else None
+                ),
             )
 
         except Exception as exc:

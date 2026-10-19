@@ -30,3 +30,4 @@ class BookmakerCaptureReport:
     skipped_prices: int
     challenge_detected: bool
     message: str
+    failed_events: int = 0
