@@ -120,9 +120,14 @@ def build_live_unified_manager(
                         or event_report.challenge_detected
                     ),
                     message=(
-                        "Paddy Power category and event "
-                        "capture completed."
+                        event_report.message
+                        if event_report.failed_events
+                        else (
+                            "Paddy Power category and event "
+                            "capture completed."
+                        )
                     ),
+                    failed_events=event_report.failed_events,
                 )
 
             finally:

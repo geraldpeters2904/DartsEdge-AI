@@ -125,6 +125,57 @@ class CurrentSeriesLiveSyncWiringTests(unittest.TestCase):
             report.message,
         )
 
+    def test_default_capture_propagates_event_failures(self):
+        category_report = BookmakerCaptureReport(
+            bookmaker="Paddy Power",
+            source_url="category",
+            captured_at=datetime(2026, 10, 19, 10, 0),
+            extracted_prices=10,
+            stored_prices=5,
+            unchanged_prices=5,
+            skipped_prices=0,
+            challenge_detected=False,
+            message="Category capture completed.",
+        )
+        event_report = BookmakerCaptureReport(
+            bookmaker="Paddy Power",
+            source_url="events",
+            captured_at=datetime(2026, 10, 19, 10, 1),
+            extracted_prices=6,
+            stored_prices=3,
+            unchanged_prices=3,
+            skipped_prices=0,
+            challenge_detected=False,
+            message="1 Paddy Power event capture failed.",
+            failed_events=1,
+        )
+
+        capture_once = MagicMock(return_value=category_report)
+        capture_service = MagicMock()
+        fake_db = MagicMock()
+
+        with patch(
+            "app.services.live_unified_sync_builder."
+            "build_paddy_power_capture_once",
+            return_value=(capture_once, capture_service),
+        ), patch(
+            "app.services.live_unified_sync_builder."
+            "capture_paddy_power_discovered_events_report_once",
+            return_value=event_report,
+        ), patch(
+            "app.db.SessionLocal",
+            return_value=fake_db,
+        ):
+            manager = build_live_unified_manager(poll_seconds=1)
+            report = manager.bookmaker_capture()
+
+        self.assertEqual(report.failed_events, 1)
+        self.assertEqual(report.message, event_report.message)
+        self.assertEqual(report.extracted_prices, 16)
+        self.assertEqual(report.stored_prices, 8)
+        fake_db.close.assert_called_once()
+        capture_service.close.assert_called_once()
+
     def test_default_capture_treats_unpublished_modus_as_waiting(
         self,
     ):
