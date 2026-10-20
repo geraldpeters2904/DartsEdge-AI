@@ -483,10 +483,26 @@ def diagnostics_page(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    diagnostics = build_diagnostics(db)
+    unified_status = unified_sync_worker.status()
+
+    diagnostics.setdefault("monitors", {})["unified_sync"] = {
+        "successful_cycles": unified_status.successful_cycles,
+        "failed_cycles": unified_status.failed_cycles,
+        "last_results": [
+            {
+                "name": item.name,
+                "success": item.success,
+                "message": item.message,
+            }
+            for item in unified_status.last_results
+        ],
+    }
+
     return templates.TemplateResponse(
         "diagnostics.html",
         {
             "request": request,
-            "diagnostics": build_diagnostics(db),
+            "diagnostics": diagnostics,
         },
     )

@@ -49,6 +49,59 @@ class DiagnosticsCapturePanelTests(unittest.TestCase):
             }),
         )
 
+    def test_diagnostics_route_includes_live_capture_result(self):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock, patch
+
+        from app.routes.diagnostics import diagnostics_page
+
+        capture_result = SimpleNamespace(
+            name="bookmaker-capture",
+            success=False,
+            message="Paddy Power: 2 event(s) failed.",
+        )
+        worker_status = SimpleNamespace(
+            successful_cycles=0,
+            failed_cycles=1,
+            last_results=[capture_result],
+        )
+        response = MagicMock()
+
+        with patch(
+            "app.routes.diagnostics.build_diagnostics",
+            return_value={"overall_status": "healthy"},
+        ), patch(
+            "app.routes.diagnostics.unified_sync_worker.status",
+            return_value=worker_status,
+        ), patch(
+            "app.routes.diagnostics.templates.TemplateResponse",
+            return_value=response,
+        ) as render:
+            result = diagnostics_page(
+                request=MagicMock(),
+                db=MagicMock(),
+            )
+
+        self.assertIs(result, response)
+        render.assert_called_once()
+        self.assertEqual(
+            render.call_args.args[0],
+            "diagnostics.html",
+        )
+
+        diagnostics = render.call_args.args[1]["diagnostics"]
+        sync = diagnostics["monitors"]["unified_sync"]
+
+        self.assertEqual(sync["failed_cycles"], 1)
+        self.assertEqual(
+            sync["last_results"],
+            [{
+                "name": "bookmaker-capture",
+                "success": False,
+                "message": "Paddy Power: 2 event(s) failed.",
+            }],
+        )
+
     def test_failed_capture_is_displayed(self):
         html = self.render([
             {
