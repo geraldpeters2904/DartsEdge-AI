@@ -120,14 +120,26 @@ def build_live_unified_manager(
                         or event_report.challenge_detected
                     ),
                     message=(
-                        event_report.message
-                        if event_report.failed_events
-                        else (
-                            "Paddy Power category and event "
-                            "capture completed."
+                        (
+                            event_report.message
+                            if event_report.failed_events
+                            else (
+                                "Paddy Power category and event "
+                                "capture completed."
+                            )
+                        )
+                        + (
+                            " Event discovery: "
+                            f"{event_report.eligible_fixtures} eligible, "
+                            f"{event_report.captured_events} captured, "
+                            f"{event_report.missing_event_urls} "
+                            "without event URLs."
                         )
                     ),
                     failed_events=event_report.failed_events,
+                    eligible_fixtures=event_report.eligible_fixtures,
+                    captured_events=event_report.captured_events,
+                    missing_event_urls=event_report.missing_event_urls,
                 )
 
             finally:

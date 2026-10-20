@@ -324,7 +324,11 @@ class PaddyPowerDiscoveredAggregateCaptureTests(
         args, kwargs = capture_events.call_args
         self.assertEqual(args, (db,))
         self.assertEqual(kwargs["failure_collector"], [])
+        self.assertEqual(kwargs["statistics_collector"], {})
         self.assertEqual(report.failed_events, 0)
+        self.assertEqual(report.eligible_fixtures, 0)
+        self.assertEqual(report.captured_events, 0)
+        self.assertEqual(report.missing_event_urls, 0)
 
         self.assertEqual(
             report.bookmaker,
@@ -883,6 +887,82 @@ class PaddyPowerEventCaptureTests(unittest.TestCase):
             [],
         )
         builder.assert_not_called()
+
+
+class PaddyPowerEventDiscoveryStatisticsTests(unittest.TestCase):
+
+    def test_collects_event_discovery_statistics(self):
+        from app.services.paddy_power_live_capture import (
+            capture_discovered_paddy_power_events,
+        )
+
+        fixtures = [
+            KnownBookmakerFixture(
+                fixture_date=date(2026, 9, 4),
+                tournament="MODUS Super Series",
+                player_a="Player One",
+                player_b="Player Two",
+            ),
+            KnownBookmakerFixture(
+                fixture_date=date(2026, 9, 4),
+                tournament="MODUS Super Series",
+                player_a="Player Three",
+                player_b="Player Four",
+            ),
+            KnownBookmakerFixture(
+                fixture_date=date(2026, 9, 4),
+                tournament="MODUS Super Series",
+                player_a="Player Five",
+                player_b="Player Six",
+            ),
+        ]
+
+        category_html = """
+        <a href="/darts/event/player-one-v-player-two">
+          <div>Player One</div><div>Player Two</div>
+        </a>
+        <a href="/darts/event/player-three-v-player-four">
+          <div>Player Three</div><div>Player Four</div>
+        </a>
+        """
+
+        statistics = {}
+        failures = []
+        successful_report = object()
+
+        with patch(
+            "app.services.paddy_power_live_capture."
+            "_should_poll_event_fixture",
+            return_value=True,
+        ), patch(
+            "app.services.paddy_power_live_capture."
+            "build_paddy_power_event_capture_once",
+            side_effect=[
+                (MagicMock(return_value=successful_report), MagicMock()),
+                (MagicMock(side_effect=TimeoutError("timed out")), MagicMock()),
+            ],
+        ), patch(
+            "app.services.paddy_power_live_capture.logger"
+        ):
+            reports = capture_discovered_paddy_power_events(
+                MagicMock(),
+                fixtures=fixtures,
+                category_html=category_html,
+                failure_collector=failures,
+                statistics_collector=statistics,
+            )
+
+        self.assertEqual(reports, [successful_report])
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(
+            statistics,
+            {
+                "eligible_fixtures": 3,
+                "captured_events": 1,
+                "failed_events": 1,
+                "missing_event_urls": 1,
+            },
+        )
 
 
 if __name__ == "__main__":

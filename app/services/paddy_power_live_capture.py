@@ -430,6 +430,7 @@ def capture_paddy_power_discovered_events_once(
     category_html=None,
     service=None,
     failure_collector=None,
+    statistics_collector=None,
 ):
     fixtures = (
         _scheduled_modus_fixtures(
@@ -450,6 +451,9 @@ def capture_paddy_power_discovered_events_once(
     if failure_collector is not None:
         kwargs["failure_collector"] = failure_collector
 
+    if statistics_collector is not None:
+        kwargs["statistics_collector"] = statistics_collector
+
     return capture_discovered_paddy_power_events(
         db,
         fixtures=fixtures,
@@ -465,8 +469,17 @@ def capture_discovered_paddy_power_events(
     category_html: str,
     service=None,
     failure_collector=None,
+    statistics_collector=None,
 ):
     reports = []
+
+    if statistics_collector is not None:
+        statistics_collector.update({
+            "eligible_fixtures": 0,
+            "captured_events": 0,
+            "failed_events": 0,
+            "missing_event_urls": 0,
+        })
 
     for fixture in fixtures:
         if not _should_poll_event_fixture(
@@ -475,12 +488,17 @@ def capture_discovered_paddy_power_events(
         ):
             continue
 
+        if statistics_collector is not None:
+            statistics_collector["eligible_fixtures"] += 1
+
         source_url = discover_fixture_event_url(
             category_html,
             fixture,
         )
 
         if source_url is None:
+            if statistics_collector is not None:
+                statistics_collector["missing_event_urls"] += 1
             continue
 
         builder_kwargs = {
@@ -502,6 +520,9 @@ def capture_discovered_paddy_power_events(
                 capture_once(db)
             )
 
+            if statistics_collector is not None:
+                statistics_collector["captured_events"] += 1
+
             _mark_event_fixture_polled(
                 fixture
             )
@@ -509,6 +530,9 @@ def capture_discovered_paddy_power_events(
         except Exception as exc:
             if failure_collector is not None:
                 failure_collector.append(exc)
+
+            if statistics_collector is not None:
+                statistics_collector["failed_events"] += 1
 
             logger.warning(
                 "Paddy Power event capture failed for "
@@ -550,6 +574,9 @@ def capture_paddy_power_discovered_events_report_once(
 
     failures = []
     kwargs["failure_collector"] = failures
+
+    statistics = {}
+    kwargs["statistics_collector"] = statistics
 
     reports = (
         capture_paddy_power_discovered_events_once(
@@ -597,6 +624,9 @@ def capture_paddy_power_discovered_events_report_once(
             else "Paddy Power discovered event capture completed."
         ),
         failed_events=len(failures),
+        eligible_fixtures=statistics.get("eligible_fixtures", 0),
+        captured_events=statistics.get("captured_events", 0),
+        missing_event_urls=statistics.get("missing_event_urls", 0),
     )
 
 

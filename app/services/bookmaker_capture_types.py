@@ -31,3 +31,6 @@ class BookmakerCaptureReport:
     challenge_detected: bool
     message: str
     failed_events: int = 0
+    eligible_fixtures: int = 0
+    captured_events: int = 0
+    missing_event_urls: int = 0

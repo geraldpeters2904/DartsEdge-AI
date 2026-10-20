@@ -50,6 +50,9 @@ class CurrentSeriesLiveSyncWiringTests(unittest.TestCase):
             skipped_prices=1,
             challenge_detected=False,
             message="events",
+            eligible_fixtures=8,
+            captured_events=5,
+            missing_event_urls=3,
         )
 
         capture_once = MagicMock(
@@ -124,6 +127,14 @@ class CurrentSeriesLiveSyncWiringTests(unittest.TestCase):
             "category and event",
             report.message,
         )
+        self.assertEqual(report.eligible_fixtures, 8)
+        self.assertEqual(report.captured_events, 5)
+        self.assertEqual(report.missing_event_urls, 3)
+        self.assertIn(
+            "Event discovery: 8 eligible, 5 captured, "
+            "3 without event URLs.",
+            report.message,
+        )
 
     def test_default_capture_propagates_event_failures(self):
         category_report = BookmakerCaptureReport(
@@ -170,7 +181,12 @@ class CurrentSeriesLiveSyncWiringTests(unittest.TestCase):
             report = manager.bookmaker_capture()
 
         self.assertEqual(report.failed_events, 1)
-        self.assertEqual(report.message, event_report.message)
+        self.assertIn(event_report.message, report.message)
+        self.assertIn(
+            "Event discovery: 0 eligible, 0 captured, "
+            "0 without event URLs.",
+            report.message,
+        )
         self.assertEqual(report.extracted_prices, 16)
         self.assertEqual(report.stored_prices, 8)
         fake_db.close.assert_called_once()
