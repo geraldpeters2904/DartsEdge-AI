@@ -299,3 +299,164 @@ class FixtureLifecycleServiceTests(
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FixtureLifecycleDuplicateRegressionTests(unittest.TestCase):
+    def test_cancelled_duplicate_cannot_overwrite_completed_result(self):
+        fixture_date = date(2026, 10, 20)
+
+        original = SimpleNamespace(
+            id=18287,
+            date=fixture_date,
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="completed",
+            winner="Archie Self",
+            score_a=2,
+            score_b=4,
+            stage=None,
+            match_format=None,
+            provider_id=None,
+        )
+
+        duplicate = SimpleNamespace(
+            id=18314,
+            date=fixture_date,
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="cancelled",
+            winner=None,
+            score_a=None,
+            score_b=None,
+            stage=None,
+            match_format=None,
+            provider_id=None,
+        )
+
+        db = FakeDb([original, duplicate])
+
+        report = synchronise_fixture_records(
+            db,
+            [
+                FixtureLifecycleRecord(
+                    fixture_date=fixture_date,
+                    tournament="MODUS",
+                    player_a=duplicate.player_a,
+                    player_b=duplicate.player_b,
+                    status="cancelled",
+                )
+            ],
+            window_start=date(2026, 10, 19),
+            window_end=date(2026, 10, 21),
+        )
+
+        self.assertEqual(original.status, "completed")
+        self.assertEqual(original.winner, "Archie Self")
+        self.assertEqual(original.score_a, 2)
+        self.assertEqual(original.score_b, 4)
+        self.assertEqual(duplicate.status, "cancelled")
+        self.assertEqual(report.updated, 0)
+
+
+class FixtureLifecycleExactIdentityTests(unittest.TestCase):
+    def test_duplicate_updates_only_its_own_database_id(self):
+        fixture_date = date(2026, 10, 20)
+
+        original = SimpleNamespace(
+            id=18287,
+            date=fixture_date,
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="completed",
+            winner="Archie Self",
+            score_a=2,
+            score_b=4,
+            stage=None,
+            match_format=None,
+            provider_id=None,
+        )
+
+        duplicate = SimpleNamespace(
+            id=18314,
+            date=fixture_date,
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="scheduled",
+            winner=None,
+            score_a=None,
+            score_b=None,
+            stage=None,
+            match_format=None,
+            provider_id=None,
+        )
+
+        db = FakeDb([original, duplicate])
+
+        report = synchronise_fixture_records(
+            db,
+            [
+                FixtureLifecycleRecord(
+                    match_id=18314,
+                    fixture_date=fixture_date,
+                    tournament="MODUS",
+                    player_a="Ricardo Ulrich",
+                    player_b="Archie Self",
+                    status="cancelled",
+                )
+            ],
+            window_start=date(2026, 10, 19),
+            window_end=date(2026, 10, 21),
+        )
+
+        self.assertEqual(original.status, "completed")
+        self.assertEqual(duplicate.status, "cancelled")
+        self.assertEqual(original.winner, "Archie Self")
+        self.assertEqual(report.updated, 1)
+
+
+class FixtureLifecycleMissingIdentityTests(unittest.TestCase):
+    def test_missing_database_id_does_not_create_duplicate(self):
+        fixture_date = date(2026, 10, 20)
+
+        original = SimpleNamespace(
+            id=18287,
+            date=fixture_date,
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="completed",
+            winner="Archie Self",
+            score_a=2,
+            score_b=4,
+            stage=None,
+            match_format=None,
+            provider_id=None,
+        )
+
+        db = FakeDb([original])
+
+        report = synchronise_fixture_records(
+            db,
+            [
+                FixtureLifecycleRecord(
+                    match_id=999999,
+                    fixture_date=fixture_date,
+                    tournament="MODUS",
+                    player_a="Ricardo Ulrich",
+                    player_b="Archie Self",
+                    status="cancelled",
+                )
+            ],
+            window_start=date(2026, 10, 19),
+            window_end=date(2026, 10, 21),
+        )
+
+        self.assertEqual(len(db.rows), 1)
+        self.assertEqual(original.status, "completed")
+        self.assertEqual(report.created, 0)
+        self.assertEqual(report.skipped, 1)
+        self.assertEqual(db.commits, 0)

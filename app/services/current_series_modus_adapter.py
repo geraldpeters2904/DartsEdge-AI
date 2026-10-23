@@ -23,6 +23,7 @@ def _records_from_matches(
 ) -> list[FixtureLifecycleRecord]:
     return [
         FixtureLifecycleRecord(
+            match_id=getattr(match, "id", None),
             fixture_date=match.date,
             tournament=(
                 match.tournament

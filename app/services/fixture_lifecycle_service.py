@@ -22,6 +22,7 @@ class FixtureLifecycleRecord:
     score_a: Optional[int] = None
     score_b: Optional[int] = None
     provider_id: Optional[str] = None
+    match_id: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -72,6 +73,15 @@ def _find_existing(
         .all()
     )
 
+    # Database-backed lifecycle records must retain exact identity.
+    # Never redirect a duplicate onto another fixture with the
+    # same date and players.
+    if record.match_id is not None:
+        for row in rows:
+            if row.id == record.match_id:
+                return row
+        return None
+
     for row in rows:
         if _fixture_matches(
             row,
@@ -87,6 +97,13 @@ def _apply_record(
     record: FixtureLifecycleRecord,
 ) -> bool:
     changed = False
+
+    # A cancelled duplicate must not overwrite a completed result.
+    if (
+        row.status == "completed"
+        and record.status == "cancelled"
+    ):
+        return False
 
     values = {
         "tournament": (
@@ -219,6 +236,12 @@ def synchronise_fixture_records(
         )
 
         if existing is None:
+            # An explicit database ID must resolve to its own fixture.
+            # Never create a replacement when that ID is missing.
+            if record.match_id is not None:
+                skipped += 1
+                continue
+
             row = Match(
                 date=(
                     record.fixture_date

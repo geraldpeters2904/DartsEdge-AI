@@ -150,3 +150,53 @@ class CurrentSeriesModusAdapterTests(
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CurrentSeriesFixtureIdentityRegressionTests(unittest.TestCase):
+    def test_adapter_preserves_database_fixture_id(self):
+        from app.services.current_series_modus_adapter import (
+            _records_from_matches,
+        )
+
+        match = SimpleNamespace(
+            id=18314,
+            date=date(2026, 10, 20),
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="cancelled",
+            winner=None,
+            score_a=None,
+            score_b=None,
+            provider_id=None,
+        )
+
+        records = _records_from_matches([match])
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0].match_id, 18314)
+
+
+class CurrentSeriesFixtureIdentityRegressionTests(unittest.TestCase):
+    def test_adapter_preserves_database_fixture_id(self):
+        from app.services.current_series_modus_adapter import (
+            _records_from_matches,
+        )
+
+        match = SimpleNamespace(
+            id=18314,
+            date=date(2026, 10, 20),
+            tournament="MODUS",
+            player_a="Ricardo Ulrich",
+            player_b="Archie Self",
+            status="cancelled",
+            winner=None,
+            score_a=None,
+            score_b=None,
+            provider_id=None,
+        )
+
+        records = _records_from_matches([match])
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0].match_id, 18314)
