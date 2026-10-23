@@ -74,6 +74,17 @@ def check_orphan_cancellation_eligibility(
             reason="Internal match is no longer scheduled.",
         )
 
+    if match.score is not None or match.winner is not None:
+        return OrphanCancellationEligibility(
+            fixture_id=fixture_id,
+            eligible=False,
+            external_id=None,
+            reason=(
+                "Fixture already contains completed result evidence "
+                "(score or winner) and cannot be cancelled."
+            ),
+        )
+
     actual_scope = find_modus_import_scope_for_match(
         db,
         fixture_id,

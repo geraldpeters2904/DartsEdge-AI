@@ -672,5 +672,43 @@ class CurrentMatchEnrichmentPersistenceServiceTests(
             )
 
 
+    def test_persist_preserves_reconciliation_transaction(self):
+        match = find_match_by_external_id(
+            db=self.db,
+            provider="modus-official",
+            match_external_id="modus-match-19001",
+        )
+        self.assertIsNotNone(match)
+        match_id = match.id
+
+        # Establish an explicit SQLite transaction before the savepoint.
+        self.db.connection().exec_driver_sql("BEGIN")
+
+        with self.db.begin_nested():
+            persisted = self.service.persist(
+                self.db,
+                statistics_result(),
+            )
+            self.assertEqual(persisted.status, "persisted")
+
+        self.assertTrue(
+            self.db.in_transaction(),
+            "Persistence must leave the caller's transaction open.",
+        )
+
+        self.db.rollback()
+        self.db.expire_all()
+
+        restored = self.db.get(type(match), match_id)
+        self.assertIsNotNone(restored)
+        self.assertEqual(restored.status, "completed")
+
+        self.assertEqual(
+            self.db.query(PlayerMatchPerformance).count(),
+            0,
+            "Outer rollback must undo persisted player statistics.",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

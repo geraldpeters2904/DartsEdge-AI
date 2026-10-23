@@ -115,6 +115,8 @@ class CurrentMatchEnrichmentPersistenceService:
             status="importing",
         )
 
+        caller_owns_transaction = db.in_nested_transaction()
+
         try:
             db.add(batch)
             db.flush()
@@ -160,7 +162,6 @@ class CurrentMatchEnrichmentPersistenceService:
 
             if rejected_rows:
                 batch.status = "rejected"
-                db.rollback()
                 raise ValueError(
                     "Current-match enrichment persistence rejected "
                     f"{rejected_rows} canonical record(s). "
@@ -168,8 +169,11 @@ class CurrentMatchEnrichmentPersistenceService:
                 )
 
             batch.status = "imported"
-            db.commit()
-            db.refresh(batch)
+            if caller_owns_transaction:
+                db.flush()
+            else:
+                db.commit()
+                db.refresh(batch)
 
             return CurrentMatchEnrichmentPersistenceResult(
                 internal_match_id=int(result.internal_match_id),
@@ -186,7 +190,8 @@ class CurrentMatchEnrichmentPersistenceService:
                 ),
             )
         except Exception:
-            rollback = getattr(db, "rollback", None)
-            if callable(rollback):
-                rollback()
+            if not caller_owns_transaction:
+                rollback = getattr(db, "rollback", None)
+                if callable(rollback):
+                    rollback()
             raise

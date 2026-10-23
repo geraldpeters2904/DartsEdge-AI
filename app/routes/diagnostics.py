@@ -150,10 +150,33 @@ def health_endpoint(
 ):
     diagnostics = build_diagnostics(db)
 
-    forward = _monitor_health(
-        forward_schedule_monitor.status(),
-        stale_after_seconds=1800.0,
-    )
+    forward_status = forward_schedule_monitor.status()
+    forward = {
+        **_monitor_health(
+            forward_status,
+            stale_after_seconds=1800.0,
+        ),
+        "latest_series": forward_status.latest_series,
+        "latest_week": forward_status.latest_week,
+        "future_fixtures": forward_status.future_fixtures,
+        "last_message": forward_status.last_message,
+        "last_error": forward_status.last_error,
+        "discovery_targets": [
+            {
+                "group": target.group,
+                "state": target.state,
+                "imported": target.imported,
+                "unchanged": target.unchanged,
+                "source_url": target.source_url,
+                "current_url": target.current_url,
+                "page_title": target.page_title,
+                "fixture_count": target.fixture_count,
+                "message": target.message,
+                "error": target.error,
+            }
+            for target in forward_status.discovery_targets
+        ],
+    }
 
     live_edge = _monitor_health(
         live_edge_monitor.status(),
@@ -401,6 +424,10 @@ def health_endpoint(
 
                 ),
 
+                "last_error": unified_status.last_error,
+
+                "last_message": unified_status.last_message,
+
                 "last_results": [
 
                     {
@@ -410,6 +437,8 @@ def health_endpoint(
                         "success": item.success,
 
                         "message": item.message,
+
+                        "error": item.error,
 
                     }
 

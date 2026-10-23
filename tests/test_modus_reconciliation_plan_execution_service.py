@@ -133,3 +133,67 @@ class ModusReconciliationPlanExecutionTests(
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModusReconciliationTransactionOwnershipTests(unittest.TestCase):
+    def test_reconciliation_does_not_commit_outer_transaction(self):
+        engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(engine)
+        db = sessionmaker(bind=engine)()
+
+        try:
+            db.add(
+                Match(
+                    id=200,
+                    date=date(2026, 9, 7),
+                    tournament="MODUS Super Series",
+                    stage="Group A",
+                    status="scheduled",
+                    player_a="Alpha",
+                    player_b="Bravo",
+                )
+            )
+            db.add(
+                ProviderEntityMapping(
+                    provider="modus-official",
+                    entity_type="fixture",
+                    external_id="modus-match-74325200",
+                    internal_id=200,
+                    competition_code="MODUS",
+                )
+            )
+            db.commit()
+
+            # Establish a real outer SQLite transaction before SAVEPOINT.
+            db.connection().exec_driver_sql("BEGIN")
+
+            report = execute_modus_reconciliation_mappings(
+                db,
+                mappings=((200, 19699),),
+                workflow_service=SelectiveWorkflow(),
+            )
+
+            self.assertEqual(report.completed, 1)
+            self.assertTrue(
+                db.in_transaction(),
+                "Reconciliation must leave the outer transaction open.",
+            )
+
+            db.rollback()
+
+            mapping = (
+                db.query(ProviderEntityMapping)
+                .filter_by(
+                    provider="modus-official",
+                    entity_type="fixture",
+                    internal_id=200,
+                )
+                .one()
+            )
+            self.assertEqual(
+                mapping.external_id,
+                "modus-match-74325200",
+            )
+        finally:
+            db.close()
+            engine.dispose()

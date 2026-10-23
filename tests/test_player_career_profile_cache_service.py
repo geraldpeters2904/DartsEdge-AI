@@ -211,5 +211,33 @@ class PlayerCareerProfileCacheServiceTests(
         self.assertIn("dartsedge_rating", profile)
 
 
+    def test_refresh_players_preserves_outer_transaction(self):
+        player = self.seed()
+
+        # SQLite requires an explicit BEGIN before SAVEPOINT to
+        # verify that the outer transaction can roll back its writes.
+        self.db.connection().exec_driver_sql("BEGIN")
+
+        with self.db.begin_nested():
+            profiles = self.service.refresh_players(
+                self.db,
+                player_ids=(player.id,),
+            )
+            self.assertEqual(len(profiles), 1)
+
+        self.assertTrue(
+            self.db.in_transaction(),
+            "Profile refresh must not commit the caller's transaction.",
+        )
+
+        self.db.rollback()
+
+        self.assertEqual(
+            self.db.query(PlayerCareerProfile).count(),
+            0,
+            "Outer rollback must undo the career-profile refresh.",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

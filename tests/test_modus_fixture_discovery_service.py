@@ -426,6 +426,28 @@ class ModusFixtureDiscoveryServiceTests(unittest.TestCase):
             result.message,
         )
 
+    def test_completed_card_mapped_to_cancelled_match_is_quarantined(self):
+        completed = card(19001, MatchStatus.COMPLETED)
+        existing = FakeMatch(status="cancelled")
+
+        with patch(
+            "app.services.modus_fixture_discovery_service."
+            "find_match_by_external_id",
+            return_value=existing,
+        ), patch.object(
+            self.service,
+            "_enrich_completed_card",
+        ) as enrich:
+            disposition, result = self.service._process_completed_card(
+                object(),
+                completed,
+            )
+
+        self.assertEqual(disposition, "quarantined")
+        self.assertIsNone(result)
+        self.assertEqual(existing.status, "cancelled")
+        enrich.assert_not_called()
+
     def test_completed_card_can_reconcile_to_unique_scheduled_fixture(self):
         completed = card(
             19715,

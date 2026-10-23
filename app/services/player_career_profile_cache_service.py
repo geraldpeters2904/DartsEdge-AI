@@ -148,6 +148,7 @@ class PlayerCareerProfileCacheService:
             }
         )
         profiles = []
+        caller_owns_transaction = db.in_nested_transaction()
 
         try:
             for player_id in unique_ids:
@@ -161,15 +162,19 @@ class PlayerCareerProfileCacheService:
                     )
                 )
 
-            db.commit()
+            if caller_owns_transaction:
+                db.flush()
+            else:
+                db.commit()
 
-            for profile in profiles:
-                db.refresh(profile)
+                for profile in profiles:
+                    db.refresh(profile)
 
             return profiles
 
         except Exception:
-            db.rollback()
+            if not caller_owns_transaction:
+                db.rollback()
             raise
 
     def refresh_all(

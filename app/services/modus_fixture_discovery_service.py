@@ -251,6 +251,9 @@ class ModusFixtureDiscoveryService:
                 return "already_completed", None
             return "quarantined", None
 
+        if match.status == "cancelled":
+            return "quarantined", None
+
         raise ValueError(
             f"Mapped match {match.id} has unsupported lifecycle status "
             f"{match.status!r}; completed MODUS card cannot enter enrichment."

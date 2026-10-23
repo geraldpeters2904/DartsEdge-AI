@@ -314,3 +314,26 @@ def test_malformed_raw_observation_rejects_cancellation():
         assert "cannot be parsed safely" in result.reason
     finally:
         db.close()
+
+
+def test_scheduled_match_with_score_and_winner_rejects_cancellation():
+    db = _database()
+
+    try:
+        _add_candidate(db)
+
+        match = db.get(Match, 17855)
+        match.score = "4-2"
+        match.winner = "Richie Howson"
+        db.commit()
+
+        result = check_orphan_cancellation_eligibility(
+            db,
+            _group(),
+            17855,
+        )
+
+        assert not result.eligible
+        assert "completed result" in result.reason.lower()
+    finally:
+        db.close()

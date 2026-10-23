@@ -14,7 +14,12 @@ def store_raw(db: Session, provider: str, entity_type: str, external_id: str, pa
     if existing:
         return existing, False
     row = RawIngestionRecord(provider=provider, entity_type=entity_type, external_id=external_id, payload_json=canonical, checksum=checksum)
-    db.add(row); db.commit(); db.refresh(row)
+    db.add(row)
+    if db.in_nested_transaction():
+        db.flush()
+    else:
+        db.commit()
+        db.refresh(row)
     return row, True
 
 def map_entity(db: Session, provider: str, entity_type: str, external_id: str, internal_id: int, competition_code=None):
@@ -25,11 +30,22 @@ def map_entity(db: Session, provider: str, entity_type: str, external_id: str, i
     else:
         row = ProviderEntityMapping(provider=provider, entity_type=entity_type, external_id=external_id, internal_id=internal_id, competition_code=competition_code)
         db.add(row)
-    db.commit(); db.refresh(row); return row
+    if db.in_nested_transaction():
+        db.flush()
+    else:
+        db.commit()
+        db.refresh(row)
+    return row
 
 def record_provenance(db: Session, entity_type: str, internal_id: int, field_name: str, provider: str, external_id=None, confidence='reported'):
     row = DataProvenance(entity_type=entity_type, internal_id=internal_id, field_name=field_name, provider=provider, external_id=external_id, confidence=confidence)
-    db.add(row); db.commit(); db.refresh(row); return row
+    db.add(row)
+    if db.in_nested_transaction():
+        db.flush()
+    else:
+        db.commit()
+        db.refresh(row)
+    return row
 
 def summary(db: Session):
     return {
